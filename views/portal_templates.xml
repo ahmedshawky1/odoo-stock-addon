@@ -686,492 +686,207 @@
     
     <!-- Custom Market Portal Layout -->
     <template id="market_portal_layout" name="Market Portal Layout">
-        <t t-call="web.layout">
-            <t t-set="head">
-                <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css"/>
-                <style><![CDATA[
-                    /* Custom Market Portal Styles */
-                    body {
-                        font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-                        background-color: #f8f9fa;
-                    }
-                    
-                    /* Custom Navbar */
-                    .market-navbar {
-                        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-                        padding: 1rem 0;
-                        box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-                    }
-                    
-                    .market-navbar .navbar-brand {
-                        color: white;
-                        font-weight: bold;
-                        font-size: 1.5rem;
-                    }
-                    
-                    .market-navbar .nav-link {
-                        color: rgba(255,255,255,0.9);
-                        margin: 0 10px;
-                        transition: all 0.3s;
-                    }
-                    
-                    .market-navbar .nav-link:hover {
-                        color: white;
-                        transform: translateY(-2px);
-                    }
-                    
-                    .market-navbar .nav-link.active {
-                        color: white;
-                        font-weight: 600;
-                        border-bottom: 2px solid white;
-                    }
-                    
-                    /* Sidebar */
-                    .market-sidebar {
-                        background: white;
-                        min-height: calc(100vh - 120px);
-                        box-shadow: 2px 0 5px rgba(0,0,0,0.05);
-                        transition: all 0.3s;
-                        position: sticky;
-                        top: 80px;
-                    }
-                    
-                    .market-sidebar.collapsed {
-                        margin-left: -250px;
-                    }
-                    
-                    .sidebar-toggle {
-                        position: fixed;
-                        left: 0;
-                        top: 100px;
-                        z-index: 1000;
-                        background: #667eea;
-                        color: white;
-                        border: none;
-                        padding: 10px 15px;
-                        border-radius: 0 5px 5px 0;
-                        cursor: pointer;
-                        transition: all 0.3s;
-                    }
-                    
-                    .sidebar-toggle:hover {
-                        background: #764ba2;
-                    }
-                    
-                    .sidebar-menu {
-                        list-style: none;
-                        padding: 0;
-                        margin: 0;
-                    }
-                    
-                    .sidebar-menu li {
-                        border-bottom: 1px solid #f0f0f0;
-                    }
-                    
-                    .sidebar-menu a {
-                        display: block;
-                        padding: 15px 20px;
-                        color: #495057;
-                        text-decoration: none;
-                        transition: all 0.3s;
-                    }
-                    
-                    .sidebar-menu a:hover {
-                        background: #f8f9fa;
-                        color: #667eea;
-                        padding-left: 25px;
-                    }
-                    
-                    .sidebar-menu a.active {
-                        background: #667eea;
-                        color: white;
-                        border-left: 4px solid #764ba2;
-                    }
-                    
-                    .sidebar-menu i {
-                        margin-right: 10px;
-                        width: 20px;
-                    }
-                    
-                    /* Main Content */
-                    .market-content {
-                        padding: 20px;
-                        transition: all 0.3s;
-                    }
-                    
-                    /* Footer */
-                    .market-footer {
-                        background: #2c3e50;
-                        color: white;
-                        padding: 30px 0;
-                        margin-top: 50px;
-                    }
-                    
-                    .market-footer a {
-                        color: #ecf0f1;
-                        text-decoration: none;
-                    }
-                    
-                    .market-footer a:hover {
-                        color: white;
-                    }
-                    
-                    /* Cards */
-                    .stat-card {
-                        background: white;
-                        border-radius: 10px;
-                        padding: 20px;
-                        box-shadow: 0 2px 10px rgba(0,0,0,0.05);
-                        transition: all 0.3s;
-                    }
-                    
-                    .stat-card:hover {
-                        transform: translateY(-5px);
-                        box-shadow: 0 5px 20px rgba(0,0,0,0.1);
-                    }
-                    
-                    /* Responsive */
-                    @media (max-width: 768px) {
-                        .market-sidebar {
-                            position: fixed;
-                            left: -250px;
-                            top: 60px;
-                            width: 250px;
-                            z-index: 999;
-                        }
-                        
-                        .market-sidebar.show {
-                            left: 0;
-                        }
-                    }
-                ]]></style>
-            </t>
+        <t t-call="portal.portal_layout">
+            <t t-set="breadcrumbs_searchbar" t-value="True"/>
             
-            <div class="market-portal">
-                <!-- Custom Navbar -->
-                <nav class="market-navbar">
-                    <div class="container-fluid">
-                        <div class="d-flex justify-content-between align-items-center">
-                            <a href="/market" class="navbar-brand">
-                                <i class="fa fa-chart-line me-2"></i>
-                                Stock Market Portal
-                            </a>
-                            
-                            <div class="d-flex align-items-center">
-                                <div class="me-4 text-white">
-                                    <small>Cash Balance:</small>
-                                    <strong class="ms-2">
-                                        <t t-esc="cash_balance or 0.0" t-options='{"widget": "monetary", "display_currency": display_currency}'/>
-                                    </strong>
-                                </div>
-                                
-                                <div class="dropdown">
-                                    <button class="btn btn-light dropdown-toggle" type="button" data-bs-toggle="dropdown">
-                                        <i class="fa fa-user-circle me-1"></i>
-                                        <t t-esc="user.name"/>
-                                    </button>
-                                    <ul class="dropdown-menu dropdown-menu-end">
-                                        <li><a class="dropdown-item" href="/my/home"><i class="fa fa-home me-2"></i>My Portal</a></li>
-                                        <li><a class="dropdown-item" href="/my/account"><i class="fa fa-user me-2"></i>My Account</a></li>
-                                        <li><hr class="dropdown-divider"/></li>
-                                        <li><a class="dropdown-item" href="/web/session/logout"><i class="fa fa-sign-out-alt me-2"></i>Logout</a></li>
-                                    </ul>
-                                </div>
-                            </div>
+            <t t-call="portal.portal_searchbar">
+                <t t-set="title">Stock Market Portal</t>
+            </t>
+
+            <!-- Financial Summary Cards -->
+            <div class="row mb-4">
+                <div class="col-md-3 mb-3">
+                    <div class="card">
+                        <div class="card-body">
+                            <h6 class="text-muted mb-2">Cash Balance</h6>
+                            <h4 class="mb-0">
+                                <t t-esc="cash_balance" t-options='{"widget": "monetary", "display_currency": display_currency}'/>
+                            </h4>
                         </div>
                     </div>
-                </nav>
-                
-                <!-- Sidebar Toggle Button -->
-                <button class="sidebar-toggle" id="sidebarToggleBtn">
-                    <i class="fa fa-bars"></i>
-                </button>
-                
-                <!-- Main Layout -->
-                <div class="container-fluid">
-                    <div class="row">
-                        <!-- Collapsible Sidebar -->
-                        <div class="col-md-3 col-lg-2 p-0">
-                            <div class="market-sidebar" id="marketSidebar">
-                                <ul class="sidebar-menu">
-                                    <li>
-                                        <a href="/market" t-attf-class="#{page_name == 'market_home' and 'active' or ''}">
-                                            <i class="fa fa-home"></i>
-                                            Dashboard
-                                        </a>
-                                    </li>
-                                    <li t-if="user.user_type == 'investor'">
-                                        <a href="/market/portfolio" t-attf-class="#{page_name == 'portfolio' and 'active' or ''}">
-                                            <i class="fa fa-briefcase"></i>
-                                            My Portfolio
-                                        </a>
-                                    </li>
-                                    <li t-if="user.user_type == 'investor'">
-                                        <a href="/market/trading" t-attf-class="#{page_name == 'trading' and 'active' or ''}">
-                                            <i class="fa fa-exchange-alt"></i>
-                                            Trading
-                                        </a>
-                                    </li>
-                                    <li t-if="user.user_type == 'investor'">
-                                        <a href="/market/orders" t-attf-class="#{page_name == 'orders' and 'active' or ''}">
-                                            <i class="fa fa-list-ul"></i>
-                                            My Orders
-                                        </a>
-                                    </li>
-                                    <li>
-                                        <a href="/my/market">
-                                            <i class="fa fa-chart-bar"></i>
-                                            Market Data
-                                        </a>
-                                    </li>
-                                    <li t-if="user.user_type == 'investor'">
-                                        <a href="/my/banking">
-                                            <i class="fa fa-university"></i>
-                                            Banking
-                                        </a>
-                                    </li>
-                                    <li t-if="user.user_type == 'broker'">
-                                        <a href="/my/commissions">
-                                            <i class="fa fa-dollar-sign"></i>
-                                            Commissions
-                                        </a>
-                                    </li>
-                                </ul>
-                            </div>
+                </div>
+                <div class="col-md-3 mb-3">
+                    <div class="card">
+                        <div class="card-body">
+                            <h6 class="text-muted mb-2">Portfolio Value</h6>
+                            <h4 class="mb-0">
+                                <t t-esc="portfolio_value" t-options='{"widget": "monetary", "display_currency": display_currency}'/>
+                            </h4>
                         </div>
-                        
-                        <!-- Main Content Area -->
-                        <div class="col-md-9 col-lg-10">
-                            <div class="market-content">
-                                <!-- Financial Summary Cards -->
-                                <div class="row mb-4">
-                                    <div class="col-md-3 mb-3">
-                                        <div class="stat-card">
-                                            <div class="d-flex justify-content-between align-items-center">
-                                                <div>
-                                                    <small class="text-muted">Cash Balance</small>
-                                                    <h4 class="mb-0">
-                                                        <t t-esc="cash_balance or 0.0" t-options='{"widget": "monetary", "display_currency": display_currency}'/>
-                                                    </h4>
-                                                </div>
-                                                <i class="fa fa-wallet fa-2x text-primary opacity-25"></i>
-                                            </div>
-                                        </div>
-                                    </div>
-                                    
-                                    <div class="col-md-3 mb-3">
-                                        <div class="stat-card">
-                                            <div class="d-flex justify-content-between align-items-center">
-                                                <div>
-                                                    <small class="text-muted">Portfolio Value</small>
-                                                    <h4 class="mb-0">
-                                                        <t t-esc="portfolio_value or 0.0" t-options='{"widget": "monetary", "display_currency": display_currency}'/>
-                                                    </h4>
-                                                </div>
-                                                <i class="fa fa-briefcase fa-2x text-success opacity-25"></i>
-                                            </div>
-                                        </div>
-                                    </div>
-                                    
-                                    <div class="col-md-3 mb-3">
-                                        <div class="stat-card">
-                                            <div class="d-flex justify-content-between align-items-center">
-                                                <div>
-                                                    <small class="text-muted">Total Assets</small>
-                                                    <h4 class="mb-0">
-                                                        <t t-esc="total_assets or 0.0" t-options='{"widget": "monetary", "display_currency": display_currency}'/>
-                                                    </h4>
-                                                </div>
-                                                <i class="fa fa-chart-pie fa-2x text-info opacity-25"></i>
-                                            </div>
-                                        </div>
-                                    </div>
-                                    
-                                    <div class="col-md-3 mb-3">
-                                        <div class="stat-card">
-                                            <div class="d-flex justify-content-between align-items-center">
-                                                <div>
-                                                    <small class="text-muted">P&amp;L</small>
-                                                    <h4 class="mb-0" t-attf-class="#{(profit_loss or 0.0) >= 0 and 'text-success' or 'text-danger'}">
-                                                        <t t-esc="profit_loss or 0.0" t-options='{"widget": "monetary", "display_currency": display_currency}'/>
-                                                    </h4>
-                                                    <small t-attf-class="#{(profit_loss or 0.0) >= 0 and 'text-success' or 'text-danger'}">
-                                                        (<t t-esc="profit_loss_percentage or 0.0"/>%)
-                                                    </small>
-                                                </div>
-                                                <i class="fa fa-chart-line fa-2x opacity-25" t-attf-class="#{(profit_loss or 0.0) >= 0 and 'text-success' or 'text-danger'}"></i>
-                                            </div>
-                                        </div>
-                                    </div>
-                                </div>
-                                
-                                <!-- Active Session Info -->
-                                <div class="alert alert-info" t-if="active_session">
-                                    <i class="fa fa-info-circle me-2"></i>
-                                    <strong>Active Session:</strong>
-                                    <t t-esc="active_session.name"/> - 
-                                    <small>Started: <t t-esc="active_session.start_date" t-options='{"widget": "datetime"}'/></small>
-                                </div>
-                                
-                                <!-- Market Movers -->
-                                <div class="row">
-                                    <div class="col-md-6 mb-4">
-                                        <div class="card">
-                                            <div class="card-header bg-success text-white">
-                                                <h5 class="mb-0"><i class="fa fa-arrow-up me-2"></i>Top Gainers</h5>
-                                            </div>
-                                            <div class="card-body">
-                                                <div class="table-responsive">
-                                                    <table class="table table-sm table-hover mb-0">
-                                                        <thead>
-                                                            <tr>
-                                                                <th>Symbol</th>
-                                                                <th>Price</th>
-                                                                <th class="text-end">Change</th>
-                                                            </tr>
-                                                        </thead>
-                                                        <tbody>
-                                                            <tr t-foreach="top_gainers" t-as="security">
-                                                                <td><strong><t t-esc="security.symbol"/></strong></td>
-                                                                <td><t t-esc="security.current_price or 0.0" t-options='{"widget": "monetary", "display_currency": display_currency}'/></td>
-                                                                <td class="text-end text-success">
-                                                                    +<t t-esc="security.change_percentage or 0.0"/>%
-                                                                </td>
-                                                            </tr>
-                                                            <tr t-if="not top_gainers">
-                                                                <td colspan="3" class="text-center text-muted">No gainers today</td>
-                                                            </tr>
-                                                        </tbody>
-                                                    </table>
-                                                </div>
-                                            </div>
-                                        </div>
-                                    </div>
-                                    
-                                    <div class="col-md-6 mb-4">
-                                        <div class="card">
-                                            <div class="card-header bg-danger text-white">
-                                                <h5 class="mb-0"><i class="fa fa-arrow-down me-2"></i>Top Losers</h5>
-                                            </div>
-                                            <div class="card-body">
-                                                <div class="table-responsive">
-                                                    <table class="table table-sm table-hover mb-0">
-                                                        <thead>
-                                                            <tr>
-                                                                <th>Symbol</th>
-                                                                <th>Price</th>
-                                                                <th class="text-end">Change</th>
-                                                            </tr>
-                                                        </thead>
-                                                        <tbody>
-                                                            <tr t-foreach="top_losers" t-as="security">
-                                                                <td><strong><t t-esc="security.symbol"/></strong></td>
-                                                                <td><t t-esc="security.current_price or 0.0" t-options='{"widget": "monetary", "display_currency": display_currency}'/></td>
-                                                                <td class="text-end text-danger">
-                                                                    <t t-esc="security.change_percentage or 0.0"/>%
-                                                                </td>
-                                                            </tr>
-                                                            <tr t-if="not top_losers">
-                                                                <td colspan="3" class="text-center text-muted">No losers today</td>
-                                                            </tr>
-                                                        </tbody>
-                                                    </table>
-                                                </div>
-                                            </div>
-                                        </div>
-                                    </div>
-                                </div>
-                                
-                                <!-- Quick Actions -->
-                                <div class="card">
-                                    <div class="card-header">
-                                        <h5 class="mb-0"><i class="fa fa-rocket me-2"></i>Quick Actions</h5>
-                                    </div>
-                                    <div class="card-body">
-                                        <div class="row">
-                                            <div class="col-md-3 mb-2" t-if="user.user_type == 'investor'">
-                                                <a href="/market/trading" class="btn btn-primary w-100">
-                                                    <i class="fa fa-shopping-cart me-2"></i>Buy Securities
-                                                </a>
-                                            </div>
-                                            <div class="col-md-3 mb-2" t-if="user.user_type == 'investor'">
-                                                <a href="/market/portfolio" class="btn btn-success w-100">
-                                                    <i class="fa fa-briefcase me-2"></i>View Portfolio
-                                                </a>
-                                            </div>
-                                            <div class="col-md-3 mb-2">
-                                                <a href="/my/market" class="btn btn-info w-100">
-                                                    <i class="fa fa-chart-bar me-2"></i>Market Data
-                                                </a>
-                                            </div>
-                                            <div class="col-md-3 mb-2" t-if="user.user_type == 'investor'">
-                                                <a href="/my/banking" class="btn btn-warning w-100">
-                                                    <i class="fa fa-university me-2"></i>Banking
-                                                </a>
-                                            </div>
-                                        </div>
-                                    </div>
-                                </div>
+                    </div>
+                </div>
+                <div class="col-md-3 mb-3">
+                    <div class="card">
+                        <div class="card-body">
+                            <h6 class="text-muted mb-2">Total Assets</h6>
+                            <h4 class="mb-0">
+                                <t t-esc="total_assets" t-options='{"widget": "monetary", "display_currency": display_currency}'/>
+                            </h4>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-3 mb-3">
+                    <div class="card">
+                        <div class="card-body">
+                            <h6 class="text-muted mb-2">P&amp;L</h6>
+                            <h4 class="mb-0" t-attf-class="#{profit_loss >= 0 and 'text-success' or 'text-danger'}">
+                                <t t-esc="profit_loss" t-options='{"widget": "monetary", "display_currency": display_currency}'/>
+                                <small>(<t t-esc="profit_loss_percentage"/>%)</small>
+                            </h4>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Session Info -->
+            <div class="alert alert-info" t-if="active_session">
+                <strong><i class="fa fa-clock-o"></i> Active Session:</strong>
+                <t t-esc="active_session.name"/> - 
+                Session ends at <t t-esc="active_session.end_time" t-options='{"widget": "datetime"}'/>
+            </div>
+            <div class="alert alert-warning" t-if="not active_session">
+                <strong><i class="fa fa-exclamation-triangle"></i> No Active Session</strong>
+                - Trading is currently closed
+            </div>
+
+            <!-- Quick Actions -->
+            <div class="row mb-4" t-if="user.user_type == 'investor'">
+                <div class="col-12">
+                    <div class="card">
+                        <div class="card-header">
+                            <h5 class="mb-0">Quick Actions</h5>
+                        </div>
+                        <div class="card-body">
+                            <div class="btn-group" role="group">
+                                <a href="/market/trading" class="btn btn-primary">
+                                    <i class="fa fa-exchange"></i> Place Order
+                                </a>
+                                <a href="/market/portfolio" class="btn btn-info">
+                                    <i class="fa fa-briefcase"></i> View Portfolio
+                                </a>
+                                <a href="/market/orders" class="btn btn-secondary">
+                                    <i class="fa fa-list"></i> My Orders
+                                </a>
+                                <a href="/my/banking" class="btn btn-success">
+                                    <i class="fa fa-university"></i> Banking
+                                </a>
                             </div>
                         </div>
                     </div>
                 </div>
-                
-                <!-- Custom Footer -->
-                <footer class="market-footer">
-                    <div class="container">
-                        <div class="row">
-                            <div class="col-md-4">
-                                <h5>Stock Market Simulation</h5>
-                                <p class="text-muted">A comprehensive trading platform for learning and practice.</p>
-                            </div>
-                            <div class="col-md-4">
-                                <h6>Quick Links</h6>
-                                <ul class="list-unstyled">
-                                    <li><a href="/market">Dashboard</a></li>
-                                    <li><a href="/my/market">Market Data</a></li>
-                                    <li><a href="/my/home">My Portal</a></li>
-                                </ul>
-                            </div>
-                            <div class="col-md-4">
-                                <h6>Support</h6>
-                                <ul class="list-unstyled">
-                                    <li><a href="#">Help Center</a></li>
-                                    <li><a href="#">Contact Us</a></li>
-                                    <li><a href="#">Terms &amp; Conditions</a></li>
-                                </ul>
-                            </div>
+            </div>
+
+            <!-- Market Movers -->
+            <div class="row">
+                <div class="col-md-6 mb-4">
+                    <div class="card">
+                        <div class="card-header bg-success text-white">
+                            <h5 class="mb-0"><i class="fa fa-arrow-up"></i> Top Gainers</h5>
                         </div>
-                        <hr class="my-4" style="border-color: rgba(255,255,255,0.1);"/>
-                        <div class="text-center">
-                            <small>© 2025 Stock Market Simulation. All rights reserved.</small>
+                        <div class="card-body p-0">
+                            <table class="table table-sm mb-0" t-if="top_gainers">
+                                <thead>
+                                    <tr>
+                                        <th>Symbol</th>
+                                        <th class="text-end">Price</th>
+                                        <th class="text-end">Change</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <tr t-foreach="top_gainers" t-as="security">
+                                        <td><t t-esc="security.symbol"/></td>
+                                        <td class="text-end">
+                                            <t t-esc="security.current_price" t-options='{"widget": "monetary", "display_currency": display_currency}'/>
+                                        </td>
+                                        <td class="text-end text-success">
+                                            +<t t-esc="security.change_percentage"/>%
+                                        </td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                            <p class="text-center text-muted p-3 mb-0" t-if="not top_gainers">No gainers today</p>
                         </div>
                     </div>
-                </footer>
+                </div>
                 
-                <!-- Sidebar Toggle Script -->
-                <script>//<![CDATA[
-                    document.addEventListener('DOMContentLoaded', function() {
-                        // Sidebar toggle
-                        const toggleBtn = document.getElementById('sidebarToggleBtn');
-                        if (toggleBtn) {
-                            toggleBtn.addEventListener('click', function() {
-                                const sidebar = document.getElementById('marketSidebar');
-                                if (sidebar) {
-                                    sidebar.classList.toggle('collapsed');
-                                }
-                            });
-                        }
-                        
-                        // Auto-refresh every 30 seconds
-                        setInterval(function() {
-                            if (window.stockPortal && window.stockPortal.refreshMarketQuotes) {
-                                window.stockPortal.refreshMarketQuotes();
-                            }
-                        }, 30000);
-                    });
-                //]]></script>
+                <div class="col-md-6 mb-4">
+                    <div class="card">
+                        <div class="card-header bg-danger text-white">
+                            <h5 class="mb-0"><i class="fa fa-arrow-down"></i> Top Losers</h5>
+                        </div>
+                        <div class="card-body p-0">
+                            <table class="table table-sm mb-0" t-if="top_losers">
+                                <thead>
+                                    <tr>
+                                        <th>Symbol</th>
+                                        <th class="text-end">Price</th>
+                                        <th class="text-end">Change</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <tr t-foreach="top_losers" t-as="security">
+                                        <td><t t-esc="security.symbol"/></td>
+                                        <td class="text-end">
+                                            <t t-esc="security.current_price" t-options='{"widget": "monetary", "display_currency": display_currency}'/>
+                                        </td>
+                                        <td class="text-end text-danger">
+                                            <t t-esc="security.change_percentage"/>%
+                                        </td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                            <p class="text-center text-muted p-3 mb-0" t-if="not top_losers">No losers today</p>
+                        </div>
+                    </div>
+                </div>
             </div>
+
+            <!-- All Securities -->
+            <div class="row">
+                <div class="col-12">
+                    <div class="card">
+                        <div class="card-header">
+                            <h5 class="mb-0"><i class="fa fa-chart-line"></i> All Securities</h5>
+                        </div>
+                        <div class="card-body p-0">
+                            <div class="table-responsive">
+                                <table class="table table-hover mb-0" t-if="securities">
+                                    <thead class="table-light">
+                                        <tr>
+                                            <th>Symbol</th>
+                                            <th>Name</th>
+                                            <th>Type</th>
+                                            <th class="text-end">Price</th>
+                                            <th class="text-end">Change</th>
+                                            <th class="text-end">Change %</th>
+                                            <th class="text-end">Volume</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        <tr t-foreach="securities" t-as="sec">
+                                            <td><strong><t t-esc="sec.symbol"/></strong></td>
+                                            <td><t t-esc="sec.name"/></td>
+                                            <td><span class="badge bg-secondary"><t t-esc="sec.security_type"/></span></td>
+                                            <td class="text-end">
+                                                <t t-esc="sec.current_price" t-options='{"widget": "monetary", "display_currency": display_currency}'/>
+                                            </td>
+                                            <td class="text-end" t-attf-class="#{sec.change_amount >= 0 and 'text-success' or 'text-danger'}">
+                                                <t t-esc="sec.change_amount" t-options='{"widget": "monetary", "display_currency": display_currency}'/>
+                                            </td>
+                                            <td class="text-end" t-attf-class="#{sec.change_percentage >= 0 and 'text-success' or 'text-danger'}">
+                                                <t t-esc="sec.change_percentage"/>%
+                                            </td>
+                                            <td class="text-end"><t t-esc="sec.volume"/></td>
+                                        </tr>
+                                    </tbody>
+                                </table>
+                                <p class="text-center text-muted p-3 mb-0" t-if="not securities">No securities available</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
         </t>
     </template>
     
