@@ -309,6 +309,123 @@ class StockMarketPortal(CustomerPortal):
             return {'error': 'An unexpected error occurred. Please try again later or contact support.', 'type': 'system'}
 
     # Market Data
+    @http.route(['/market', '/market/home'], type='http', auth="user", website=True)
+    def market_home(self, **kw):
+        """Custom market portal entry point with custom layout"""
+        user = request.env.user
+        
+        # Get active session
+        active_session = request.env['stock.session'].sudo().search([('state', '=', 'open')], limit=1)
+        
+        # Get all active securities
+        securities = request.env['stock.security'].sudo().search([('active', '=', True)])
+        
+        # Get market movers
+        gainers = securities.filtered(lambda s: s.change_percentage > 0).sorted('change_percentage', reverse=True)[:5]
+        losers = securities.filtered(lambda s: s.change_percentage < 0).sorted('change_percentage')[:5]
+        
+        # Financial data with fallbacks
+        values = {
+            'user': user,
+            'user_type': user.user_type,
+            'cash_balance': user.cash_balance or 0.0,
+            'portfolio_value': user.portfolio_value or 0.0,
+            'total_assets': user.total_assets or 0.0,
+            'profit_loss': user.profit_loss or 0.0,
+            'profit_loss_percentage': user.profit_loss_percentage or 0.0,
+            'display_currency': request.env.company.currency_id,
+            'active_session': active_session,
+            'securities': securities,
+            'top_gainers': gainers,
+            'top_losers': losers,
+            'page_name': 'market_home',
+        }
+        
+        return request.render("stock_market_simulation.market_portal_layout", values)
+    
+    @http.route(['/market/portfolio'], type='http', auth="user", website=True)
+    def market_portfolio(self, page=1, **kw):
+        """Portfolio view in market portal"""
+        user = request.env.user
+        
+        if user.user_type != 'investor':
+            return request.redirect('/market')
+        
+        # Get positions
+        positions = request.env['stock.position'].search([
+            ('user_id', '=', user.id),
+            ('quantity', '>', 0)
+        ])
+        
+        values = {
+            'user': user,
+            'positions': positions,
+            'cash_balance': user.cash_balance or 0.0,
+            'portfolio_value': user.portfolio_value or 0.0,
+            'total_assets': user.total_assets or 0.0,
+            'display_currency': request.env.company.currency_id,
+            'page_name': 'portfolio',
+        }
+        
+        return request.render("stock_market_simulation.market_portfolio_view", values)
+    
+    @http.route(['/market/trading'], type='http', auth="user", website=True)
+    def market_trading(self, **kw):
+        """Trading view in market portal"""
+        user = request.env.user
+        
+        if user.user_type != 'investor':
+            return request.redirect('/market')
+        
+        # Get active session
+        active_session = request.env['stock.session'].sudo().search([('state', '=', 'open')], limit=1)
+        
+        if not active_session:
+            return request.redirect('/market')
+        
+        # Get all active securities
+        securities = request.env['stock.security'].sudo().search([('active', '=', True)])
+        
+        # Get user positions for selling
+        positions = request.env['stock.position'].search([
+            ('user_id', '=', user.id),
+            ('available_quantity', '>', 0)
+        ])
+        
+        values = {
+            'user': user,
+            'securities': securities,
+            'positions': positions,
+            'active_session': active_session,
+            'cash_balance': user.cash_balance or 0.0,
+            'display_currency': request.env.company.currency_id,
+            'page_name': 'trading',
+        }
+        
+        return request.render("stock_market_simulation.market_trading_view", values)
+    
+    @http.route(['/market/orders'], type='http', auth="user", website=True)
+    def market_orders(self, **kw):
+        """Orders view in market portal"""
+        user = request.env.user
+        
+        if user.user_type != 'investor':
+            return request.redirect('/market')
+        
+        # Get user orders
+        orders = request.env['stock.order'].search([
+            ('user_id', '=', user.id)
+        ], order='create_date desc', limit=50)
+        
+        values = {
+            'user': user,
+            'orders': orders,
+            'display_currency': request.env.company.currency_id,
+            'page_name': 'orders',
+        }
+        
+        return request.render("stock_market_simulation.market_orders_view", values)
+    
     @http.route(['/my/market'], type='http', auth="user", website=True)
     def portal_market_data(self, **kw):
         values = self._prepare_portal_layout_values()

@@ -684,4 +684,607 @@
         //]]></script>
     </template>
     
+    <!-- Custom Market Portal Layout -->
+    <template id="market_portal_layout" name="Market Portal Layout">
+        <t t-call="web.layout">
+            <t t-set="head">
+                <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css"/>
+                <style><![CDATA[
+                    /* Custom Market Portal Styles */
+                    body {
+                        font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+                        background-color: #f8f9fa;
+                    }
+                    
+                    /* Custom Navbar */
+                    .market-navbar {
+                        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+                        padding: 1rem 0;
+                        box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+                    }
+                    
+                    .market-navbar .navbar-brand {
+                        color: white;
+                        font-weight: bold;
+                        font-size: 1.5rem;
+                    }
+                    
+                    .market-navbar .nav-link {
+                        color: rgba(255,255,255,0.9);
+                        margin: 0 10px;
+                        transition: all 0.3s;
+                    }
+                    
+                    .market-navbar .nav-link:hover {
+                        color: white;
+                        transform: translateY(-2px);
+                    }
+                    
+                    .market-navbar .nav-link.active {
+                        color: white;
+                        font-weight: 600;
+                        border-bottom: 2px solid white;
+                    }
+                    
+                    /* Sidebar */
+                    .market-sidebar {
+                        background: white;
+                        min-height: calc(100vh - 120px);
+                        box-shadow: 2px 0 5px rgba(0,0,0,0.05);
+                        transition: all 0.3s;
+                        position: sticky;
+                        top: 80px;
+                    }
+                    
+                    .market-sidebar.collapsed {
+                        margin-left: -250px;
+                    }
+                    
+                    .sidebar-toggle {
+                        position: fixed;
+                        left: 0;
+                        top: 100px;
+                        z-index: 1000;
+                        background: #667eea;
+                        color: white;
+                        border: none;
+                        padding: 10px 15px;
+                        border-radius: 0 5px 5px 0;
+                        cursor: pointer;
+                        transition: all 0.3s;
+                    }
+                    
+                    .sidebar-toggle:hover {
+                        background: #764ba2;
+                    }
+                    
+                    .sidebar-menu {
+                        list-style: none;
+                        padding: 0;
+                        margin: 0;
+                    }
+                    
+                    .sidebar-menu li {
+                        border-bottom: 1px solid #f0f0f0;
+                    }
+                    
+                    .sidebar-menu a {
+                        display: block;
+                        padding: 15px 20px;
+                        color: #495057;
+                        text-decoration: none;
+                        transition: all 0.3s;
+                    }
+                    
+                    .sidebar-menu a:hover {
+                        background: #f8f9fa;
+                        color: #667eea;
+                        padding-left: 25px;
+                    }
+                    
+                    .sidebar-menu a.active {
+                        background: #667eea;
+                        color: white;
+                        border-left: 4px solid #764ba2;
+                    }
+                    
+                    .sidebar-menu i {
+                        margin-right: 10px;
+                        width: 20px;
+                    }
+                    
+                    /* Main Content */
+                    .market-content {
+                        padding: 20px;
+                        transition: all 0.3s;
+                    }
+                    
+                    /* Footer */
+                    .market-footer {
+                        background: #2c3e50;
+                        color: white;
+                        padding: 30px 0;
+                        margin-top: 50px;
+                    }
+                    
+                    .market-footer a {
+                        color: #ecf0f1;
+                        text-decoration: none;
+                    }
+                    
+                    .market-footer a:hover {
+                        color: white;
+                    }
+                    
+                    /* Cards */
+                    .stat-card {
+                        background: white;
+                        border-radius: 10px;
+                        padding: 20px;
+                        box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+                        transition: all 0.3s;
+                    }
+                    
+                    .stat-card:hover {
+                        transform: translateY(-5px);
+                        box-shadow: 0 5px 20px rgba(0,0,0,0.1);
+                    }
+                    
+                    /* Responsive */
+                    @media (max-width: 768px) {
+                        .market-sidebar {
+                            position: fixed;
+                            left: -250px;
+                            top: 60px;
+                            width: 250px;
+                            z-index: 999;
+                        }
+                        
+                        .market-sidebar.show {
+                            left: 0;
+                        }
+                    }
+                ]]></style>
+            </t>
+            
+            <div class="market-portal">
+                <!-- Custom Navbar -->
+                <nav class="market-navbar">
+                    <div class="container-fluid">
+                        <div class="d-flex justify-content-between align-items-center">
+                            <a href="/market" class="navbar-brand">
+                                <i class="fa fa-chart-line me-2"></i>
+                                Stock Market Portal
+                            </a>
+                            
+                            <div class="d-flex align-items-center">
+                                <div class="me-4 text-white">
+                                    <small>Cash Balance:</small>
+                                    <strong class="ms-2">
+                                        <t t-esc="cash_balance or 0.0" t-options='{"widget": "monetary", "display_currency": display_currency}'/>
+                                    </strong>
+                                </div>
+                                
+                                <div class="dropdown">
+                                    <button class="btn btn-light dropdown-toggle" type="button" data-bs-toggle="dropdown">
+                                        <i class="fa fa-user-circle me-1"></i>
+                                        <t t-esc="user.name"/>
+                                    </button>
+                                    <ul class="dropdown-menu dropdown-menu-end">
+                                        <li><a class="dropdown-item" href="/my/home"><i class="fa fa-home me-2"></i>My Portal</a></li>
+                                        <li><a class="dropdown-item" href="/my/account"><i class="fa fa-user me-2"></i>My Account</a></li>
+                                        <li><hr class="dropdown-divider"/></li>
+                                        <li><a class="dropdown-item" href="/web/session/logout"><i class="fa fa-sign-out-alt me-2"></i>Logout</a></li>
+                                    </ul>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </nav>
+                
+                <!-- Sidebar Toggle Button -->
+                <button class="sidebar-toggle" id="sidebarToggleBtn">
+                    <i class="fa fa-bars"></i>
+                </button>
+                
+                <!-- Main Layout -->
+                <div class="container-fluid">
+                    <div class="row">
+                        <!-- Collapsible Sidebar -->
+                        <div class="col-md-3 col-lg-2 p-0">
+                            <div class="market-sidebar" id="marketSidebar">
+                                <ul class="sidebar-menu">
+                                    <li>
+                                        <a href="/market" t-attf-class="#{page_name == 'market_home' and 'active' or ''}">
+                                            <i class="fa fa-home"></i>
+                                            Dashboard
+                                        </a>
+                                    </li>
+                                    <li t-if="user.user_type == 'investor'">
+                                        <a href="/market/portfolio" t-attf-class="#{page_name == 'portfolio' and 'active' or ''}">
+                                            <i class="fa fa-briefcase"></i>
+                                            My Portfolio
+                                        </a>
+                                    </li>
+                                    <li t-if="user.user_type == 'investor'">
+                                        <a href="/market/trading" t-attf-class="#{page_name == 'trading' and 'active' or ''}">
+                                            <i class="fa fa-exchange-alt"></i>
+                                            Trading
+                                        </a>
+                                    </li>
+                                    <li t-if="user.user_type == 'investor'">
+                                        <a href="/market/orders" t-attf-class="#{page_name == 'orders' and 'active' or ''}">
+                                            <i class="fa fa-list-ul"></i>
+                                            My Orders
+                                        </a>
+                                    </li>
+                                    <li>
+                                        <a href="/my/market">
+                                            <i class="fa fa-chart-bar"></i>
+                                            Market Data
+                                        </a>
+                                    </li>
+                                    <li t-if="user.user_type == 'investor'">
+                                        <a href="/my/banking">
+                                            <i class="fa fa-university"></i>
+                                            Banking
+                                        </a>
+                                    </li>
+                                    <li t-if="user.user_type == 'broker'">
+                                        <a href="/my/commissions">
+                                            <i class="fa fa-dollar-sign"></i>
+                                            Commissions
+                                        </a>
+                                    </li>
+                                </ul>
+                            </div>
+                        </div>
+                        
+                        <!-- Main Content Area -->
+                        <div class="col-md-9 col-lg-10">
+                            <div class="market-content">
+                                <!-- Financial Summary Cards -->
+                                <div class="row mb-4">
+                                    <div class="col-md-3 mb-3">
+                                        <div class="stat-card">
+                                            <div class="d-flex justify-content-between align-items-center">
+                                                <div>
+                                                    <small class="text-muted">Cash Balance</small>
+                                                    <h4 class="mb-0">
+                                                        <t t-esc="cash_balance or 0.0" t-options='{"widget": "monetary", "display_currency": display_currency}'/>
+                                                    </h4>
+                                                </div>
+                                                <i class="fa fa-wallet fa-2x text-primary opacity-25"></i>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    
+                                    <div class="col-md-3 mb-3">
+                                        <div class="stat-card">
+                                            <div class="d-flex justify-content-between align-items-center">
+                                                <div>
+                                                    <small class="text-muted">Portfolio Value</small>
+                                                    <h4 class="mb-0">
+                                                        <t t-esc="portfolio_value or 0.0" t-options='{"widget": "monetary", "display_currency": display_currency}'/>
+                                                    </h4>
+                                                </div>
+                                                <i class="fa fa-briefcase fa-2x text-success opacity-25"></i>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    
+                                    <div class="col-md-3 mb-3">
+                                        <div class="stat-card">
+                                            <div class="d-flex justify-content-between align-items-center">
+                                                <div>
+                                                    <small class="text-muted">Total Assets</small>
+                                                    <h4 class="mb-0">
+                                                        <t t-esc="total_assets or 0.0" t-options='{"widget": "monetary", "display_currency": display_currency}'/>
+                                                    </h4>
+                                                </div>
+                                                <i class="fa fa-chart-pie fa-2x text-info opacity-25"></i>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    
+                                    <div class="col-md-3 mb-3">
+                                        <div class="stat-card">
+                                            <div class="d-flex justify-content-between align-items-center">
+                                                <div>
+                                                    <small class="text-muted">P&amp;L</small>
+                                                    <h4 class="mb-0" t-attf-class="#{(profit_loss or 0.0) >= 0 and 'text-success' or 'text-danger'}">
+                                                        <t t-esc="profit_loss or 0.0" t-options='{"widget": "monetary", "display_currency": display_currency}'/>
+                                                    </h4>
+                                                    <small t-attf-class="#{(profit_loss or 0.0) >= 0 and 'text-success' or 'text-danger'}">
+                                                        (<t t-esc="profit_loss_percentage or 0.0"/>%)
+                                                    </small>
+                                                </div>
+                                                <i class="fa fa-chart-line fa-2x opacity-25" t-attf-class="#{(profit_loss or 0.0) >= 0 and 'text-success' or 'text-danger'}"></i>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                                
+                                <!-- Active Session Info -->
+                                <div class="alert alert-info" t-if="active_session">
+                                    <i class="fa fa-info-circle me-2"></i>
+                                    <strong>Active Session:</strong>
+                                    <t t-esc="active_session.name"/> - 
+                                    <small>Started: <t t-esc="active_session.start_date" t-options='{"widget": "datetime"}'/></small>
+                                </div>
+                                
+                                <!-- Market Movers -->
+                                <div class="row">
+                                    <div class="col-md-6 mb-4">
+                                        <div class="card">
+                                            <div class="card-header bg-success text-white">
+                                                <h5 class="mb-0"><i class="fa fa-arrow-up me-2"></i>Top Gainers</h5>
+                                            </div>
+                                            <div class="card-body">
+                                                <div class="table-responsive">
+                                                    <table class="table table-sm table-hover mb-0">
+                                                        <thead>
+                                                            <tr>
+                                                                <th>Symbol</th>
+                                                                <th>Price</th>
+                                                                <th class="text-end">Change</th>
+                                                            </tr>
+                                                        </thead>
+                                                        <tbody>
+                                                            <tr t-foreach="top_gainers" t-as="security">
+                                                                <td><strong><t t-esc="security.symbol"/></strong></td>
+                                                                <td><t t-esc="security.current_price or 0.0" t-options='{"widget": "monetary", "display_currency": display_currency}'/></td>
+                                                                <td class="text-end text-success">
+                                                                    +<t t-esc="security.change_percentage or 0.0"/>%
+                                                                </td>
+                                                            </tr>
+                                                            <tr t-if="not top_gainers">
+                                                                <td colspan="3" class="text-center text-muted">No gainers today</td>
+                                                            </tr>
+                                                        </tbody>
+                                                    </table>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    
+                                    <div class="col-md-6 mb-4">
+                                        <div class="card">
+                                            <div class="card-header bg-danger text-white">
+                                                <h5 class="mb-0"><i class="fa fa-arrow-down me-2"></i>Top Losers</h5>
+                                            </div>
+                                            <div class="card-body">
+                                                <div class="table-responsive">
+                                                    <table class="table table-sm table-hover mb-0">
+                                                        <thead>
+                                                            <tr>
+                                                                <th>Symbol</th>
+                                                                <th>Price</th>
+                                                                <th class="text-end">Change</th>
+                                                            </tr>
+                                                        </thead>
+                                                        <tbody>
+                                                            <tr t-foreach="top_losers" t-as="security">
+                                                                <td><strong><t t-esc="security.symbol"/></strong></td>
+                                                                <td><t t-esc="security.current_price or 0.0" t-options='{"widget": "monetary", "display_currency": display_currency}'/></td>
+                                                                <td class="text-end text-danger">
+                                                                    <t t-esc="security.change_percentage or 0.0"/>%
+                                                                </td>
+                                                            </tr>
+                                                            <tr t-if="not top_losers">
+                                                                <td colspan="3" class="text-center text-muted">No losers today</td>
+                                                            </tr>
+                                                        </tbody>
+                                                    </table>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                                
+                                <!-- Quick Actions -->
+                                <div class="card">
+                                    <div class="card-header">
+                                        <h5 class="mb-0"><i class="fa fa-rocket me-2"></i>Quick Actions</h5>
+                                    </div>
+                                    <div class="card-body">
+                                        <div class="row">
+                                            <div class="col-md-3 mb-2" t-if="user.user_type == 'investor'">
+                                                <a href="/market/trading" class="btn btn-primary w-100">
+                                                    <i class="fa fa-shopping-cart me-2"></i>Buy Securities
+                                                </a>
+                                            </div>
+                                            <div class="col-md-3 mb-2" t-if="user.user_type == 'investor'">
+                                                <a href="/market/portfolio" class="btn btn-success w-100">
+                                                    <i class="fa fa-briefcase me-2"></i>View Portfolio
+                                                </a>
+                                            </div>
+                                            <div class="col-md-3 mb-2">
+                                                <a href="/my/market" class="btn btn-info w-100">
+                                                    <i class="fa fa-chart-bar me-2"></i>Market Data
+                                                </a>
+                                            </div>
+                                            <div class="col-md-3 mb-2" t-if="user.user_type == 'investor'">
+                                                <a href="/my/banking" class="btn btn-warning w-100">
+                                                    <i class="fa fa-university me-2"></i>Banking
+                                                </a>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Custom Footer -->
+                <footer class="market-footer">
+                    <div class="container">
+                        <div class="row">
+                            <div class="col-md-4">
+                                <h5>Stock Market Simulation</h5>
+                                <p class="text-muted">A comprehensive trading platform for learning and practice.</p>
+                            </div>
+                            <div class="col-md-4">
+                                <h6>Quick Links</h6>
+                                <ul class="list-unstyled">
+                                    <li><a href="/market">Dashboard</a></li>
+                                    <li><a href="/my/market">Market Data</a></li>
+                                    <li><a href="/my/home">My Portal</a></li>
+                                </ul>
+                            </div>
+                            <div class="col-md-4">
+                                <h6>Support</h6>
+                                <ul class="list-unstyled">
+                                    <li><a href="#">Help Center</a></li>
+                                    <li><a href="#">Contact Us</a></li>
+                                    <li><a href="#">Terms &amp; Conditions</a></li>
+                                </ul>
+                            </div>
+                        </div>
+                        <hr class="my-4" style="border-color: rgba(255,255,255,0.1);"/>
+                        <div class="text-center">
+                            <small>© 2025 Stock Market Simulation. All rights reserved.</small>
+                        </div>
+                    </div>
+                </footer>
+                
+                <!-- Sidebar Toggle Script -->
+                <script>//<![CDATA[
+                    document.addEventListener('DOMContentLoaded', function() {
+                        // Sidebar toggle
+                        const toggleBtn = document.getElementById('sidebarToggleBtn');
+                        if (toggleBtn) {
+                            toggleBtn.addEventListener('click', function() {
+                                const sidebar = document.getElementById('marketSidebar');
+                                if (sidebar) {
+                                    sidebar.classList.toggle('collapsed');
+                                }
+                            });
+                        }
+                        
+                        // Auto-refresh every 30 seconds
+                        setInterval(function() {
+                            if (window.stockPortal && window.stockPortal.refreshMarketQuotes) {
+                                window.stockPortal.refreshMarketQuotes();
+                            }
+                        }, 30000);
+                    });
+                //]]></script>
+            </div>
+        </t>
+    </template>
+    
+    <!-- Market Portfolio View -->
+    <template id="market_portfolio_view" name="Market Portfolio View">
+        <t t-call="stock_market_simulation.market_portal_layout">
+            <div class="card">
+                <div class="card-header">
+                    <h4 class="mb-0"><i class="fa fa-briefcase me-2"></i>My Portfolio</h4>
+                </div>
+                <div class="card-body">
+                    <div class="table-responsive">
+                        <table class="table table-hover">
+                            <thead>
+                                <tr>
+                                    <th>Security</th>
+                                    <th>Quantity</th>
+                                    <th>Avg Cost</th>
+                                    <th>Current Price</th>
+                                    <th>Market Value</th>
+                                    <th>P&amp;L</th>
+                                    <th>P&amp;L %</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr t-foreach="positions" t-as="position">
+                                    <td><strong><t t-esc="position.security_id.symbol"/></strong><br/><small class="text-muted"><t t-esc="position.security_id.name"/></small></td>
+                                    <td><t t-esc="position.quantity"/></td>
+                                    <td><t t-esc="position.average_price or 0.0" t-options='{"widget": "monetary", "display_currency": display_currency}'/></td>
+                                    <td><t t-esc="position.security_id.current_price or 0.0" t-options='{"widget": "monetary", "display_currency": display_currency}'/></td>
+                                    <td><t t-esc="position.market_value or 0.0" t-options='{"widget": "monetary", "display_currency": display_currency}'/></td>
+                                    <td t-attf-class="#{(position.unrealized_pnl or 0.0) >= 0 and 'text-success' or 'text-danger'}">
+                                        <t t-esc="position.unrealized_pnl or 0.0" t-options='{"widget": "monetary", "display_currency": display_currency}'/>
+                                    </td>
+                                    <td t-attf-class="#{(position.unrealized_pnl_percent or 0.0) >= 0 and 'text-success' or 'text-danger'}">
+                                        <t t-esc="position.unrealized_pnl_percent or 0.0"/>%
+                                    </td>
+                                </tr>
+                                <tr t-if="not positions">
+                                    <td colspan="7" class="text-center text-muted py-5">
+                                        <i class="fa fa-inbox fa-3x mb-3 d-block"></i>
+                                        No positions yet. Start trading to build your portfolio!
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </t>
+    </template>
+    
+    <!-- Market Trading View -->
+    <template id="market_trading_view" name="Market Trading View">
+        <t t-call="stock_market_simulation.market_portal_layout">
+            <h4 class="mb-4"><i class="fa fa-exchange-alt me-2"></i>Trading Platform</h4>
+            <t t-call="stock_market_simulation.portal_order_new"/>
+        </t>
+    </template>
+    
+    <!-- Market Orders View -->
+    <template id="market_orders_view" name="Market Orders View">
+        <t t-call="stock_market_simulation.market_portal_layout">
+            <div class="card">
+                <div class="card-header">
+                    <h4 class="mb-0"><i class="fa fa-list-ul me-2"></i>My Orders</h4>
+                </div>
+                <div class="card-body">
+                    <div class="table-responsive">
+                        <table class="table table-hover">
+                            <thead>
+                                <tr>
+                                    <th>Order ID</th>
+                                    <th>Security</th>
+                                    <th>Side</th>
+                                    <th>Type</th>
+                                    <th>Quantity</th>
+                                    <th>Price</th>
+                                    <th>Status</th>
+                                    <th>Date</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr t-foreach="orders" t-as="order">
+                                    <td><span class="badge bg-secondary"><t t-esc="order.name"/></span></td>
+                                    <td><strong><t t-esc="order.security_id.symbol"/></strong></td>
+                                    <td>
+                                        <span t-attf-class="badge #{order.side == 'buy' and 'bg-success' or 'bg-danger'}">
+                                            <t t-esc="order.side.upper()"/>
+                                        </span>
+                                    </td>
+                                    <td><t t-esc="order.order_type"/></td>
+                                    <td><t t-esc="order.quantity"/></td>
+                                    <td><t t-esc="order.price or 0.0" t-options='{"widget": "monetary", "display_currency": display_currency}'/></td>
+                                    <td>
+                                        <span t-attf-class="badge #{order.status == 'filled' and 'bg-success' or order.status == 'cancelled' and 'bg-danger' or 'bg-warning'}">
+                                            <t t-esc="order.status.upper()"/>
+                                        </span>
+                                    </td>
+                                    <td><small><t t-esc="order.create_date" t-options='{"widget": "datetime"}'/></small></td>
+                                </tr>
+                                <tr t-if="not orders">
+                                    <td colspan="8" class="text-center text-muted py-5">
+                                        <i class="fa fa-list fa-3x mb-3 d-block"></i>
+                                        No orders yet. Place your first order to get started!
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </t>
+    </template>
+    
 </odoo> 

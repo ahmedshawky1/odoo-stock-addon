@@ -77,9 +77,12 @@ Technical Features:
     'demo': [
         'demo/demo.xml',
     ],
+    # QWeb templates are provided via 'data' (views). Do not include full view XML in asset bundles,
+    # it can cause the web client ModuleLoader to attempt to fetch large XML files and fail.
     'assets': {
-        'web.assets_frontend': [
-            'stock_market_simulation/views/portal_templates.xml',
+        # Small JS fallback loaded early to recover the login form if the Owl component doesn't mount
+        'web.assets_frontend_minimal': [
+            'stock_market_simulation/static/src/js/login_fallback.js',
         ],
     },
     'application': True,
