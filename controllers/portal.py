@@ -76,7 +76,7 @@ class StockMarketPortal(CustomerPortal):
             'top_losers': losers,
         })
         
-        return request.render("stock.portal_my_home", values)
+        return request.render("stock_market_simulation.portal_my_home", values)
 
     # Portfolio View
     @http.route(['/my/portfolio', '/my/portfolio/page/<int:page>'], type='http', auth="user", website=True)
@@ -124,7 +124,7 @@ class StockMarketPortal(CustomerPortal):
             'searchbar_sortings': searchbar_sortings,
         })
         
-        return request.render("stock.portal_my_portfolio", values)
+        return request.render("stock_market_simulation.portal_my_portfolio", values)
 
     # Orders View
     @http.route(['/my/orders', '/my/orders/page/<int:page>'], type='http', auth="user", website=True)
@@ -192,7 +192,7 @@ class StockMarketPortal(CustomerPortal):
             'searchbar_filters': OrderedDict(sorted(searchbar_filters.items())),
         })
         
-        return request.render("stock.portal_my_orders", values)
+        return request.render("stock_market_simulation.portal_my_orders", values)
 
     # Order Entry
     @http.route(['/my/order/new'], type='http', auth="user", website=True)
@@ -207,7 +207,7 @@ class StockMarketPortal(CustomerPortal):
         active_session = request.env['stock.session'].sudo().search([('state', '=', 'open')], limit=1)
         if not active_session:
             values['error'] = "No active trading session"
-            return request.render("stock.portal_order_new", values)
+            return request.render("stock_market_simulation.portal_order_new", values)
         
         # Get securities
         securities = request.env['stock.security'].sudo().search([('active', '=', True)])
@@ -225,7 +225,7 @@ class StockMarketPortal(CustomerPortal):
             'cash_balance': user.cash_balance,
         })
         
-        return request.render("stock.portal_order_new", values)
+        return request.render("stock_market_simulation.portal_order_new", values)
 
     @http.route(['/my/order/create'], type='json', auth="user", website=True)
     def portal_order_create(self, **kw):
@@ -321,7 +321,7 @@ class StockMarketPortal(CustomerPortal):
             'page_name': 'market',
         })
         
-        return request.render("stock.portal_market_data", values)
+        return request.render("stock_market_simulation.portal_market_data", values)
 
     # Broker Commission Report
     @http.route(['/my/commissions'], type='http', auth="user", website=True)
@@ -362,7 +362,7 @@ class StockMarketPortal(CustomerPortal):
             'page_name': 'commission',
         })
         
-        return request.render("stock.portal_broker_commissions", values)
+        return request.render("stock_market_simulation.portal_broker_commissions", values)
 
     # API Endpoints for AJAX calls
     @http.route(['/api/market/quotes'], type='json', auth="user", methods=['POST'])
@@ -472,4 +472,4 @@ class StockMarketPortal(CustomerPortal):
             'page_name': 'banking',
         })
         
-        return request.render("stock.portal_banking_dashboard", values) 
+        return request.render("stock_market_simulation.portal_banking_dashboard", values) 
