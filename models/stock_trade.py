@@ -57,7 +57,7 @@ class StockTrade(models.Model):
     buy_broker_id = fields.Many2one(
         'res.users',
         string='Buy Broker',
-        related='buy_order_id.broker_id',
+        related='buy_order_id.user_id.broker_id',
         store=True,
         readonly=True
     )
@@ -65,7 +65,7 @@ class StockTrade(models.Model):
     sell_broker_id = fields.Many2one(
         'res.users',
         string='Sell Broker',
-        related='sell_order_id.broker_id',
+        related='sell_order_id.user_id.broker_id',
         store=True,
         readonly=True
     )

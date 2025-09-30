@@ -5,7 +5,7 @@
     <menuitem id="menu_stock_market_root"
               name="Stock Market"
               sequence="10"
-              web_icon="stock,static/description/icon.png"/>
+              web_icon="stock_market_simulation,static/description/icon.png"/>
     
     <!-- Trading Menu -->
     <menuitem id="menu_stock_trading"

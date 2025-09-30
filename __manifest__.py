@@ -53,7 +53,6 @@ Technical Features:
         'data/stock_data.xml',
         
         # Views - Backend
-        'views/menu_views.xml',
         'views/res_users_views.xml',
         'views/stock_session_views.xml',
         'views/stock_security_views.xml',
@@ -64,6 +63,7 @@ Technical Features:
         'views/stock_loan_views.xml',
         'views/stock_price_history_views.xml',
         'views/stock_config_views.xml',
+        'views/menu_views.xml',
         
         # Views - Portal
         'views/portal_templates.xml',
@@ -79,7 +79,7 @@ Technical Features:
     ],
     'assets': {
         'web.assets_frontend': [
-            'stock/views/portal_templates.xml',
+            'stock_market_simulation/views/portal_templates.xml',
         ],
     },
     'application': True,

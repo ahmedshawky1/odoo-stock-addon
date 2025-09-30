@@ -10,7 +10,6 @@
             <field name="code">model.cron_check_session_times()</field>
             <field name="interval_number">5</field>
             <field name="interval_type">minutes</field>
-            <field name="numbercall">-1</field>
             <field name="active" eval="True"/>
         </record>
         
@@ -22,7 +21,6 @@
             <field name="code">model.check_matured_deposits()</field>
             <field name="interval_number">1</field>
             <field name="interval_type">days</field>
-            <field name="numbercall">-1</field>
             <field name="active" eval="True"/>
         </record>
         
@@ -34,7 +32,6 @@
             <field name="code">model.check_overdue_loans()</field>
             <field name="interval_number">1</field>
             <field name="interval_type">days</field>
-            <field name="numbercall">-1</field>
             <field name="active" eval="True"/>
         </record>
         
@@ -46,7 +43,6 @@
             <field name="code">model.expire_orders()</field>
             <field name="interval_number">1</field>
             <field name="interval_type">hours</field>
-            <field name="numbercall">-1</field>
             <field name="active" eval="True"/>
         </record>
         

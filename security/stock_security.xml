@@ -66,14 +66,14 @@
         <record id="stock_order_broker_rule" model="ir.rule">
             <field name="name">Broker: Client Orders</field>
             <field name="model_id" ref="model_stock_order"/>
-            <field name="domain_force">[('broker_id', '=', user.id)]</field>
+            <field name="domain_force">[('user_id.broker_id', '=', user.id)]</field>
             <field name="groups" eval="[(4, ref('group_stock_broker'))]"/>
         </record>
         
         <record id="stock_trade_broker_rule" model="ir.rule">
             <field name="name">Broker: Client Trades</field>
             <field name="model_id" ref="model_stock_trade"/>
-            <field name="domain_force">['|', ('buy_order_id.broker_id', '=', user.id), ('sell_order_id.broker_id', '=', user.id)]</field>
+            <field name="domain_force">['|', ('buy_order_id.user_id.broker_id', '=', user.id), ('sell_order_id.user_id.broker_id', '=', user.id)]</field>
             <field name="groups" eval="[(4, ref('group_stock_broker'))]"/>
         </record>
         

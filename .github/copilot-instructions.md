@@ -11,7 +11,7 @@
 ```bash
 # After any change (MANDATORY):
 sudo docker restart odoo_stock
-sudo docker exec -it odoo_stock odoo -u stock -d stock --stop-after-init
+sudo docker exec -it odoo_stock odoo -u stock_market_simulation -d stock --stop-after-init
 ```
 
 ## Code Patterns
