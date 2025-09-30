@@ -1,0 +1,687 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    
+    <!-- Extend portal home page -->
+    <template id="portal_my_home" name="Show Stock Market Data" inherit_id="portal.portal_my_home" priority="40">
+        <xpath expr="//div[hasclass('o_portal_docs')]" position="inside">
+            <t t-if="user.user_type in ['investor', 'broker', 'banker']">
+                <h3 class="mt-4">Stock Market Dashboard</h3>
+                
+                <!-- Financial Summary -->
+                <div class="row mt-3">
+                    <div class="col-md-3">
+                        <div class="card">
+                            <div class="card-body text-center">
+                                <h5 class="card-title">Cash Balance</h5>
+                                <p class="card-text h4"><t t-esc="cash_balance" t-options='{"widget": "monetary"}'/></p>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="card">
+                            <div class="card-body text-center">
+                                <h5 class="card-title">Portfolio Value</h5>
+                                <p class="card-text h4"><t t-esc="portfolio_value" t-options='{"widget": "monetary"}'/></p>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="card">
+                            <div class="card-body text-center">
+                                <h5 class="card-title">Total Assets</h5>
+                                <p class="card-text h4"><t t-esc="total_assets" t-options='{"widget": "monetary"}'/></p>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="card">
+                            <div class="card-body text-center">
+                                <h5 class="card-title">P&amp;L</h5>
+                                <p class="card-text h4">
+                                    <span t-attf-class="#{profit_loss >= 0 and 'text-success' or 'text-danger'}">
+                                        <t t-esc="profit_loss" t-options='{"widget": "monetary"}'/>
+                                        (<t t-esc="profit_loss_percentage"/>%)
+                                    </span>
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Quick Actions -->
+                <div class="row mt-4">
+                    <div class="col-12">
+                        <t t-if="user_type == 'investor'">
+                            <a href="/my/order/new" class="btn btn-primary">Place New Order</a>
+                            <a href="/my/portfolio" class="btn btn-secondary">View Portfolio</a>
+                            <a href="/my/orders" class="btn btn-secondary">My Orders</a>
+                        </t>
+                        <t t-if="user_type == 'broker'">
+                            <a href="/my/commissions" class="btn btn-primary">Commission Report</a>
+                        </t>
+                        <t t-if="user_type == 'banker'">
+                            <a href="/my/banking" class="btn btn-primary">Banking Dashboard</a>
+                        </t>
+                        <a href="/my/market" class="btn btn-info">Market Data</a>
+                    </div>
+                </div>
+                
+                <!-- Market Movers -->
+                <div class="row mt-4">
+                    <div class="col-md-6">
+                        <h4>Top Gainers</h4>
+                        <table class="table table-sm">
+                            <thead>
+                                <tr>
+                                    <th>Symbol</th>
+                                    <th>Price</th>
+                                    <th>Change</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <t t-foreach="top_gainers" t-as="security">
+                                    <tr>
+                                        <td><t t-esc="security.symbol"/></td>
+                                        <td><t t-esc="security.current_price" t-options='{"widget": "float", "precision": 2}'/></td>
+                                        <td class="text-success">+<t t-esc="security.change_percentage"/>%</td>
+                                    </tr>
+                                </t>
+                            </tbody>
+                        </table>
+                    </div>
+                    <div class="col-md-6">
+                        <h4>Top Losers</h4>
+                        <table class="table table-sm">
+                            <thead>
+                                <tr>
+                                    <th>Symbol</th>
+                                    <th>Price</th>
+                                    <th>Change</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <t t-foreach="top_losers" t-as="security">
+                                    <tr>
+                                        <td><t t-esc="security.symbol"/></td>
+                                        <td><t t-esc="security.current_price" t-options='{"widget": "float", "precision": 2}'/></td>
+                                        <td class="text-danger"><t t-esc="security.change_percentage"/>%</td>
+                                    </tr>
+                                </t>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </t>
+        </xpath>
+        
+        <!-- Add counts to portal docs section -->
+        <xpath expr="//div[hasclass('o_portal_docs')]" position="inside">
+            <t t-if="user.user_type == 'investor' and order_count">
+                <t t-call="portal.portal_docs_entry">
+                    <t t-set="title">Orders</t>
+                    <t t-set="url" t-value="'/my/orders'"/>
+                    <t t-set="count" t-value="order_count"/>
+                </t>
+            </t>
+            <t t-if="user.user_type == 'investor' and position_count">
+                <t t-call="portal.portal_docs_entry">
+                    <t t-set="title">Positions</t>
+                    <t t-set="url" t-value="'/my/portfolio'"/>
+                    <t t-set="count" t-value="position_count"/>
+                </t>
+            </t>
+            <t t-if="trade_count">
+                <t t-call="portal.portal_docs_entry">
+                    <t t-set="title">Trades</t>
+                    <t t-set="url" t-value="'/my/trades'"/>
+                    <t t-set="count" t-value="trade_count"/>
+                </t>
+            </t>
+            <t t-if="deposit_count">
+                <t t-call="portal.portal_docs_entry">
+                    <t t-set="title">Deposits</t>
+                    <t t-set="url" t-value="'/my/deposits'"/>
+                    <t t-set="count" t-value="deposit_count"/>
+                </t>
+            </t>
+            <t t-if="loan_count">
+                <t t-call="portal.portal_docs_entry">
+                    <t t-set="title">Loans</t>
+                    <t t-set="url" t-value="'/my/loans'"/>
+                    <t t-set="count" t-value="loan_count"/>
+                </t>
+            </t>
+        </xpath>
+    </template>
+    
+    <!-- Portfolio Page -->
+    <template id="portal_my_portfolio" name="My Portfolio">
+        <t t-call="portal.portal_layout">
+            <t t-set="breadcrumbs_searchbar" t-value="True"/>
+            
+            <t t-call="portal.portal_searchbar">
+                <t t-set="title">My Portfolio</t>
+            </t>
+            
+            <t t-if="not positions">
+                <p>You don't have any positions yet.</p>
+            </t>
+            
+            <t t-if="positions" t-call="portal.portal_table">
+                <thead>
+                    <tr class="active">
+                        <th>Security</th>
+                        <th class="text-right">Quantity</th>
+                        <th class="text-right">Avg Cost</th>
+                        <th class="text-right">Market Value</th>
+                        <th class="text-right">Unrealized P&amp;L</th>
+                        <th class="text-right">P&amp;L %</th>
+                        <th class="text-right">Weight %</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <t t-foreach="positions" t-as="position">
+                        <tr>
+                            <td><t t-esc="position.security_id.symbol"/> - <t t-esc="position.security_id.name"/></td>
+                            <td class="text-right"><t t-esc="position.quantity"/></td>
+                            <td class="text-right"><t t-esc="position.average_cost" t-options='{"widget": "float", "precision": 2}'/></td>
+                            <td class="text-right"><t t-esc="position.market_value" t-options='{"widget": "monetary"}'/></td>
+                            <td class="text-right">
+                                <span t-attf-class="#{position.unrealized_pnl >= 0 and 'text-success' or 'text-danger'}">
+                                    <t t-esc="position.unrealized_pnl" t-options='{"widget": "monetary"}'/>
+                                </span>
+                            </td>
+                            <td class="text-right">
+                                <span t-attf-class="#{position.unrealized_pnl_percent >= 0 and 'text-success' or 'text-danger'}">
+                                    <t t-esc="position.unrealized_pnl_percent" t-options='{"widget": "float", "precision": 2}'/>%
+                                </span>
+                            </td>
+                            <td class="text-right"><t t-esc="position.portfolio_weight" t-options='{"widget": "float", "precision": 2}'/>%</td>
+                        </tr>
+                    </t>
+                </tbody>
+            </t>
+        </t>
+    </template>
+    
+    <!-- Order Entry Page -->
+    <template id="portal_order_new" name="Place New Order">
+        <t t-call="portal.portal_layout">
+            <t t-set="no_breadcrumbs" t-value="True"/>
+            
+            <div class="container mt-3">
+                <h2>Place New Order</h2>
+                
+                <t t-if="error">
+                    <div class="alert alert-danger" role="alert">
+                        <t t-esc="error"/>
+                    </div>
+                </t>
+                
+                <t t-if="active_session">
+                    <div class="row">
+                        <div class="col-md-8">
+                            <form id="order_form" method="post">
+                                <input type="hidden" name="csrf_token" t-att-value="request.csrf_token()"/>
+                                
+                                <div class="form-group">
+                                    <label for="side">Order Type</label>
+                                    <div>
+                                        <div class="form-check form-check-inline">
+                                            <input class="form-check-input" type="radio" name="side" id="side_buy" value="buy" checked="checked"/>
+                                            <label class="form-check-label" for="side_buy">Buy</label>
+                                        </div>
+                                        <div class="form-check form-check-inline">
+                                            <input class="form-check-input" type="radio" name="side" id="side_sell" value="sell"/>
+                                            <label class="form-check-label" for="side_sell">Sell</label>
+                                        </div>
+                                    </div>
+                                </div>
+                                
+                                <div class="form-group">
+                                    <label for="security_id">Security</label>
+                                    <select name="security_id" id="security_id" class="form-control" required="required">
+                                        <option value="">Select Security</option>
+                                        <t t-foreach="securities" t-as="security">
+                                            <option t-att-value="security.id" t-att-data-price="security.current_price">
+                                                <t t-esc="security.symbol"/> - <t t-esc="security.name"/> 
+                                                (Current: <t t-esc="security.current_price" t-options='{"widget": "float", "precision": 2}'/>)
+                                            </option>
+                                        </t>
+                                    </select>
+                                </div>
+                                
+                                <div class="form-group">
+                                    <label for="order_type">Price Type</label>
+                                    <div>
+                                        <div class="form-check form-check-inline">
+                                            <input class="form-check-input" type="radio" name="order_type" id="order_type_limit" value="limit" checked="checked"/>
+                                            <label class="form-check-label" for="order_type_limit">Limit</label>
+                                        </div>
+                                        <div class="form-check form-check-inline">
+                                            <input class="form-check-input" type="radio" name="order_type" id="order_type_market" value="market"/>
+                                            <label class="form-check-label" for="order_type_market">Market</label>
+                                        </div>
+                                    </div>
+                                </div>
+                                
+                                <div class="form-group">
+                                    <label for="quantity">Quantity</label>
+                                    <input type="number" class="form-control" id="quantity" name="quantity" min="1" required="required"/>
+                                </div>
+                                
+                                <div class="form-group" id="price_group">
+                                    <label for="price">Price</label>
+                                    <input type="number" class="form-control" id="price" name="price" step="0.01" min="0.01" required="required"/>
+                                </div>
+                                
+                                <div class="form-group">
+                                    <label>Estimated Order Value</label>
+                                    <p class="form-control-static h4" id="order_value">0.00</p>
+                                </div>
+                                
+                                <button type="submit" class="btn btn-primary">Submit Order</button>
+                                <a href="/my" class="btn btn-secondary">Cancel</a>
+                            </form>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="card">
+                                <div class="card-header">
+                                    <h5>Account Information</h5>
+                                </div>
+                                <div class="card-body">
+                                    <p>Cash Balance: <strong><t t-esc="cash_balance" t-options='{"widget": "monetary"}'/></strong></p>
+                                    <p>Active Session: <strong><t t-esc="active_session.name"/></strong></p>
+                                </div>
+                            </div>
+                            
+                            <div class="card mt-3" id="positions_card" style="display:none;">
+                                <div class="card-header">
+                                    <h5>Your Positions</h5>
+                                </div>
+                                <div class="card-body">
+                                    <table class="table table-sm">
+                                        <thead>
+                                            <tr>
+                                                <th>Security</th>
+                                                <th>Available</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            <t t-foreach="positions" t-as="position">
+                                                <tr t-att-data-security-id="position.security_id.id">
+                                                    <td><t t-esc="position.security_id.symbol"/></td>
+                                                    <td><t t-esc="position.available_quantity"/></td>
+                                                </tr>
+                                            </t>
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </t>
+            </div>
+            
+            <script>
+                $(document).ready(function() {
+                    // Calculate order value
+                    function calculateOrderValue() {
+                        var quantity = parseFloat($('#quantity').val()) || 0;
+                        var price = parseFloat($('#price').val()) || 0;
+                        var value = quantity * price;
+                        $('#order_value').text(value.toFixed(2));
+                    }
+                    
+                    $('#quantity, #price').on('input', calculateOrderValue);
+                    
+                    // Handle order type change
+                    $('input[name="order_type"]').change(function() {
+                        if ($(this).val() === 'market') {
+                            $('#price_group').hide();
+                            $('#price').prop('required', false);
+                        } else {
+                            $('#price_group').show();
+                            $('#price').prop('required', true);
+                        }
+                    });
+                    
+                    // Handle side change
+                    $('input[name="side"]').change(function() {
+                        if ($(this).val() === 'sell') {
+                            $('#positions_card').show();
+                        } else {
+                            $('#positions_card').hide();
+                        }
+                    });
+                    
+                    // Set current price when security changes
+                    $('#security_id').change(function() {
+                        var selectedOption = $(this).find('option:selected');
+                        var currentPrice = selectedOption.data('price');
+                        if (currentPrice) {
+                            $('#price').val(currentPrice);
+                            calculateOrderValue();
+                        }
+                    });
+                    
+                    // Submit order
+                    $('#order_form').submit(function(e) {
+                        e.preventDefault();
+                        
+                        var formData = {
+                            security_id: $('#security_id').val(),
+                            side: $('input[name="side"]:checked').val(),
+                            order_type: $('input[name="order_type"]:checked').val(),
+                            quantity: $('#quantity').val(),
+                            price: $('#price').val()
+                        };
+                        
+                        $.ajax({
+                            url: '/my/order/create',
+                            type: 'POST',
+                            contentType: 'application/json',
+                            data: JSON.stringify(formData),
+                            headers: {
+                                'X-Csrf-Token': $('input[name="csrf_token"]').val()
+                            },
+                            success: function(result) {
+                                if (result.success) {
+                                    alert(result.message);
+                                    window.location.href = '/my/orders';
+                                } else {
+                                    alert('Error: ' + result.error);
+                                }
+                            },
+                            error: function() {
+                                alert('Error submitting order');
+                            }
+                        });
+                    });
+                });
+            </script>
+        </t>
+    </template>
+    
+    <!-- Market Data Page -->
+    <template id="portal_market_data" name="Market Data">
+        <t t-call="portal.portal_layout">
+            <t t-set="no_breadcrumbs" t-value="True"/>
+            
+            <div class="container mt-3">
+                <h2>Market Data</h2>
+                
+                <ul class="nav nav-tabs" role="tablist">
+                    <li class="nav-item">
+                        <a class="nav-link active" data-toggle="tab" href="#all">All Securities</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" data-toggle="tab" href="#stocks">Stocks</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" data-toggle="tab" href="#bonds">Bonds</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" data-toggle="tab" href="#mf">Mutual Funds</a>
+                    </li>
+                </ul>
+                
+                <div class="tab-content mt-3">
+                    <div id="all" class="tab-pane fade show active">
+                        <table class="table table-striped">
+                            <thead>
+                                <tr>
+                                    <th>Symbol</th>
+                                    <th>Name</th>
+                                    <th>Type</th>
+                                    <th class="text-right">Price</th>
+                                    <th class="text-right">Change</th>
+                                    <th class="text-right">Change %</th>
+                                    <th class="text-right">Volume</th>
+                                    <th class="text-right">Value</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <t t-foreach="securities" t-as="security">
+                                    <tr>
+                                        <td><strong><t t-esc="security.symbol"/></strong></td>
+                                        <td><t t-esc="security.name"/></td>
+                                        <td><t t-esc="security.security_type"/></td>
+                                        <td class="text-right"><t t-esc="security.current_price" t-options='{"widget": "float", "precision": 2}'/></td>
+                                        <td class="text-right">
+                                            <span t-attf-class="#{security.change_amount >= 0 and 'text-success' or 'text-danger'}">
+                                                <t t-esc="security.change_amount" t-options='{"widget": "float", "precision": 2}'/>
+                                            </span>
+                                        </td>
+                                        <td class="text-right">
+                                            <span t-attf-class="#{security.change_percentage >= 0 and 'text-success' or 'text-danger'}">
+                                                <t t-esc="security.change_percentage" t-options='{"widget": "float", "precision": 2}'/>%
+                                            </span>
+                                        </td>
+                                        <td class="text-right"><t t-esc="security.volume_today"/></td>
+                                        <td class="text-right"><t t-esc="security.value_today" t-options='{"widget": "monetary"}'/></td>
+                                    </tr>
+                                </t>
+                            </tbody>
+                        </table>
+                    </div>
+                    
+                    <t t-foreach="grouped_securities" t-as="sec_type">
+                        <div t-att-id="sec_type" class="tab-pane fade">
+                            <table class="table table-striped">
+                                <thead>
+                                    <tr>
+                                        <th>Symbol</th>
+                                        <th>Name</th>
+                                        <th class="text-right">Price</th>
+                                        <th class="text-right">Change</th>
+                                        <th class="text-right">Change %</th>
+                                        <th class="text-right">Volume</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <t t-foreach="grouped_securities[sec_type]" t-as="security">
+                                        <tr>
+                                            <td><strong><t t-esc="security.symbol"/></strong></td>
+                                            <td><t t-esc="security.name"/></td>
+                                            <td class="text-right"><t t-esc="security.current_price" t-options='{"widget": "float", "precision": 2}'/></td>
+                                            <td class="text-right">
+                                                <span t-attf-class="#{security.change_amount >= 0 and 'text-success' or 'text-danger'}">
+                                                    <t t-esc="security.change_amount" t-options='{"widget": "float", "precision": 2}'/>
+                                                </span>
+                                            </td>
+                                            <td class="text-right">
+                                                <span t-attf-class="#{security.change_percentage >= 0 and 'text-success' or 'text-danger'}">
+                                                    <t t-esc="security.change_percentage" t-options='{"widget": "float", "precision": 2}'/>%
+                                                </span>
+                                            </td>
+                                            <td class="text-right"><t t-esc="security.volume_today"/></td>
+                                        </tr>
+                                    </t>
+                                </tbody>
+                            </table>
+                        </div>
+                    </t>
+                </div>
+            </div>
+        </t>
+    </template>
+
+    <!-- JavaScript for real-time updates -->
+    <template id="portal_stock_js" name="Stock Portal JavaScript">
+        <script>//<![CDATA[
+            // Global namespace for stock portal functionality
+            window.stockPortal = window.stockPortal || {};
+            
+            // Portfolio refresh functionality
+            function refreshPortfolioSummary() {
+                fetch('/api/portfolio/summary', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-Requested-With': 'XMLHttpRequest'
+                    },
+                    body: JSON.stringify({})
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        // Update portfolio values on dashboard
+                        const cashEl = document.querySelector('[data-portfolio="cash"]');
+                        const portfolioEl = document.querySelector('[data-portfolio="value"]');
+                        const totalEl = document.querySelector('[data-portfolio="total"]');
+                        const plEl = document.querySelector('[data-portfolio="pl"]');
+                        
+                        if (cashEl) cashEl.textContent = '$' + data.cash_balance.toLocaleString();
+                        if (portfolioEl) portfolioEl.textContent = '$' + data.portfolio_value.toLocaleString();
+                        if (totalEl) totalEl.textContent = '$' + data.total_assets.toLocaleString();
+                        if (plEl) {
+                            plEl.textContent = '$' + data.profit_loss.toLocaleString() + ' (' + data.profit_loss_percentage + '%)';
+                            plEl.className = data.profit_loss >= 0 ? 'text-success' : 'text-danger';
+                        }
+                        
+                        console.log('Portfolio data refreshed');
+                    }
+                })
+                .catch(error => {
+                    console.error('Error refreshing portfolio:', error);
+                });
+            }
+            
+            // Market data refresh functionality
+            function refreshMarketQuotes() {
+                const symbols = [];
+                document.querySelectorAll('[data-symbol]').forEach(el => {
+                    symbols.push(el.dataset.symbol);
+                });
+                
+                if (symbols.length === 0) return;
+                
+                fetch('/api/market/quotes', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-Requested-With': 'XMLHttpRequest'
+                    },
+                    body: JSON.stringify({symbols: symbols})
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success && data.quotes) {
+                        data.quotes.forEach(quote => {
+                            const rows = document.querySelectorAll(`[data-symbol="${quote.symbol}"]`);
+                            rows.forEach(row => {
+                                const priceEl = row.querySelector('.quote-price');
+                                const changeEl = row.querySelector('.quote-change');
+                                const pctEl = row.querySelector('.quote-percentage');
+                                
+                                if (priceEl) priceEl.textContent = quote.current_price.toFixed(2);
+                                if (changeEl) {
+                                    changeEl.textContent = quote.price_change.toFixed(2);
+                                    changeEl.className = quote.price_change >= 0 ? 'text-success' : 'text-danger';
+                                }
+                                if (pctEl) {
+                                    pctEl.textContent = quote.change_percentage + '%';
+                                    pctEl.className = quote.change_percentage >= 0 ? 'text-success' : 'text-danger';
+                                }
+                            });
+                        });
+                        console.log('Market quotes refreshed');
+                    }
+                })
+                .catch(error => {
+                    console.error('Error refreshing market quotes:', error);
+                });
+            }
+            
+            // Order submission with enhanced validation
+            function submitOrder(formData) {
+                const submitBtn = document.querySelector('#submit-order-btn');
+                if (submitBtn) {
+                    submitBtn.disabled = true;
+                    submitBtn.innerHTML = '<span class="spinner-border spinner-border-sm" role="status"></span> Submitting...';
+                }
+                
+                return fetch('/my/order/submit', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/x-www-form-urlencoded',
+                        'X-Requested-With': 'XMLHttpRequest'
+                    },
+                    body: new URLSearchParams(formData)
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (submitBtn) {
+                        submitBtn.disabled = false;
+                        submitBtn.innerHTML = 'Submit Order';
+                    }
+                    
+                    if (data.success) {
+                        showNotification('Success', data.message, 'success');
+                        // Refresh portfolio data
+                        setTimeout(refreshPortfolioSummary, 1000);
+                    } else {
+                        showNotification('Error', data.error, 'danger');
+                    }
+                    
+                    return data;
+                })
+                .catch(error => {
+                    if (submitBtn) {
+                        submitBtn.disabled = false;
+                        submitBtn.innerHTML = 'Submit Order';
+                    }
+                    console.error('Order submission error:', error);
+                    showNotification('Error', 'Network error occurred', 'danger');
+                    throw error;
+                });
+            }
+            
+            // Notification system
+            function showNotification(title, message, type) {
+                // Remove existing notifications
+                const existing = document.querySelectorAll('.stock-notification');
+                existing.forEach(el => el.remove());
+                
+                const notification = document.createElement('div');
+                notification.className = `alert alert-${type} alert-dismissible stock-notification`;
+                notification.style.cssText = 'position: fixed; top: 20px; right: 20px; z-index: 9999; min-width: 300px;';
+                notification.innerHTML = `
+                    <strong>${title}</strong> ${message}
+                    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                `;
+                
+                document.body.appendChild(notification);
+                
+                // Auto-remove after 5 seconds
+                setTimeout(() => {
+                    if (notification.parentNode) {
+                        notification.remove();
+                    }
+                }, 5000);
+            }
+            
+            // Initialize when DOM is loaded
+            document.addEventListener('DOMContentLoaded', function() {
+                // Start periodic updates for real-time data
+                if (window.location.pathname.startsWith('/my')) {
+                    // Refresh portfolio every 30 seconds
+                    setInterval(refreshPortfolioSummary, 30000);
+                    
+                    // Refresh market quotes every 15 seconds
+                    setInterval(refreshMarketQuotes, 15000);
+                    
+                    console.log('Stock portal real-time updates initialized');
+                }
+            });
+            
+            // Expose functions globally
+            window.stockPortal.refreshPortfolioSummary = refreshPortfolioSummary;
+            window.stockPortal.refreshMarketQuotes = refreshMarketQuotes;
+            window.stockPortal.submitOrder = submitOrder;
+            window.stockPortal.showNotification = showNotification;
+        //]]></script>
+    </template>
+    
+</odoo> 

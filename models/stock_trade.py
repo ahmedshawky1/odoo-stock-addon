@@ -1,0 +1,257 @@
+# -*- coding: utf-8 -*-
+
+from odoo import models, fields, api
+import logging
+
+_logger = logging.getLogger(__name__)
+
+class StockTrade(models.Model):
+    _name = 'stock.trade'
+    _description = 'Executed Trade'
+    _order = 'trade_date desc'
+    _inherit = ['mail.thread', 'mail.activity.mixin']
+    
+    # Identity
+    name = fields.Char(
+        string='Trade Number',
+        required=True,
+        copy=False,
+        readonly=True,
+        default=lambda self: self.env['ir.sequence'].next_by_code('stock.trade') or 'New'
+    )
+    
+    # Orders
+    buy_order_id = fields.Many2one(
+        'stock.order',
+        string='Buy Order',
+        required=True,
+        readonly=True,
+        ondelete='restrict'
+    )
+    
+    sell_order_id = fields.Many2one(
+        'stock.order',
+        string='Sell Order',
+        readonly=True,
+        ondelete='restrict',
+        help='Empty for IPO trades'
+    )
+    
+    # Parties
+    buyer_id = fields.Many2one(
+        'res.users',
+        string='Buyer',
+        related='buy_order_id.user_id',
+        store=True,
+        readonly=True
+    )
+    
+    seller_id = fields.Many2one(
+        'res.users',
+        string='Seller',
+        related='sell_order_id.user_id',
+        store=True,
+        readonly=True
+    )
+    
+    buy_broker_id = fields.Many2one(
+        'res.users',
+        string='Buy Broker',
+        related='buy_order_id.broker_id',
+        store=True,
+        readonly=True
+    )
+    
+    sell_broker_id = fields.Many2one(
+        'res.users',
+        string='Sell Broker',
+        related='sell_order_id.broker_id',
+        store=True,
+        readonly=True
+    )
+    
+    # Security and Session
+    security_id = fields.Many2one(
+        'stock.security',
+        string='Security',
+        related='buy_order_id.security_id',
+        store=True,
+        readonly=True,
+        index=True
+    )
+    
+    session_id = fields.Many2one(
+        'stock.session',
+        string='Trading Session',
+        required=True,
+        readonly=True,
+        ondelete='restrict',
+        index=True
+    )
+    
+    # Trade Details
+    quantity = fields.Integer(
+        string='Quantity',
+        required=True,
+        readonly=True
+    )
+    
+    price = fields.Float(
+        string='Trade Price',
+        digits=(16, 4),
+        required=True,
+        readonly=True
+    )
+    
+    value = fields.Float(
+        string='Trade Value',
+        digits='Product Price',
+        required=True,
+        readonly=True,
+        help='Quantity × Price'
+    )
+    
+    # Commissions
+    buy_commission = fields.Float(
+        string='Buy Commission',
+        digits='Product Price',
+        readonly=True,
+        help='Commission paid by buyer'
+    )
+    
+    sell_commission = fields.Float(
+        string='Sell Commission',
+        digits='Product Price',
+        readonly=True,
+        help='Commission paid by seller'
+    )
+    
+    total_commission = fields.Float(
+        string='Total Commission',
+        compute='_compute_total_commission',
+        digits='Product Price',
+        store=True
+    )
+    
+    # Settlement
+    settlement_status = fields.Selection([
+        ('pending', 'Pending'),
+        ('settled', 'Settled'),
+        ('failed', 'Failed')
+    ], string='Settlement Status', default='settled', readonly=True)
+    
+    trade_type = fields.Selection([
+        ('regular', 'Regular'),
+        ('ipo', 'IPO'),
+        ('block', 'Block Trade')
+    ], string='Trade Type', default='regular', readonly=True)
+    
+    # Timestamps
+    trade_date = fields.Datetime(
+        string='Trade Date',
+        required=True,
+        readonly=True,
+        default=fields.Datetime.now,
+        index=True
+    )
+    
+    settlement_date = fields.Datetime(
+        string='Settlement Date',
+        readonly=True,
+        help='T+N settlement date'
+    )
+    
+    # Analytics
+    buyer_pnl = fields.Float(
+        string='Buyer P&L',
+        compute='_compute_pnl',
+        digits='Product Price',
+        help='Unrealized P&L for buyer'
+    )
+    
+    seller_pnl = fields.Float(
+        string='Seller P&L',
+        compute='_compute_pnl',
+        digits='Product Price',
+        help='Realized P&L for seller'
+    )
+    
+    @api.depends('buy_commission', 'sell_commission')
+    def _compute_total_commission(self):
+        for trade in self:
+            trade.total_commission = trade.buy_commission + trade.sell_commission
+    
+    @api.depends('security_id.current_price', 'price', 'quantity')
+    def _compute_pnl(self):
+        for trade in self:
+            if trade.security_id:
+                # Buyer P&L (unrealized)
+                current_value = trade.quantity * trade.security_id.current_price
+                cost_basis = trade.value + trade.buy_commission
+                trade.buyer_pnl = current_value - cost_basis
+                
+                # Seller P&L (realized) - would need seller's cost basis
+                # For now, just show proceeds
+                trade.seller_pnl = trade.value - trade.sell_commission
+            else:
+                trade.buyer_pnl = 0.0
+                trade.seller_pnl = 0.0
+    
+    @api.model
+    def create(self, vals):
+        if vals.get('name', 'New') == 'New':
+            vals['name'] = self.env['ir.sequence'].next_by_code('stock.trade') or 'New'
+        
+        # Set settlement date (T+2 by default)
+        if not vals.get('settlement_date'):
+            from datetime import timedelta
+            trade_date = fields.Datetime.from_string(vals.get('trade_date', fields.Datetime.now()))
+            vals['settlement_date'] = trade_date + timedelta(days=2)
+        
+        trade = super().create(vals)
+        
+        # Post to chatter
+        trade._post_trade_message()
+        
+        return trade
+    
+    def _post_trade_message(self):
+        """Post trade execution message to chatter"""
+        self.ensure_one()
+        
+        body = f"""
+        <p><strong>Trade Executed</strong></p>
+        <ul>
+            <li>Security: {self.security_id.symbol}</li>
+            <li>Quantity: {self.quantity:,}</li>
+            <li>Price: {self.price:.4f}</li>
+            <li>Value: {self.value:,.2f}</li>
+            <li>Buyer: {self.buyer_id.name}</li>
+            <li>Seller: {self.seller_id.name if self.seller_id else 'IPO'}</li>
+        </ul>
+        """
+        
+        self.message_post(body=body, message_type='notification')
+    
+    def action_view_buy_order(self):
+        """View the buy order"""
+        self.ensure_one()
+        return {
+            'type': 'ir.actions.act_window',
+            'res_model': 'stock.order',
+            'res_id': self.buy_order_id.id,
+            'view_mode': 'form',
+            'target': 'current',
+        }
+    
+    def action_view_sell_order(self):
+        """View the sell order"""
+        self.ensure_one()
+        if self.sell_order_id:
+            return {
+                'type': 'ir.actions.act_window',
+                'res_model': 'stock.order',
+                'res_id': self.sell_order_id.id,
+                'view_mode': 'form',
+                'target': 'current',
+            } 

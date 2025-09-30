@@ -2,7 +2,192 @@
 <odoo>
     <data>
         
-        <!-- Demo data will be added here -->
+        <!-- Demo Users -->
+        <record id="demo_investor_1" model="res.users">
+            <field name="name">John Investor</field>
+            <field name="login">investor1@demo.com</field>
+            <field name="email">investor1@demo.com</field>
+            <field name="user_type">investor</field>
+            <field name="cash_balance">100000.00</field>
+            <field name="initial_capital">100000.00</field>
+            <field name="groups_id" eval="[(6, 0, [ref('group_stock_investor')])]"/>
+        </record>
+        
+        <record id="demo_investor_2" model="res.users">
+            <field name="name">Sarah Trader</field>
+            <field name="login">investor2@demo.com</field>
+            <field name="email">investor2@demo.com</field>
+            <field name="user_type">investor</field>
+            <field name="cash_balance">250000.00</field>
+            <field name="initial_capital">250000.00</field>
+            <field name="groups_id" eval="[(6, 0, [ref('group_stock_investor')])]"/>
+        </record>
+        
+        <record id="demo_broker_1" model="res.users">
+            <field name="name">Mike Broker</field>
+            <field name="login">broker1@demo.com</field>
+            <field name="email">broker1@demo.com</field>
+            <field name="user_type">broker</field>
+            <field name="cash_balance">50000.00</field>
+            <field name="initial_capital">50000.00</field>
+            <field name="groups_id" eval="[(6, 0, [ref('group_stock_broker')])]"/>
+        </record>
+        
+        <record id="demo_banker_1" model="res.users">
+            <field name="name">Alice Banker</field>
+            <field name="login">banker1@demo.com</field>
+            <field name="email">banker1@demo.com</field>
+            <field name="user_type">banker</field>
+            <field name="cash_balance">25000.00</field>
+            <field name="initial_capital">25000.00</field>
+            <field name="groups_id" eval="[(6, 0, [ref('group_stock_banker')])]"/>
+        </record>
+        
+        <!-- Assign broker to investors -->
+        <record id="demo_investor_1" model="res.users">
+            <field name="broker_id" ref="demo_broker_1"/>
+        </record>
+        
+        <record id="demo_investor_2" model="res.users">
+            <field name="broker_id" ref="demo_broker_1"/>
+        </record>
+        
+        <!-- Demo Securities -->
+        <record id="demo_security_aapl" model="stock.security">
+            <field name="symbol">AAPL</field>
+            <field name="name">Apple Inc.</field>
+            <field name="security_type">stock</field>
+            <field name="current_price">175.50</field>
+            <field name="session_start_price">175.50</field>
+            <field name="tick_size">0.01</field>
+            <field name="lot_size">1</field>
+            <field name="active">True</field>
+        </record>
+        
+        <record id="demo_security_googl" model="stock.security">
+            <field name="symbol">GOOGL</field>
+            <field name="name">Alphabet Inc.</field>
+            <field name="security_type">stock</field>
+            <field name="current_price">145.25</field>
+            <field name="session_start_price">145.25</field>
+            <field name="tick_size">0.01</field>
+            <field name="lot_size">1</field>
+            <field name="active">True</field>
+        </record>
+        
+        <record id="demo_security_msft" model="stock.security">
+            <field name="symbol">MSFT</field>
+            <field name="name">Microsoft Corporation</field>
+            <field name="security_type">stock</field>
+            <field name="current_price">415.75</field>
+            <field name="session_start_price">415.75</field>
+            <field name="tick_size">0.01</field>
+            <field name="lot_size">1</field>
+            <field name="active">True</field>
+        </record>
+        
+        <record id="demo_security_tsla" model="stock.security">
+            <field name="symbol">TSLA</field>
+            <field name="name">Tesla Inc.</field>
+            <field name="security_type">stock</field>
+            <field name="current_price">250.00</field>
+            <field name="session_start_price">250.00</field>
+            <field name="tick_size">0.01</field>
+            <field name="lot_size">1</field>
+            <field name="active">True</field>
+        </record>
+        
+        <record id="demo_security_bond_1" model="stock.security">
+            <field name="symbol">BOND001</field>
+            <field name="name">US Treasury Bond 10Y</field>
+            <field name="security_type">bond</field>
+            <field name="current_price">98.50</field>
+            <field name="session_start_price">98.50</field>
+            <field name="tick_size">0.01</field>
+            <field name="lot_size">10</field>
+            <field name="active">True</field>
+        </record>
+        
+        <!-- Demo Trading Session -->
+        <record id="demo_session_1" model="stock.session">
+            <field name="name">Demo Trading Session 2025</field>
+            <field name="state">open</field>
+            <field name="start_date" eval="(datetime.now() - timedelta(hours=2)).strftime('%Y-%m-%d %H:%M:%S')"/>
+            <field name="end_date" eval="(datetime.now() + timedelta(hours=6)).strftime('%Y-%m-%d %H:%M:%S')"/>
+            <field name="price_change_threshold">15.0</field>
+            <field name="broker_commission_rate">0.005</field>
+            <field name="max_price_change">20.0</field>
+            <field name="min_order_value">100.0</field>
+            <field name="daily_trading_limit">500000.0</field>
+            <field name="position_limit_per_security">10000</field>
+        </record>
+        
+        <!-- Demo Orders -->
+        <record id="demo_order_1" model="stock.order">
+            <field name="name">ORD001</field>
+            <field name="user_id" ref="demo_investor_1"/>
+            <field name="session_id" ref="demo_session_1"/>
+            <field name="security_id" ref="demo_security_aapl"/>
+            <field name="order_type">limit</field>
+            <field name="side">buy</field>
+            <field name="price">174.00</field>
+            <field name="quantity">100</field>
+            <field name="time_in_force">day</field>
+            <field name="status">open</field>
+        </record>
+        
+        <record id="demo_order_2" model="stock.order">
+            <field name="name">ORD002</field>
+            <field name="user_id" ref="demo_investor_2"/>
+            <field name="session_id" ref="demo_session_1"/>
+            <field name="security_id" ref="demo_security_aapl"/>
+            <field name="order_type">limit</field>
+            <field name="side">sell</field>
+            <field name="price">176.00</field>
+            <field name="quantity">50</field>
+            <field name="time_in_force">day</field>
+            <field name="status">open</field>
+        </record>
+        
+        <record id="demo_order_3" model="stock.order">
+            <field name="name">ORD003</field>
+            <field name="user_id" ref="demo_investor_1"/>
+            <field name="session_id" ref="demo_session_1"/>
+            <field name="security_id" ref="demo_security_googl"/>
+            <field name="order_type">market</field>
+            <field name="side">buy</field>
+            <field name="price">0</field>
+            <field name="quantity">25</field>
+            <field name="time_in_force">day</field>
+            <field name="status">open</field>
+        </record>
+        
+        <!-- Demo Deposits -->
+        <record id="demo_deposit_1" model="stock.deposit">
+            <field name="name">DEP001</field>
+            <field name="user_id" ref="demo_investor_1"/>
+            <field name="banker_id" ref="demo_banker_1"/>
+            <field name="deposit_type">savings</field>
+            <field name="amount">50000.00</field>
+            <field name="interest_rate">3.5</field>
+            <field name="maturity_date" eval="(datetime.now() + timedelta(days=365)).strftime('%Y-%m-%d')"/>
+            <field name="status">active</field>
+        </record>
+        
+        <!-- Demo Configuration -->
+        <record id="demo_config" model="stock.config">
+            <field name="name">Demo System Configuration</field>
+            <field name="margin_call_threshold">70.0</field>
+            <field name="settlement_days">2</field>
+            <field name="default_penalty_rate">0.1</field>
+            <field name="loan_default_days">30</field>
+            <field name="max_leverage_ratio">3.0</field>
+            <field name="trading_halt_threshold">10.0</field>
+            <field name="min_order_value">100.0</field>
+            <field name="max_order_value">1000000.0</field>
+            <field name="daily_trading_limit">500000.0</field>
+            <field name="position_limit_percentage">25.0</field>
+        </record>
         
     </data>
 </odoo>
