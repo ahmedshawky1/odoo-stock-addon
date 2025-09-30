@@ -54,16 +54,16 @@ Technical Features:
         
         # Views - Backend
         'views/res_users_views.xml',
-        'views/stock_session_views.xml',
-        'views/stock_security_views.xml',
-        'views/stock_order_views.xml',
         'views/stock_trade_views.xml',
+        'views/stock_order_views.xml',
+        'views/stock_security_views.xml',
+        'views/stock_session_views.xml',
         'views/stock_position_views.xml',
         'views/stock_deposit_views.xml',
         'views/stock_loan_views.xml',
         'views/stock_price_history_views.xml',
-        'views/stock_config_views.xml',
         'views/menu_views.xml',
+        'views/stock_config_views.xml',
         
         # Views - Portal
         'views/portal_templates.xml',

@@ -26,8 +26,7 @@ class StockLoan(models.Model):
         'res.users',
         string='Borrower',
         required=True,
-        readonly=True,
-        states={'draft': [('readonly', False)]},
+        readonly="status != 'draft'",
         domain=[('user_type', '=', 'investor')],
         tracking=True
     )
@@ -36,8 +35,7 @@ class StockLoan(models.Model):
         'res.users',
         string='Lender (Bank)',
         required=True,
-        readonly=True,
-        states={'draft': [('readonly', False)]},
+        readonly="status != 'draft'",
         domain=[('user_type', '=', 'banker')],
         tracking=True
     )
@@ -53,8 +51,7 @@ class StockLoan(models.Model):
         string='Loan Amount',
         digits='Product Price',
         required=True,
-        readonly=True,
-        states={'draft': [('readonly', False)]},
+        readonly="status != 'draft'",
         tracking=True
     )
     
@@ -62,8 +59,7 @@ class StockLoan(models.Model):
         string='Interest Rate (%)',
         digits=(16, 2),
         required=True,
-        readonly=True,
-        states={'draft': [('readonly', False)]},
+        readonly="status != 'draft'",
         help='Annual interest rate',
         tracking=True
     )
@@ -71,8 +67,7 @@ class StockLoan(models.Model):
     term_months = fields.Integer(
         string='Term (Months)',
         required=True,
-        readonly=True,
-        states={'draft': [('readonly', False)]},
+        readonly="status != 'draft'",
         help='Loan term in months',
         tracking=True
     )
@@ -81,15 +76,13 @@ class StockLoan(models.Model):
     collateral_security_id = fields.Many2one(
         'stock.security',
         string='Collateral Security',
-        readonly=True,
-        states={'draft': [('readonly', False)]},
+        readonly="status != 'draft'",
         help='Security pledged as collateral'
     )
     
     collateral_quantity = fields.Integer(
         string='Collateral Quantity',
-        readonly=True,
-        states={'draft': [('readonly', False)]},
+        readonly="status != 'draft'",
         help='Number of shares pledged'
     )
     

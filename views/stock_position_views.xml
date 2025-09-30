@@ -13,7 +13,7 @@
                             <span>View Trades</span>
                         </button>
                         <button name="action_sell_position" type="object" class="oe_stat_button" icon="fa-money" 
-                                attrs="{'invisible': [('available_quantity', '&lt;=', 0)]}">
+                                invisible="available_quantity &lt;= 0">
                             <span>Sell Position</span>
                         </button>
                     </div>
@@ -104,12 +104,6 @@
                 <field name="user_id"/>
                 <field name="security_id"/>
                 <filter string="My Positions" name="filter_my_positions" domain="[('user_id', '=', uid)]"/>
-                <separator/>
-                <filter string="Profitable" name="filter_profitable" domain="[('unrealized_pnl', '>', 0)]"/>
-                <filter string="Loss Making" name="filter_loss" domain="[('unrealized_pnl', '&lt;', 0)]"/>
-                <separator/>
-                <filter string="Has Available Shares" name="filter_available" domain="[('available_quantity', '>', 0)]"/>
-                <filter string="Fully Blocked" name="filter_blocked" domain="[('available_quantity', '=', 0), ('quantity', '>', 0)]"/>
                 <group expand="0" string="Group By">
                     <filter string="User" name="group_by_user" context="{'group_by': 'user_id'}"/>
                     <filter string="Security" name="group_by_security" context="{'group_by': 'security_id'}"/>

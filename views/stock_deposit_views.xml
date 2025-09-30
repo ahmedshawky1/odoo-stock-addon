@@ -9,18 +9,18 @@
             <form string="Bank Deposit">
                 <header>
                     <button name="action_confirm" type="object" string="Confirm Deposit" 
-                            invisible="state != 'draft'" class="btn-primary"/>
+                            invisible="status != 'draft'" class="btn-primary"/>
                     <button name="action_withdraw" type="object" string="Withdraw" 
-                            invisible="(state != 'active') and (state != 'matured')" class="btn-warning" confirm="Are you sure you want to withdraw this deposit?"/>
+                            invisible="(status != 'active') and (status != 'matured')" class="btn-warning" confirm="Are you sure you want to withdraw this deposit?"/>
                     <button name="action_mature" type="object" string="Mark as Matured" 
-                            invisible="state != 'active'" class="btn-info" attrs="{'invisible': [('days_to_maturity', '>', 0)]}"/>
+                            invisible="status != 'active' or days_to_maturity > 0" class="btn-info"/>
                     <button name="action_cancel" type="object" string="Cancel" 
-                            invisible="state != 'draft'"/>
+                            invisible="status != 'draft'"/>
                     <field name="status" widget="statusbar" statusbar_visible="draft,active,matured,withdrawn"/>
                 </header>
                 <sheet>
-                    <widget name="web_ribbon" title="Matured" bg_color="bg-success" attrs="{'invisible': [('status', '!=', 'matured')]}"/>
-                    <widget name="web_ribbon" title="Withdrawn" bg_color="bg-info" attrs="{'invisible': [('status', '!=', 'withdrawn')]}"/>
+                    <widget name="web_ribbon" title="Matured" bg_color="bg-success" invisible="status != 'matured'"/>
+                    <widget name="web_ribbon" title="Withdrawn" bg_color="bg-info" invisible="status != 'withdrawn'"/>
                     <div class="oe_title">
                         <h1>
                             <field name="name" readonly="1"/>
@@ -38,7 +38,7 @@
                         <group string="Dates">
                             <field name="deposit_date"/>
                             <field name="maturity_date"/>
-                            <field name="days_to_maturity" attrs="{'invisible': [('status', '!=', 'active')]}"/>
+                            <field name="days_to_maturity" invisible="status != 'active'"/>
                         </group>
                     </group>
                     <group>
@@ -48,9 +48,9 @@
                             <field name="maturity_amount" widget="monetary"/>
                         </group>
                         <group string="Withdrawal">
-                            <field name="early_withdrawal_penalty" widget="percentage" attrs="{'invisible': [('status', 'in', ['withdrawn', 'cancelled'])]}"/>
-                            <field name="withdrawal_date" attrs="{'invisible': [('status', '!=', 'withdrawn')]}"/>
-                            <field name="withdrawal_amount" widget="monetary" attrs="{'invisible': [('status', '!=', 'withdrawn')]}"/>
+                            <field name="early_withdrawal_penalty" widget="percentage" invisible="status in ['withdrawn', 'cancelled']"/>
+                            <field name="withdrawal_date" invisible="status != 'withdrawn'"/>
+                            <field name="withdrawal_amount" widget="monetary" invisible="status != 'withdrawn'"/>
                         </group>
                     </group>
                 </sheet>
@@ -141,7 +141,6 @@
                 <filter string="Matured" name="filter_matured" domain="[('status', '=', 'matured')]"/>
                 <filter string="Withdrawn" name="filter_withdrawn" domain="[('status', '=', 'withdrawn')]"/>
                 <separator/>
-                <filter string="Maturing Soon" name="filter_maturing_soon" domain="[('days_to_maturity', '&lt;=', 30), ('status', '=', 'active')]"/>
                 <group expand="0" string="Group By">
                     <filter string="Depositor" name="group_by_user" context="{'group_by': 'user_id'}"/>
                     <filter string="Bank" name="group_by_banker" context="{'group_by': 'banker_id'}"/>

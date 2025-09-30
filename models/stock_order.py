@@ -25,7 +25,7 @@ class StockOrder(models.Model):
         required=True, index=True,
         domain=[('share', '=', False)],
         default=lambda self: self.env.user,
-        readonly=True, states={'draft': [('readonly', False)]},
+        readonly="status != 'draft'",
         tracking=True
     )
     
@@ -33,14 +33,14 @@ class StockOrder(models.Model):
         'stock.session', string='Trading Session',
         required=True, index=True,
         domain=[('state', '=', 'open')],
-        readonly=True, states={'draft': [('readonly', False)]},
+        readonly="status != 'draft'",
         tracking=True
     )
     
     security_id = fields.Many2one(
         'stock.security', string='Security',
         required=True, index=True,
-        readonly=True, states={'draft': [('readonly', False)]},
+        readonly="status != 'draft'",
         tracking=True
     )
     
@@ -51,7 +51,7 @@ class StockOrder(models.Model):
         ('stop_loss', 'Stop Loss'),
         ('stop_limit', 'Stop Limit'),
     ], string='Order Type', required=True, default='limit', tracking=True,
-       readonly=True, states={'draft': [('readonly', False)]})
+       readonly="status != 'draft'")
     
     time_in_force = fields.Selection([
         ('day', 'Day'),
@@ -59,36 +59,34 @@ class StockOrder(models.Model):
         ('ioc', 'Immediate or Cancel'),
         ('fok', 'Fill or Kill'),
     ], string='Time in Force', default='day', tracking=True,
-       readonly=True, states={'draft': [('readonly', False)]})
+       readonly="status != 'draft'")
     
     stop_price = fields.Float(
         string='Stop Price', 
         digits='Product Price',
         help="For stop orders: the price at which the order becomes active",
-        readonly=True, states={'draft': [('readonly', False)]}
+        readonly="status != 'draft'"
     )
     
     side = fields.Selection([
         ('buy', 'Buy'),
         ('sell', 'Sell')
     ], string='Side', required=True, tracking=True,
-       readonly=True, states={'draft': [('readonly', False)]})
+       readonly="status != 'draft'")
     
     price = fields.Float(
         string='Price',
         digits=(16, 4),
         required=True,
         tracking=True,
-        readonly=True,
-        states={'draft': [('readonly', False)]}
+        readonly="status != 'draft'"
     )
     
     quantity = fields.Integer(
         string='Quantity',
         required=True,
         tracking=True,
-        readonly=True,
-        states={'draft': [('readonly', False)]}
+        readonly="status != 'draft'"
     )
     
     filled_quantity = fields.Integer(

@@ -24,9 +24,9 @@
                         <button name="action_view_trades" type="object" class="oe_stat_button" icon="fa-exchange">
                             <field name="total_trades" widget="statinfo" string="Trades"/>
                         </button>
-                        <button name="%(action_stock_order)d" type="action" class="oe_stat_button" icon="fa-plus-circle"
-                                attrs="{'invisible': [('state', '!=', 'open')]}"
-                                context="{'default_session_id': active_id}">
+                        <button name="%(action_stock_order)d" type="action" class="oe_stat_button" icon="fa-plus-circle" 
+                                invisible="state != 'open'"
+                                context="{'default_session_id': id}">
                             <span>New Order</span>
                         </button>
                     </div>
@@ -75,7 +75,7 @@
                         </page>
                         <page string="Trades" name="trades">
                             <field name="trade_ids" readonly="1">
-                                <tree>
+                                <list>
                                     <field name="name"/>
                                     <field name="security_id"/>
                                     <field name="buyer_id"/>
@@ -162,8 +162,8 @@
                 <filter string="Closed" name="filter_closed" domain="[('state', '=', 'closed')]"/>
                 <filter string="Settled" name="filter_settled" domain="[('state', '=', 'settled')]"/>
                 <separator/>
-                <filter string="Today" name="filter_today" domain="[('start_date', '&lt;=', datetime.datetime.now()), ('end_date', '>=', datetime.datetime.now())]"/>
-                <filter string="This Week" name="filter_week" domain="[('start_date', '>=', (datetime.datetime.now() - datetime.timedelta(days=7)).strftime('%%Y-%%m-%%d'))]"/>
+                <filter string="Active Sessions" name="filter_active" domain="[('state', '=', 'open')]"/>
+                <separator/>
                 <group expand="0" string="Group By">
                     <filter string="State" name="group_by_state" context="{'group_by': 'state'}"/>
                     <filter string="Start Date" name="group_by_start" context="{'group_by': 'start_date:month'}"/>

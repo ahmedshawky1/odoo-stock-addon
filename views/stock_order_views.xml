@@ -9,20 +9,20 @@
             <form string="Stock Order">
                 <header>
                     <button name="action_submit" type="object" string="Submit Order" 
-                            invisible="state != 'draft'" class="btn-primary"/>
+                            invisible="status != 'draft'" class="btn-primary"/>
                     <button name="action_cancel" type="object" string="Cancel Order" 
-                            invisible="(state != 'pending') and (state != 'partial')" class="btn-warning"/>
+                            invisible="(status != 'pending') and (status != 'partial')" class="btn-warning"/>
                     <field name="status" widget="statusbar" statusbar_visible="draft,pending,partial,filled"/>
                 </header>
                 <sheet>
                     <div class="oe_button_box" name="button_box">
                         <button name="%(action_stock_trade)d" type="action" class="oe_stat_button" icon="fa-exchange"
-                                context="{'search_default_buy_order_id': active_id, 'search_default_sell_order_id': active_id}">
+                                context="{'search_default_buy_order_id': id, 'search_default_sell_order_id': id}">
                             <field name="filled_quantity" widget="statinfo" string="Filled"/>
                         </button>
                     </div>
-                    <widget name="web_ribbon" title="Cancelled" bg_color="bg-danger" attrs="{'invisible': [('status', '!=', 'cancelled')]}"/>
-                    <widget name="web_ribbon" title="Rejected" bg_color="bg-danger" attrs="{'invisible': [('status', '!=', 'rejected')]}"/>
+                    <widget name="web_ribbon" title="Cancelled" bg_color="bg-danger" invisible="status != 'cancelled'"/>
+                    <widget name="web_ribbon" title="Rejected" bg_color="bg-danger" invisible="status != 'rejected'"/>
                     <div class="oe_title">
                         <h1>
                             <field name="name" readonly="1"/>
@@ -31,7 +31,6 @@
                     <group>
                         <group string="Order Details">
                             <field name="user_id" options="{'no_create': True}"/>
-                            <field name="broker_id"/>
                             <field name="session_id" options="{'no_create': True}" domain="[('state', '=', 'open')]"/>
                             <field name="security_id" options="{'no_create': True}"/>
                         </group>
@@ -39,7 +38,7 @@
                             <field name="side" widget="radio_button"/>
                             <field name="order_type" widget="radio_button"/>
                             <field name="quantity"/>
-                            <field name="price" attrs="{'invisible': [('order_type', '=', 'market')], 'required': [('order_type', '=', 'limit')]}"/>
+                            <field name="price" invisible="order_type == 'market'" required="order_type == 'limit'"/>
                             <field name="order_date"/>
                             <field name="expiry_date"/>
                         </group>
@@ -59,7 +58,7 @@
                     <notebook>
                         <page string="Trades" name="trades">
                             <field name="trade_ids" readonly="1">
-                                <tree>
+                                <list>
                                     <field name="name"/>
                                     <field name="trade_date"/>
                                     <field name="quantity"/>
@@ -71,7 +70,7 @@
                         <page string="Additional Information" name="info">
                             <group>
                                 <field name="description" readonly="1"/>
-                                <field name="rejection_reason" readonly="1" attrs="{'invisible': [('status', '!=', 'rejected')]}"/>
+                                <field name="rejection_reason" readonly="1" invisible="status != 'rejected'"/>
                             </group>
                         </page>
                     </notebook>
@@ -171,8 +170,6 @@
                 <field name="name"/>
                 <field name="user_id"/>
                 <field name="security_id"/>
-                <field name="buy_order_id" string="Buy Order" filter_domain="[('id', '=', self)]"/>
-                <field name="sell_order_id" string="Sell Order" filter_domain="[('id', '=', self)]"/>
                 <filter string="My Orders" name="filter_my_orders" domain="[('user_id', '=', uid)]"/>
                 <separator/>
                 <filter string="Buy Orders" name="filter_buy" domain="[('side', '=', 'buy')]"/>
@@ -184,7 +181,6 @@
                 <filter string="Filled" name="filter_filled" domain="[('status', '=', 'filled')]"/>
                 <filter string="Cancelled" name="filter_cancelled" domain="[('status', '=', 'cancelled')]"/>
                 <separator/>
-                <filter string="Today" name="filter_today" domain="[('order_date', '>=', datetime.datetime.now().replace(hour=0, minute=0, second=0))]"/>
                 <group expand="0" string="Group By">
                     <filter string="User" name="group_by_user" context="{'group_by': 'user_id'}"/>
                     <filter string="Security" name="group_by_security" context="{'group_by': 'security_id'}"/>

@@ -123,6 +123,12 @@ class ResUsers(models.Model):
         digits='Product Price'
     )
     
+    # Count fields
+    order_count = fields.Integer(
+        string='Order Count',
+        compute='_compute_order_count'
+    )
+    
     @api.depends('position_ids', 'position_ids.quantity', 'position_ids.security_id.current_price')
     def _compute_portfolio_value(self):
         for user in self:
@@ -166,6 +172,11 @@ class ResUsers(models.Model):
                 user.profit_loss_percentage = (user.profit_loss / user.initial_capital) * 100
             else:
                 user.profit_loss_percentage = 0.0
+    
+    @api.depends('order_ids')
+    def _compute_order_count(self):
+        for user in self:
+            user.order_count = len(user.order_ids)
     
     @api.depends('order_ids', 'order_ids.broker_commission')
     def _compute_broker_commission(self):

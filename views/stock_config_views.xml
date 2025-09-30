@@ -16,7 +16,7 @@
                             <field name="daily_trading_limit"/>
                             <field name="position_limit_percent"/>
                         </group>
-                        <group string="Margin & Loan Configuration">
+                        <group string="Margin &amp; Loan Configuration">
                             <field name="margin_call_threshold"/>
                             <field name="margin_call_grace_period"/>
                             <field name="default_penalty_rate"/>
@@ -71,7 +71,7 @@
     <!-- Menu -->
     <menuitem id="menu_stock_config"
         name="Configuration"
-        parent="menu_stock_configuration"
+        parent="menu_stock_admin"
         action="action_stock_config"
         sequence="100"
         groups="group_stock_admin"/>

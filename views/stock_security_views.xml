@@ -23,11 +23,11 @@
                             <field name="volume_today" widget="statinfo" string="Volume"/>
                         </button>
                         <button name="%(action_stock_order)d" type="action" class="oe_stat_button" icon="fa-plus-circle"
-                                context="{'default_security_id': active_id}">
+                                context="{'default_security_id': id}">
                             <span>Place Order</span>
                         </button>
                     </div>
-                    <widget name="web_ribbon" title="Inactive" bg_color="bg-danger" attrs="{'invisible': [('active', '=', True)]}"/>
+                    <widget name="web_ribbon" title="Inactive" bg_color="bg-danger" invisible="not active"/>
                     <div class="oe_title">
                         <label for="symbol" class="oe_edit_only"/>
                         <h1>
@@ -68,7 +68,7 @@
                                     <field name="best_ask" widget="monetary"/>
                                     <label for="best_bid" string="Spread"/>
                                     <div>
-                                        <span t-if="best_ask and best_bid" t-esc="best_ask - best_bid" class="text-muted"/>
+                                        <span class="text-muted">Calculated at runtime</span>
                                     </div>
                                 </group>
                             </group>
@@ -86,7 +86,7 @@
                         </page>
                         <page string="Price History" name="history">
                             <field name="price_history_ids" readonly="1">
-                                <tree>
+                                <list>
                                     <field name="change_date"/>
                                     <field name="old_price"/>
                                     <field name="new_price"/>
@@ -97,7 +97,7 @@
                         </page>
                         <page string="Positions" name="positions">
                             <field name="position_ids" readonly="1">
-                                <tree>
+                                <list>
                                     <field name="user_id"/>
                                     <field name="quantity"/>
                                     <field name="average_cost"/>
@@ -193,9 +193,6 @@
                 <filter string="Stocks" name="filter_stock" domain="[('security_type', '=', 'stock')]"/>
                 <filter string="Bonds" name="filter_bond" domain="[('security_type', '=', 'bond')]"/>
                 <filter string="Mutual Funds" name="filter_mf" domain="[('security_type', '=', 'mf')]"/>
-                <separator/>
-                <filter string="Gainers" name="filter_gainers" domain="[('change_percentage', '>', 0)]"/>
-                <filter string="Losers" name="filter_losers" domain="[('change_percentage', '&lt;', 0)]"/>
                 <group expand="0" string="Group By">
                     <filter string="Type" name="group_by_type" context="{'group_by': 'security_type'}"/>
                     <filter string="Active" name="group_by_active" context="{'group_by': 'active'}"/>

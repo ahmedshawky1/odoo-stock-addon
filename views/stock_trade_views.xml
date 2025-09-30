@@ -12,7 +12,7 @@
                         <button name="action_view_buy_order" type="object" class="oe_stat_button" icon="fa-shopping-cart">
                             <span>Buy Order</span>
                         </button>
-                        <button name="action_view_sell_order" type="object" class="oe_stat_button" icon="fa-shopping-cart" attrs="{'invisible': [('sell_order_id', '=', False)]}">
+                        <button name="action_view_sell_order" type="object" class="oe_stat_button" icon="fa-shopping-cart" invisible="not sell_order_id">
                             <span>Sell Order</span>
                         </button>
                     </div>
@@ -90,9 +90,6 @@
                 <field name="buyer_id"/>
                 <field name="seller_id"/>
                 <filter string="My Trades" name="filter_my_trades" domain="['|', ('buyer_id', '=', uid), ('seller_id', '=', uid)]"/>
-                <separator/>
-                <filter string="Today" name="filter_today" domain="[('trade_date', '>=', datetime.datetime.now().replace(hour=0, minute=0, second=0))]"/>
-                <filter string="This Week" name="filter_week" domain="[('trade_date', '>=', (datetime.datetime.now() - datetime.timedelta(days=7)).strftime('%%Y-%%m-%%d'))]"/>
                 <separator/>
                 <filter string="IPO Trades" name="filter_ipo" domain="[('trade_type', '=', 'ipo')]"/>
                 <group expand="0" string="Group By">

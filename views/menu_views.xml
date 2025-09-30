@@ -93,7 +93,7 @@
               action="action_stock_market_users"
               sequence="20"/>
     
-    <!-- Reports Menu -->
+    <!-- Reports Menu - Commented out until report actions are implemented
     <menuitem id="menu_stock_reports"
               name="Reports"
               parent="menu_stock_market_root"
@@ -126,5 +126,6 @@
               action="action_stock_session_report"
               sequence="40"
               groups="group_stock_admin"/>
+    -->
     
 </odoo> 

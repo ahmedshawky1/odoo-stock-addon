@@ -27,9 +27,6 @@
             <search string="Price History">
                 <field name="security_id"/>
                 <field name="session_id"/>
-                <filter string="Today" name="filter_today" domain="[('change_date', '>=', datetime.datetime.now().replace(hour=0, minute=0, second=0))]"/>
-                <filter string="This Week" name="filter_week" domain="[('change_date', '>=', (datetime.datetime.now() - datetime.timedelta(days=7)).strftime('%%Y-%%m-%%d'))]"/>
-                <separator/>
                 <filter string="Trade Triggered" name="filter_trade" domain="[('change_reason', '=', 'trade')]"/>
                 <filter string="Manual" name="filter_manual" domain="[('change_reason', '=', 'manual')]"/>
                 <group expand="0" string="Group By">

@@ -26,8 +26,7 @@ class StockDeposit(models.Model):
         'res.users',
         string='Depositor',
         required=True,
-        readonly=True,
-        states={'draft': [('readonly', False)]},
+        readonly="status != 'draft'",
         domain=[('user_type', '=', 'investor')],
         tracking=True
     )
@@ -36,8 +35,7 @@ class StockDeposit(models.Model):
         'res.users',
         string='Bank',
         required=True,
-        readonly=True,
-        states={'draft': [('readonly', False)]},
+        readonly="status != 'draft'",
         domain=[('user_type', '=', 'banker')],
         tracking=True
     )
@@ -53,8 +51,7 @@ class StockDeposit(models.Model):
         string='Principal Amount',
         digits='Product Price',
         required=True,
-        readonly=True,
-        states={'draft': [('readonly', False)]},
+        readonly="status != 'draft'",
         tracking=True
     )
     
@@ -62,16 +59,14 @@ class StockDeposit(models.Model):
         string='Interest Rate (%)',
         digits=(16, 2),
         required=True,
-        readonly=True,
-        states={'draft': [('readonly', False)]},
+        readonly="status != 'draft'",
         help='Annual interest rate',
         tracking=True
     )
     
     term_months = fields.Integer(
         string='Term (Months)',
-        readonly=True,
-        states={'draft': [('readonly', False)]},
+        readonly="status != 'draft'",
         help='Deposit term in months'
     )
     
@@ -80,8 +75,7 @@ class StockDeposit(models.Model):
         string='Deposit Date',
         required=True,
         default=fields.Date.today,
-        readonly=True,
-        states={'draft': [('readonly', False)]},
+        readonly="status != 'draft'",
         tracking=True
     )
     
@@ -89,8 +83,7 @@ class StockDeposit(models.Model):
         string='Maturity Date',
         compute='_compute_maturity_date',
         store=True,
-        readonly=False,
-        states={'active': [('readonly', True)], 'matured': [('readonly', True)]},
+        readonly="status in ['active', 'matured']",
         tracking=True
     )
     
