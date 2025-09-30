@@ -54,12 +54,14 @@ class StockMarketPortal(CustomerPortal):
         
         # Add user type specific data
         values.update({
+            'user': user,  # Add user to context for template
             'user_type': user.user_type,
-            'cash_balance': user.cash_balance,
-            'portfolio_value': user.portfolio_value,
-            'total_assets': user.total_assets,
-            'profit_loss': user.profit_loss,
-            'profit_loss_percentage': user.profit_loss_percentage,
+            'cash_balance': user.cash_balance or 0.0,
+            'portfolio_value': user.portfolio_value or 0.0,
+            'total_assets': user.total_assets or 0.0,
+            'profit_loss': user.profit_loss or 0.0,
+            'profit_loss_percentage': user.profit_loss_percentage or 0.0,
+            'display_currency': request.env.company.currency_id,
         })
         
         # Get active session
@@ -76,7 +78,7 @@ class StockMarketPortal(CustomerPortal):
             'top_losers': losers,
         })
         
-        return request.render("stock_market_simulation.portal_my_home", values)
+        return request.render("portal.portal_my_home", values)
 
     # Portfolio View
     @http.route(['/my/portfolio', '/my/portfolio/page/<int:page>'], type='http', auth="user", website=True)
@@ -116,6 +118,7 @@ class StockMarketPortal(CustomerPortal):
         positions = Position.search(domain, order=order, limit=self._items_per_page, offset=pager['offset'])
         
         values.update({
+            'user': user,
             'positions': positions,
             'page_name': 'portfolio',
             'pager': pager,
@@ -181,6 +184,7 @@ class StockMarketPortal(CustomerPortal):
         orders = Order.search(domain, order=order, limit=self._items_per_page, offset=pager['offset'])
         
         values.update({
+            'user': user,
             'date': date_begin,
             'orders': orders,
             'page_name': 'order',
@@ -219,10 +223,12 @@ class StockMarketPortal(CustomerPortal):
         ])
         
         values.update({
+            'user': user,
             'securities': securities,
             'positions': positions,
             'active_session': active_session,
-            'cash_balance': user.cash_balance,
+            'cash_balance': user.cash_balance or 0.0,
+            'display_currency': request.env.company.currency_id,
         })
         
         return request.render("stock_market_simulation.portal_order_new", values)
@@ -306,6 +312,7 @@ class StockMarketPortal(CustomerPortal):
     @http.route(['/my/market'], type='http', auth="user", website=True)
     def portal_market_data(self, **kw):
         values = self._prepare_portal_layout_values()
+        user = request.env.user
         
         # Get all active securities
         securities = request.env['stock.security'].sudo().search([('active', '=', True)])
@@ -316,6 +323,7 @@ class StockMarketPortal(CustomerPortal):
             grouped_securities[k] = list(g)
         
         values.update({
+            'user': user,
             'securities': securities,
             'grouped_securities': grouped_securities,
             'page_name': 'market',
@@ -356,6 +364,7 @@ class StockMarketPortal(CustomerPortal):
                 session_commissions[session] += trade.sell_commission
         
         values.update({
+            'user': user,
             'total_commission': total_commission,
             'session_commissions': session_commissions,
             'recent_trades': trades[:20],
@@ -465,6 +474,7 @@ class StockMarketPortal(CustomerPortal):
         total_loans = sum(l.principal_outstanding for l in loans.filtered(lambda l: l.status == 'active'))
         
         values.update({
+            'user': user,
             'total_deposits': total_deposits,
             'total_loans': total_loans,
             'active_deposits': deposits.filtered(lambda d: d.status == 'active'),

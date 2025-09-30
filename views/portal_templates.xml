@@ -4,7 +4,7 @@
     <!-- Extend portal home page -->
     <template id="portal_my_home" name="Show Stock Market Data" inherit_id="portal.portal_my_home" priority="40">
         <xpath expr="//div[hasclass('o_portal_docs')]" position="inside">
-            <t t-if="user.user_type in ['investor', 'broker', 'banker']">
+            <t t-if="request.env.user.user_type in ['investor', 'broker', 'banker']">
                 <h3 class="mt-4">Stock Market Dashboard</h3>
                 
                 <!-- Financial Summary -->
@@ -13,7 +13,7 @@
                         <div class="card">
                             <div class="card-body text-center">
                                 <h5 class="card-title">Cash Balance</h5>
-                                <p class="card-text h4"><t t-esc="cash_balance" t-options='{"widget": "monetary"}'/></p>
+                                <p class="card-text h4"><t t-esc="cash_balance or 0.0" t-options='{"widget": "monetary", "display_currency": request.env.company.currency_id}'/></p>
                             </div>
                         </div>
                     </div>
@@ -21,7 +21,7 @@
                         <div class="card">
                             <div class="card-body text-center">
                                 <h5 class="card-title">Portfolio Value</h5>
-                                <p class="card-text h4"><t t-esc="portfolio_value" t-options='{"widget": "monetary"}'/></p>
+                                <p class="card-text h4"><t t-esc="portfolio_value or 0.0" t-options='{"widget": "monetary", "display_currency": request.env.company.currency_id}'/></p>
                             </div>
                         </div>
                     </div>
@@ -29,7 +29,7 @@
                         <div class="card">
                             <div class="card-body text-center">
                                 <h5 class="card-title">Total Assets</h5>
-                                <p class="card-text h4"><t t-esc="total_assets" t-options='{"widget": "monetary"}'/></p>
+                                <p class="card-text h4"><t t-esc="total_assets or 0.0" t-options='{"widget": "monetary", "display_currency": request.env.company.currency_id}'/></p>
                             </div>
                         </div>
                     </div>
@@ -38,9 +38,9 @@
                             <div class="card-body text-center">
                                 <h5 class="card-title">P&amp;L</h5>
                                 <p class="card-text h4">
-                                    <span t-attf-class="#{profit_loss >= 0 and 'text-success' or 'text-danger'}">
-                                        <t t-esc="profit_loss" t-options='{"widget": "monetary"}'/>
-                                        (<t t-esc="profit_loss_percentage"/>%)
+                                    <span t-attf-class="#{(profit_loss or 0.0) >= 0 and 'text-success' or 'text-danger'}">
+                                        <t t-esc="profit_loss or 0.0" t-options='{"widget": "monetary", "display_currency": request.env.company.currency_id}'/>
+                                        (<t t-esc="profit_loss_percentage or 0.0"/>%)
                                     </span>
                                 </p>
                             </div>
@@ -116,14 +116,14 @@
         
         <!-- Add counts to portal docs section -->
         <xpath expr="//div[hasclass('o_portal_docs')]" position="inside">
-            <t t-if="user.user_type == 'investor' and order_count">
+            <t t-if="request.env.user.user_type == 'investor' and order_count">
                 <t t-call="portal.portal_docs_entry">
                     <t t-set="title">Orders</t>
                     <t t-set="url" t-value="'/my/orders'"/>
                     <t t-set="count" t-value="order_count"/>
                 </t>
             </t>
-            <t t-if="user.user_type == 'investor' and position_count">
+            <t t-if="request.env.user.user_type == 'investor' and position_count">
                 <t t-call="portal.portal_docs_entry">
                     <t t-set="title">Positions</t>
                     <t t-set="url" t-value="'/my/portfolio'"/>
@@ -185,14 +185,14 @@
                             <td><t t-esc="position.security_id.symbol"/> - <t t-esc="position.security_id.name"/></td>
                             <td class="text-right"><t t-esc="position.quantity"/></td>
                             <td class="text-right"><t t-esc="position.average_cost" t-options='{"widget": "float", "precision": 2}'/></td>
-                            <td class="text-right"><t t-esc="position.market_value" t-options='{"widget": "monetary"}'/></td>
+                            <td class="text-right"><t t-esc="position.market_value or 0.0" t-options='{"widget": "monetary", "display_currency": request.env.company.currency_id}'/></td>
                             <td class="text-right">
-                                <span t-attf-class="#{position.unrealized_pnl >= 0 and 'text-success' or 'text-danger'}">
-                                    <t t-esc="position.unrealized_pnl" t-options='{"widget": "monetary"}'/>
+                                <span t-attf-class="#{(position.unrealized_pnl or 0.0) >= 0 and 'text-success' or 'text-danger'}">
+                                    <t t-esc="position.unrealized_pnl or 0.0" t-options='{"widget": "monetary", "display_currency": request.env.company.currency_id}'/>
                                 </span>
                             </td>
                             <td class="text-right">
-                                <span t-attf-class="#{position.unrealized_pnl_percent >= 0 and 'text-success' or 'text-danger'}">
+                                <span t-attf-class="#{(position.unrealized_pnl_percent or 0.0) >= 0 and 'text-success' or 'text-danger'}">
                                     <t t-esc="position.unrealized_pnl_percent" t-options='{"widget": "float", "precision": 2}'/>%
                                 </span>
                             </td>
@@ -290,7 +290,7 @@
                                     <h5>Account Information</h5>
                                 </div>
                                 <div class="card-body">
-                                    <p>Cash Balance: <strong><t t-esc="cash_balance" t-options='{"widget": "monetary"}'/></strong></p>
+                                    <p>Cash Balance: <strong><t t-esc="cash_balance or 0.0" t-options='{"widget": "monetary", "display_currency": request.env.company.currency_id}'/></strong></p>
                                     <p>Active Session: <strong><t t-esc="active_session.name"/></strong></p>
                                 </div>
                             </div>
@@ -459,7 +459,7 @@
                                             </span>
                                         </td>
                                         <td class="text-right"><t t-esc="security.volume_today"/></td>
-                                        <td class="text-right"><t t-esc="security.value_today" t-options='{"widget": "monetary"}'/></td>
+                                        <td class="text-right"><t t-esc="security.value_today or 0.0" t-options='{"widget": "monetary", "display_currency": request.env.company.currency_id}'/></td>
                                     </tr>
                                 </t>
                             </tbody>
