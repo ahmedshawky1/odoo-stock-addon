@@ -178,17 +178,25 @@ class ResUsers(models.Model):
         for user in self:
             user.order_count = len(user.order_ids)
     
-    @api.depends('order_ids', 'order_ids.broker_commission')
+    @api.depends('user_type')
     def _compute_broker_commission(self):
         for user in self:
             if user.user_type == 'broker':
                 # Sum commissions from all orders where this user is the broker
-                domain = [
-                    ('broker_id', '=', user.id),
-                    ('status', 'in', ['partial', 'filled'])
-                ]
-                orders = self.env['stock.order'].search(domain)
-                user.total_commission = sum(orders.mapped('broker_commission'))
+                # Get all users who have this broker assigned
+                clients = self.env['res.users'].search([('broker_id', '=', user.id)])
+                client_ids = clients.ids
+                
+                if client_ids:
+                    # Search for orders from these clients with completed status
+                    domain = [
+                        ('user_id', 'in', client_ids),
+                        ('status', 'in', ['partial', 'filled'])
+                    ]
+                    orders = self.env['stock.order'].search(domain)
+                    user.total_commission = sum(orders.mapped('broker_commission'))
+                else:
+                    user.total_commission = 0.0
             else:
                 user.total_commission = 0.0
     
