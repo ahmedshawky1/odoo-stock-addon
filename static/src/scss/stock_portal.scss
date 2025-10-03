@@ -132,8 +132,8 @@ html.stock-sidebar-init-collapsed .stock-main-content {
     top: 0;
     height: 100vh;
     overflow-y: auto;
-    overflow-x: hidden;
-    z-index: 1000;
+    overflow-x: visible; /* allow toggle to protrude outside right edge */
+    z-index: 2000; /* keep the sidebar above most elements */
     transition: width 0.3s ease, min-width 0.3s ease;
     box-shadow: var(--stock-shadow-lg);
     
@@ -185,20 +185,32 @@ html.stock-sidebar-init-collapsed .stock-main-content {
         }
         
         .stock-sidebar-toggle-icon {
-            margin-left: 14px !important;
+            /* Ensure toggle is visible when collapsed */
             background: rgba(255, 255, 255, 0.25) !important;
             border-color: rgba(255, 255, 255, 0.4) !important;
+            right: -18px; /* protrude a bit more in collapsed state */
+            z-index: 2002;
+            transform: translateY(-50%);
+            
+            &:hover {
+                transform: translateY(-50%);
+            }
             
             &:hover {
                 background: rgba(255, 255, 255, 0.35) !important;
             }
             
+            i {
+                color: white !important;
+                font-size: 18px !important;
+            }
+            
             .sidebar-toggle-expand {
-                display: block;
+                display: block !important;
             }
             
             .sidebar-toggle-collapse {
-                display: none;
+                display: none !important;
             }
         }
         
@@ -259,7 +271,8 @@ html.stock-sidebar-init-collapsed .stock-main-content {
     display: flex;
     align-items: center;
     justify-content: space-between;
-    overflow: hidden; /* Prevent any overflow from header */
+    /* Let the toggle icon protrude outside the header/sidebar edge */
+    overflow: hidden;
     
     .sidebar-brand {
         display: flex;
@@ -284,6 +297,14 @@ html.stock-sidebar-init-collapsed .stock-main-content {
             margin-right: var(--stock-space-3);
             font-size: 1.2rem;
             flex-shrink: 0;
+            
+            i {
+                font-size: 1.2rem !important;
+                color: white !important;
+                display: inline-flex !important;
+                opacity: 1 !important;
+                visibility: visible !important;
+            }
         }
         
         .sidebar-brand-text {
@@ -298,19 +319,33 @@ html.stock-sidebar-init-collapsed .stock-main-content {
         background: rgba(255, 255, 255, 0.15);
         border: 1px solid rgba(255, 255, 255, 0.3);
         border-radius: var(--stock-radius);
-        color: white;
+        color: white !important;
         cursor: pointer;
         padding: var(--stock-space-2);
         display: flex;
         align-items: center;
         justify-content: center;
         transition: all 0.2s ease;
-        margin-left: var(--stock-space-2);
+        /* Absolutely position the toggle so it can sit on the outer edge */
+        position: absolute;
+        top: 50%;
+        right: -14px; /* protrude outside the sidebar edge */
+        transform: translateY(-50%);
+        z-index: 2001; /* above sidebar and page content */
         flex-shrink: 0;
-        width: 32px;
-        height: 32px;
+        width: 36px;
+        height: 36px;
         font-size: 18px;
-        position: relative;
+        pointer-events: auto;
+        
+        i {
+            color: white !important;
+            font-size: 18px !important;
+            line-height: 1;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
         
         .sidebar-toggle-expand {
             display: none;
@@ -323,7 +358,8 @@ html.stock-sidebar-init-collapsed .stock-main-content {
         &:hover {
             background: rgba(255, 255, 255, 0.25);
             color: white;
-            transform: scale(1.05);
+            /* keep the same translate so it doesn't jump vertically */
+            transform: translateY(-50%);
         }
         
         &:focus {
@@ -410,13 +446,15 @@ html.stock-sidebar-init-collapsed .stock-main-content {
                 height: 24px;
                 margin-right: var(--stock-space-3);
                 text-align: center;
-                display: inline-flex;
+                display: inline-flex !important;
                 align-items: center;
                 justify-content: center;
                 transition: margin 0.3s ease;
                 flex-shrink: 0;
-                font-size: 18px;
+                font-size: 18px !important;
                 line-height: 1;
+                opacity: 1 !important;
+                visibility: visible !important;
             }
             
             .nav-text {
