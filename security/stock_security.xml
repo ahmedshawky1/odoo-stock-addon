@@ -38,73 +38,50 @@
             <field name="comment">Full access to stock market configuration and operations</field>
         </record>
         
-        <!-- Record Rules -->
+        <!-- Simple Global Access Rules - Security handled in models via user_type -->
         
-        <!-- Investor Rules -->
-        <record id="stock_order_investor_rule" model="ir.rule">
-            <field name="name">Investor: Own Orders Only</field>
+        <!-- Global access for portal users -->
+        <record id="stock_order_global_rule" model="ir.rule">
+            <field name="name">Orders: Global Access</field>
             <field name="model_id" ref="model_stock_order"/>
-            <field name="domain_force">[('user_id', '=', user.id)]</field>
-            <field name="groups" eval="[(4, ref('group_stock_investor'))]"/>
+            <field name="domain_force">[(1, '=', 1)]</field>
+            <field name="groups" eval="[(4, ref('base.group_portal'))]"/>
         </record>
         
-        <record id="stock_position_investor_rule" model="ir.rule">
-            <field name="name">Investor: Own Positions Only</field>
+        <record id="stock_position_global_rule" model="ir.rule">
+            <field name="name">Positions: Global Access</field>
             <field name="model_id" ref="model_stock_position"/>
-            <field name="domain_force">[('user_id', '=', user.id)]</field>
-            <field name="groups" eval="[(4, ref('group_stock_investor'))]"/>
+            <field name="domain_force">[(1, '=', 1)]</field>
+            <field name="groups" eval="[(4, ref('base.group_portal'))]"/>
         </record>
         
-        <record id="stock_trade_investor_rule" model="ir.rule">
-            <field name="name">Investor: Own Trades Only</field>
+        <record id="stock_trade_global_rule" model="ir.rule">
+            <field name="name">Trades: Global Access</field>
             <field name="model_id" ref="model_stock_trade"/>
-            <field name="domain_force">['|', ('buy_order_id.user_id', '=', user.id), ('sell_order_id.user_id', '=', user.id)]</field>
-            <field name="groups" eval="[(4, ref('group_stock_investor'))]"/>
+            <field name="domain_force">[(1, '=', 1)]</field>
+            <field name="groups" eval="[(4, ref('base.group_portal'))]"/>
         </record>
         
-        <!-- Broker Rules -->
-        <record id="stock_order_broker_rule" model="ir.rule">
-            <field name="name">Broker: Client Orders</field>
-            <field name="model_id" ref="model_stock_order"/>
-            <field name="domain_force">[('user_id.broker_id', '=', user.id)]</field>
-            <field name="groups" eval="[(4, ref('group_stock_broker'))]"/>
-        </record>
-        
-        <record id="stock_trade_broker_rule" model="ir.rule">
-            <field name="name">Broker: Client Trades</field>
-            <field name="model_id" ref="model_stock_trade"/>
-            <field name="domain_force">['|', ('buy_order_id.user_id.broker_id', '=', user.id), ('sell_order_id.user_id.broker_id', '=', user.id)]</field>
-            <field name="groups" eval="[(4, ref('group_stock_broker'))]"/>
-        </record>
-        
-        <record id="stock_position_broker_rule" model="ir.rule">
-            <field name="name">Broker: Client Positions</field>
-            <field name="model_id" ref="model_stock_position"/>
-            <field name="domain_force">[('user_id.broker_id', '=', user.id)]</field>
-            <field name="groups" eval="[(4, ref('group_stock_broker'))]"/>
-        </record>
-        
-        <!-- Banker Rules -->
-        <record id="stock_deposit_banker_rule" model="ir.rule">
-            <field name="name">Banker: All Deposits</field>
+        <record id="stock_deposit_global_rule" model="ir.rule">
+            <field name="name">Deposits: Global Access</field>
             <field name="model_id" ref="model_stock_deposit"/>
             <field name="domain_force">[(1, '=', 1)]</field>
-            <field name="groups" eval="[(4, ref('group_stock_banker'))]"/>
+            <field name="groups" eval="[(4, ref('base.group_portal'))]"/>
         </record>
         
-        <record id="stock_loan_banker_rule" model="ir.rule">
-            <field name="name">Banker: All Loans</field>
+        <record id="stock_loan_global_rule" model="ir.rule">
+            <field name="name">Loans: Global Access</field>
             <field name="model_id" ref="model_stock_loan"/>
             <field name="domain_force">[(1, '=', 1)]</field>
-            <field name="groups" eval="[(4, ref('group_stock_banker'))]"/>
+            <field name="groups" eval="[(4, ref('base.group_portal'))]"/>
         </record>
         
-        <!-- Admin has full access - no domain restrictions -->
+        <!-- Admin users get full access -->
         <record id="stock_admin_all_rule" model="ir.rule">
-            <field name="name">Admin: Full Access</field>
+            <field name="name">Admin: Full Access All Models</field>
             <field name="model_id" ref="model_stock_order"/>
             <field name="domain_force">[(1, '=', 1)]</field>
-            <field name="groups" eval="[(4, ref('group_stock_admin'))]"/>
+            <field name="groups" eval="[(4, ref('base.group_user'))]"/>
         </record>
         
     </data>

@@ -295,4 +295,23 @@ class StockPosition(models.Model):
                 'default_price': self.security_id.current_price,
                 'default_order_type': 'limit'
             }
-        } 
+        }
+    
+    def _apply_ir_rules(self, query, mode='read'):
+        """Override to check user_type instead of relying only on groups"""
+        if self.env.user.user_type in ['broker', 'admin']:
+            # Brokers and admins can see all positions
+            return super(StockPosition, self)._apply_ir_rules(query, mode)
+        else:
+            # Other users only see their own positions
+            query.where_clause += ' AND "stock_position"."user_id" = %s'
+            query.where_clause_params.append(self.env.user.id)
+            return super(StockPosition, self)._apply_ir_rules(query, mode)
+    
+    @api.model
+    def _search(self, domain, offset=0, limit=None, order=None):
+        """Override search to apply user_type based filtering"""
+        if self.env.user.user_type not in ['broker', 'admin']:
+            # Add domain filter for non-broker/admin users
+            domain += [('user_id', '=', self.env.user.id)]
+        return super(StockPosition, self)._search(domain, offset=offset, limit=limit, order=order) 

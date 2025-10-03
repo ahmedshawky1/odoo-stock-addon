@@ -240,11 +240,11 @@
                 <t t-if="active_session">
                     <div class="row">
                         <div class="col-md-8">
-                            <form id="order_form" method="post">
+                            <form id="order_form" onsubmit="return false;">
                                 <input type="hidden" name="csrf_token" t-att-value="request.csrf_token()"/>
                                 
-                                <!-- Client Selection for Brokers -->
-                                <t t-if="user.user_type == 'broker'">
+                                <!-- Client Selection for Brokers and Admins -->
+                                <t t-if="user.user_type in ['broker', 'admin']">
                                     <div class="form-group">
                                         <label for="client_id">Select Client</label>
                                         <select class="form-control" id="client_id" name="client_id" required="required">
@@ -320,7 +320,7 @@
                                     <p class="form-control-static h4" id="order_value">0.00</p>
                                 </div>
                                 
-                                <button type="submit" class="btn btn-primary">Submit Order</button>
+                                <button type="submit" id="submit-order-btn" class="btn btn-primary">Submit Order</button>
                                 <a href="/my" class="btn btn-secondary">Cancel</a>
                             </form>
                         </div>
@@ -363,104 +363,234 @@
                 </t>
             </div>
             
-            <script>
-                $(document).ready(function() {
-                    // Calculate order value
-                    function calculateOrderValue() {
-                        var quantity = parseFloat($('#quantity').val()) || 0;
-                        var price = parseFloat($('#price').val()) || 0;
-                        var value = quantity * price;
-                        $('#order_value').text(value.toFixed(2));
+            <script>//<![CDATA[
+                // Define functions globally so they're accessible from event handlers
+                
+                // Show notification function
+                function showNotification(title, message, type = 'info') {
+                    // Try to use existing toast system first
+                    if (window.stockPortal && window.stockPortal.showToast) {
+                        window.stockPortal.showToast(message, type);
+                        return;
                     }
                     
-                    $('#quantity, #price').on('input', calculateOrderValue);
+                    // Fallback to alert for now
+                    const typeMap = {
+                        'success': 'Success',
+                        'danger': 'Error',
+                        'warning': 'Warning',
+                        'info': 'Info'
+                    };
+                    alert(`${typeMap[type] || 'Notification'}: ${message}`);
+                }
+                
+                // Order submission with enhanced validation and debugging
+                function submitOrder(formData) {
+                    console.log('submitOrder function called');
+                    
+                    const submitBtn = document.querySelector('#submit-order-btn');
+                    if (submitBtn) {
+                        submitBtn.disabled = true;
+                        submitBtn.innerHTML = '<span class="spinner-border spinner-border-sm" role="status"></span> Submitting...';
+                    }
+                    
+                    console.log('Making fetch request to /my/order/submit');
+                    
+                    return fetch('/my/order/submit', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/x-www-form-urlencoded',
+                            'X-Requested-With': 'XMLHttpRequest'
+                        },
+                        body: new URLSearchParams(formData)
+                    })
+                    .then(response => {
+                        console.log('Response received:', response.status, response.statusText);
+                        
+                        if (!response.ok) {
+                            throw new Error(`HTTP error! status: ${response.status}`);
+                        }
+                        
+                        return response.json();
+                    })
+                    .then(data => {
+                        console.log('Response data:', data);
+                        
+                        if (submitBtn) {
+                            submitBtn.disabled = false;
+                            submitBtn.innerHTML = 'Submit Order';
+                        }
+                        
+                        if (data.success) {
+                            showNotification('Success', data.message || 'Order submitted successfully', 'success');
+                            // Clear form on success
+                            const form = document.getElementById('order_form');
+                            if (form) form.reset();
+                            // Refresh portfolio data if function exists
+                            if (typeof refreshPortfolioSummary === 'function') {
+                                setTimeout(refreshPortfolioSummary, 1000);
+                            }
+                        } else {
+                            showNotification('Error', data.error || 'Unknown error occurred', 'danger');
+                        }
+                        
+                        return data;
+                    })
+                    .catch(error => {
+                        console.error('Order submission error:', error);
+                        
+                        if (submitBtn) {
+                            submitBtn.disabled = false;
+                            submitBtn.innerHTML = 'Submit Order';
+                        }
+                        
+                        showNotification('Error', 'Network error occurred: ' + error.message, 'danger');
+                        throw error;
+                    });
+                }
+                
+                // Now setup event listeners when DOM is ready
+                document.addEventListener('DOMContentLoaded', function() {
+                    // Calculate order value
+                    function calculateOrderValue() {
+                        var quantityEl = document.getElementById('quantity');
+                        var priceEl = document.getElementById('price');
+                        var orderValueEl = document.getElementById('order_value');
+                        
+                        if (!quantityEl || !priceEl || !orderValueEl) return;
+                        
+                        var quantity = parseFloat(quantityEl.value) || 0;
+                        var price = parseFloat(priceEl.value) || 0;
+                        var value = quantity * price;
+                        orderValueEl.textContent = value.toFixed(2);
+                    }
+                    
+                    // Attach event listeners for calculation
+                    var quantityEl = document.getElementById('quantity');
+                    var priceEl = document.getElementById('price');
+                    if (quantityEl) quantityEl.addEventListener('input', calculateOrderValue);
+                    if (priceEl) priceEl.addEventListener('input', calculateOrderValue);
                     
                     // Handle order type change
-                    $('input[name="order_type"]').change(function() {
-                        if ($(this).val() === 'market') {
-                            $('#price_group').hide();
-                            $('#price').prop('required', false);
-                        } else {
-                            $('#price_group').show();
-                            $('#price').prop('required', true);
-                        }
-                    });
-                    
-                    // Handle side change
-                    $('input[name="side"]').change(function() {
-                        if ($(this).val() === 'sell') {
-                            $('#positions_card').show();
-                        } else {
-                            $('#positions_card').hide();
-                        }
-                    });
-                    
-                    // Set current price when security changes
-                    $('#security_id').change(function() {
-                        var selectedOption = $(this).find('option:selected');
-                        var currentPrice = selectedOption.data('price');
-                        if (currentPrice) {
-                            $('#price').val(currentPrice);
-                            calculateOrderValue();
-                        }
-                    });
-                    
-                    // Handle client selection change (for brokers)
-                    $('#client_id').change(function() {
-                        var selectedOption = $(this).find('option:selected');
-                        var clientCash = selectedOption.data('cash');
-                        if (clientCash !== undefined) {
-                            $('#client_cash').text('Cash Balance: $' + clientCash.toLocaleString('en-US', {minimumFractionDigits: 2}));
-                            $('#client_info').show();
-                        } else {
-                            $('#client_info').hide();
-                        }
-                    });
-                    
-                    // Submit order
-                    $('#order_form').submit(function(e) {
-                        e.preventDefault();
-                        
-                        var formData = {
-                            security_id: $('#security_id').val(),
-                            side: $('input[name="side"]:checked').val(),
-                            order_type: $('input[name="order_type"]:checked').val(),
-                            quantity: $('#quantity').val(),
-                            price: $('#price').val()
-                        };
-                        
-                        // Add client_id if broker is placing order
-                        if ($('#client_id').length) {
-                            formData.client_id = $('#client_id').val();
-                            if (!formData.client_id) {
-                                alert('Please select a client');
-                                return;
-                            }
-                        }
-                        
-                        $.ajax({
-                            url: '/my/order/create',
-                            type: 'POST',
-                            contentType: 'application/json',
-                            data: JSON.stringify(formData),
-                            headers: {
-                                'X-Csrf-Token': $('input[name="csrf_token"]').val()
-                            },
-                            success: function(result) {
-                                if (result.success) {
-                                    alert(result.message);
-                                    window.location.href = '/my/orders';
-                                } else {
-                                    alert('Error: ' + result.error);
-                                }
-                            },
-                            error: function() {
-                                alert('Error submitting order');
+                    var orderTypeInputs = document.querySelectorAll('input[name="order_type"]');
+                    orderTypeInputs.forEach(function(input) {
+                        input.addEventListener('change', function() {
+                            var priceGroup = document.getElementById('price_group');
+                            var priceInput = document.getElementById('price');
+                            if (this.value === 'market') {
+                                if (priceGroup) priceGroup.style.display = 'none';
+                                if (priceInput) priceInput.required = false;
+                            } else {
+                                if (priceGroup) priceGroup.style.display = 'block';
+                                if (priceInput) priceInput.required = true;
                             }
                         });
                     });
+                    
+                    // Handle side change
+                    var sideInputs = document.querySelectorAll('input[name="side"]');
+                    sideInputs.forEach(function(input) {
+                        input.addEventListener('change', function() {
+                            var positionsCard = document.getElementById('positions_card');
+                            if (positionsCard) {
+                                if (this.value === 'sell') {
+                                    positionsCard.style.display = 'block';
+                                } else {
+                                    positionsCard.style.display = 'none';
+                                }
+                            }
+                        });
+                    });
+                    
+                    // Set current price when security changes
+                    var securitySelect = document.getElementById('security_id');
+                    if (securitySelect) {
+                        securitySelect.addEventListener('change', function() {
+                            var selectedOption = this.options[this.selectedIndex];
+                            var currentPrice = selectedOption.getAttribute('data-price');
+                            var priceEl = document.getElementById('price');
+                            if (currentPrice && priceEl) {
+                                priceEl.value = currentPrice;
+                                calculateOrderValue();
+                            }
+                        });
+                    }
+                    
+                    // Handle client selection change (for brokers and admins)
+                    var clientSelect = document.getElementById('client_id');
+                    if (clientSelect) {
+                        clientSelect.addEventListener('change', function() {
+                            var selectedOption = this.options[this.selectedIndex];
+                            var clientCash = selectedOption.getAttribute('data-cash');
+                            var clientCashEl = document.getElementById('client_cash');
+                            var clientInfoEl = document.getElementById('client_info');
+                            
+                            if (clientCash !== null && clientCash !== undefined && clientCashEl && clientInfoEl) {
+                                var cashValue = parseFloat(clientCash);
+                                clientCashEl.textContent = 'Cash Balance: $' + cashValue.toLocaleString('en-US', {minimumFractionDigits: 2});
+                                clientInfoEl.style.display = 'block';
+                            } else if (clientInfoEl) {
+                                clientInfoEl.style.display = 'none';
+                            }
+                        });
+                    }
+                    
+                    // Modern form submission with better UX - with enhanced debugging
+                    var orderForm = document.getElementById('order_form');
+                    if (orderForm) {
+                        orderForm.addEventListener('submit', function(e) {
+                            console.log('Form submit event triggered');
+                            e.preventDefault();
+                            e.stopPropagation();
+                            
+                            console.log('Form submission prevented, processing...');
+                            
+                            // Collect form data
+                            const formData = new FormData(this);
+                            
+                            // Add client_id if broker/admin is placing order
+                            var clientIdEl = document.getElementById('client_id');
+                            if (clientIdEl && clientIdEl.value) {
+                                formData.set('client_id', clientIdEl.value);
+                            } else if (clientIdEl) {
+                                showNotification('Error', 'Please select a client', 'danger');
+                                return false;
+                            }
+                            
+                            console.log('Calling submitOrder function...');
+                            
+                            // Submit using the modern function
+                            if (window.stockPortal && window.stockPortal.submitOrder) {
+                                window.stockPortal.submitOrder(formData);
+                            } else {
+                                // Fallback to direct fetch
+                                submitOrder(formData);
+                            }
+                            
+                            return false; // Ensure form doesn't submit normally
+                        });
+                    }
+                    
+                    // Direct button click handler to bypass any form submission
+                    var submitBtn = document.getElementById('submit-order-btn');
+                    if (submitBtn) {
+                        submitBtn.addEventListener('click', function(e) {
+                            console.log('Submit button clicked - preventing default and calling handler');
+                            e.preventDefault();
+                            e.stopPropagation();
+                            
+                            // Directly trigger the form submit event which has preventDefault
+                            var orderForm = document.getElementById('order_form');
+                            if (orderForm) {
+                                var event = new Event('submit', {bubbles: true, cancelable: true});
+                                orderForm.dispatchEvent(event);
+                            }
+                            
+                            return false;
+                        });
+                    }
                 });
-            </script>
+            //]]></script>
     </template>
     
     <!-- Market Data Page -->
@@ -654,74 +784,6 @@
                 });
             }
             
-            // Order submission with enhanced validation
-            function submitOrder(formData) {
-                const submitBtn = document.querySelector('#submit-order-btn');
-                if (submitBtn) {
-                    submitBtn.disabled = true;
-                    submitBtn.innerHTML = '<span class="spinner-border spinner-border-sm" role="status"></span> Submitting...';
-                }
-                
-                return fetch('/my/order/submit', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/x-www-form-urlencoded',
-                        'X-Requested-With': 'XMLHttpRequest'
-                    },
-                    body: new URLSearchParams(formData)
-                })
-                .then(response => response.json())
-                .then(data => {
-                    if (submitBtn) {
-                        submitBtn.disabled = false;
-                        submitBtn.innerHTML = 'Submit Order';
-                    }
-                    
-                    if (data.success) {
-                        showNotification('Success', data.message, 'success');
-                        // Refresh portfolio data
-                        setTimeout(refreshPortfolioSummary, 1000);
-                    } else {
-                        showNotification('Error', data.error, 'danger');
-                    }
-                    
-                    return data;
-                })
-                .catch(error => {
-                    if (submitBtn) {
-                        submitBtn.disabled = false;
-                        submitBtn.innerHTML = 'Submit Order';
-                    }
-                    console.error('Order submission error:', error);
-                    showNotification('Error', 'Network error occurred', 'danger');
-                    throw error;
-                });
-            }
-            
-            // Notification system
-            function showNotification(title, message, type) {
-                // Remove existing notifications
-                const existing = document.querySelectorAll('.stock-notification');
-                existing.forEach(el => el.remove());
-                
-                const notification = document.createElement('div');
-                notification.className = `alert alert-${type} alert-dismissible stock-notification`;
-                notification.style.cssText = 'position: fixed; top: 20px; right: 20px; z-index: 9999; min-width: 300px;';
-                notification.innerHTML = `
-                    <strong>${title}</strong> ${message}
-                    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
-                `;
-                
-                document.body.appendChild(notification);
-                
-                // Auto-remove after 5 seconds
-                setTimeout(() => {
-                    if (notification.parentNode) {
-                        notification.remove();
-                    }
-                }, 5000);
-            }
-            
             // Initialize when DOM is loaded
             document.addEventListener('DOMContentLoaded', function() {
                 // Start periodic updates for real-time data
@@ -737,6 +799,7 @@
             });
             
             // Expose functions globally
+            window.stockPortal = window.stockPortal || {};
             window.stockPortal.refreshPortfolioSummary = refreshPortfolioSummary;
             window.stockPortal.refreshMarketQuotes = refreshMarketQuotes;
             window.stockPortal.submitOrder = submitOrder;

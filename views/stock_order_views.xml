@@ -30,7 +30,7 @@
                     </div>
                     <group>
                         <group string="Order Details">
-                            <field name="user_id" options="{'no_create': True}"/>
+                            <field name="user_id" options="{'no_create': True}" domain="[('share', '=', False), ('user_type', '=', 'investor')]"/>
                             <field name="broker_id" readonly="1" options="{'no_create': True}"/>
                             <field name="session_id" options="{'no_create': True}" domain="[('state', '=', 'open')]"/>
                             <field name="security_id" options="{'no_create': True}"/>

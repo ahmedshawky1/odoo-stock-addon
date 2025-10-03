@@ -518,3 +518,11 @@ class StockOrder(models.Model):
         for order in expired_orders:
             order.status = 'expired'
             order.message_post(body="Order expired at end of trading session") 
+    
+    @api.model
+    def _search(self, domain, offset=0, limit=None, order=None):
+        """Override search to apply user_type based filtering"""
+        if self.env.user.user_type not in ['broker', 'admin']:
+            # Add domain filter for non-broker/admin users
+            domain += [('user_id', '=', self.env.user.id)]
+        return super(StockOrder, self)._search(domain, offset=offset, limit=limit, order=order) 
