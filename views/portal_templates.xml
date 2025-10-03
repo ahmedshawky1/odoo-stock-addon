@@ -742,7 +742,7 @@
             <div class="alert alert-info" t-if="active_session">
                 <strong><i class="fa fa-clock-o"></i> Active Session:</strong>
                 <t t-esc="active_session.name"/> - 
-                Session ends at <t t-esc="active_session.end_time" t-options='{"widget": "datetime"}'/>
+                Session ends at <t t-esc="active_session.planned_end_date" t-options='{"widget": "datetime"}'/>
             </div>
             <div class="alert alert-warning" t-if="not active_session">
                 <strong><i class="fa fa-exclamation-triangle"></i> No Active Session</strong>

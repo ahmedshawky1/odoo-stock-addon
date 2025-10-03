@@ -85,7 +85,7 @@
         <field name="name">stock.order.tree</field>
         <field name="model">stock.order</field>
         <field name="arch" type="xml">
-            <list string="Orders" decoration-success="status == 'filled'" decoration-warning="status == 'partial'" decoration-danger="status in ['cancelled', 'rejected']">
+            <list string="Orders" create="true" decoration-success="status == 'filled'" decoration-warning="status == 'partial'" decoration-danger="status in ['cancelled', 'rejected']">
                 <field name="name"/>
                 <field name="order_date"/>
                 <field name="user_id"/>
@@ -172,6 +172,8 @@
                 <field name="security_id"/>
                 <filter string="My Orders" name="filter_my_orders" domain="[('user_id', '=', uid)]"/>
                 <separator/>
+                <filter string="Today" name="filter_today" domain="[('create_date', '&gt;=', context_today().strftime('%Y-%m-%d'))]"/>
+                <separator/>
                 <filter string="Buy Orders" name="filter_buy" domain="[('side', '=', 'buy')]"/>
                 <filter string="Sell Orders" name="filter_sell" domain="[('side', '=', 'sell')]"/>
                 <separator/>
@@ -197,7 +199,7 @@
         <field name="name">Orders</field>
         <field name="res_model">stock.order</field>
         <field name="view_mode">list,kanban,form</field>
-        <field name="context">{'search_default_filter_my_orders': 1, 'search_default_filter_today': 1}</field>
+        <field name="context">{}</field>
         <field name="help" type="html">
             <p class="o_view_nocontent_smiling_face">
                 Place a new order
