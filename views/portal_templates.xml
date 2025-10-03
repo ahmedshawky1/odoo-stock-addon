@@ -156,67 +156,86 @@
     
     <!-- Portfolio Page -->
     <template id="portal_my_portfolio" name="My Portfolio">
-        <t t-call="portal.portal_layout">
-            <t t-set="breadcrumbs_searchbar" t-value="True"/>
-            
-            <t t-call="portal.portal_searchbar">
-                <t t-set="title">My Portfolio</t>
-            </t>
-            
-            <t t-if="not positions">
-                <p>You don't have any positions yet.</p>
-            </t>
-            
-            <t t-if="positions" t-call="portal.portal_table">
-                <thead>
-                    <tr class="active">
-                        <th>Security</th>
-                        <th class="text-right">Quantity</th>
-                        <th class="text-right">Avg Cost</th>
-                        <th class="text-right">Market Value</th>
-                        <th class="text-right">Unrealized P&amp;L</th>
-                        <th class="text-right">P&amp;L %</th>
-                        <th class="text-right">Weight %</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    <t t-foreach="positions" t-as="position">
-                        <tr>
-                            <td><t t-esc="position.security_id.symbol"/> - <t t-esc="position.security_id.name"/></td>
-                            <td class="text-right"><t t-esc="position.quantity"/></td>
-                            <td class="text-right"><t t-esc="position.average_cost" t-options='{"widget": "float", "precision": 2}'/></td>
-                            <td class="text-right"><t t-esc="position.market_value or 0.0" t-options='{"widget": "monetary", "display_currency": request.env.company.currency_id}'/></td>
-                            <td class="text-right">
-                                <span t-attf-class="#{(position.unrealized_pnl or 0.0) >= 0 and 'text-success' or 'text-danger'}">
-                                    <t t-esc="position.unrealized_pnl or 0.0" t-options='{"widget": "monetary", "display_currency": request.env.company.currency_id}'/>
-                                </span>
-                            </td>
-                            <td class="text-right">
-                                <span t-attf-class="#{(position.unrealized_pnl_percent or 0.0) >= 0 and 'text-success' or 'text-danger'}">
-                                    <t t-esc="position.unrealized_pnl_percent" t-options='{"widget": "float", "precision": 2}'/>%
-                                </span>
-                            </td>
-                            <td class="text-right"><t t-esc="position.portfolio_weight" t-options='{"widget": "float", "precision": 2}'/>%</td>
-                        </tr>
-                    </t>
-                </tbody>
-            </t>
+        <t t-call="stock_market_simulation.market_portal_layout">
+            <div class="container-fluid">
+                <div class="page-header mb-4">
+                    <h1 class="h2">My Portfolio</h1>
+                </div>
+                
+                <t t-if="not positions">
+                    <div class="alert alert-info">
+                        <i class="fa fa-info-circle"/> You don't have any positions yet.
+                    </div>
+                </t>
+                
+                <t t-if="positions">
+                    <div class="card">
+                        <div class="card-header">
+                            <h5><i class="fa fa-briefcase"/> Portfolio Positions</h5>
+                        </div>
+                        <div class="card-body p-0">
+                            <div class="table-responsive">
+                                <table class="table table-sm">
+                                    <thead>
+                                        <tr class="active">
+                                            <th>Security</th>
+                                            <th class="text-right">Quantity</th>
+                                            <th class="text-right">Avg Cost</th>
+                                            <th class="text-right">Market Value</th>
+                                            <th class="text-right">Unrealized P&amp;L</th>
+                                            <th class="text-right">P&amp;L %</th>
+                                            <th class="text-right">Weight %</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        <t t-foreach="positions" t-as="position">
+                                            <tr>
+                                                <td><t t-esc="position.security_id.symbol"/> - <t t-esc="position.security_id.name"/></td>
+                                                <td class="text-right"><t t-esc="position.quantity"/></td>
+                                                <td class="text-right"><t t-esc="position.average_cost" t-options='{"widget": "float", "precision": 2}'/></td>
+                                                <td class="text-right"><t t-esc="position.market_value or 0.0" t-options='{"widget": "monetary", "display_currency": request.env.company.currency_id}'/></td>
+                                                <td class="text-right">
+                                                    <span t-attf-class="#{(position.unrealized_pnl or 0.0) >= 0 and 'text-success' or 'text-danger'}">
+                                                        <t t-esc="position.unrealized_pnl or 0.0" t-options='{"widget": "monetary", "display_currency": request.env.company.currency_id}'/>
+                                                    </span>
+                                                </td>
+                                                <td class="text-right">
+                                                    <span t-attf-class="#{(position.unrealized_pnl_percent or 0.0) >= 0 and 'text-success' or 'text-danger'}">
+                                                        <t t-esc="position.unrealized_pnl_percent" t-options='{"widget": "float", "precision": 2}'/>%
+                                                    </span>
+                                                </td>
+                                                <td class="text-right"><t t-esc="position.portfolio_weight" t-options='{"widget": "float", "precision": 2}'/>%</td>
+                                            </tr>
+                                        </t>
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                </t>
+            </div>
         </t>
     </template>
     
     <!-- Order Entry Page -->
     <template id="portal_order_new" name="Place New Order">
-        <t t-call="portal.portal_layout">
-            <t t-set="no_breadcrumbs" t-value="True"/>
+        <t t-call="stock_market_simulation.market_portal_layout">
+            <t t-call="stock_market_simulation.portal_order_new_content"/>
+        </t>
+    </template>
+    
+    <!-- Order Entry Content (for embedding in other templates) -->
+    <template id="portal_order_new_content" name="Place New Order Content">
+        <div class="container-fluid">
+            <div class="page-header mb-4">
+                <h1 class="h2">Place New Order</h1>
+            </div>
             
-            <div class="container mt-3">
-                <h2>Place New Order</h2>
-                
-                <t t-if="error">
-                    <div class="alert alert-danger" role="alert">
-                        <t t-esc="error"/>
-                    </div>
-                </t>
+            <t t-if="error">
+                <div class="alert alert-danger" role="alert">
+                    <t t-esc="error"/>
+                </div>
+            </t>
                 
                 <t t-if="active_session">
                     <div class="row">
@@ -442,16 +461,15 @@
                     });
                 });
             </script>
-        </t>
     </template>
     
     <!-- Market Data Page -->
     <template id="portal_market_data" name="Market Data">
-        <t t-call="portal.portal_layout">
-            <t t-set="no_breadcrumbs" t-value="True"/>
-            
-            <div class="container mt-3">
-                <h2>Market Data</h2>
+        <t t-call="stock_market_simulation.market_portal_layout">
+            <div class="container-fluid">
+                <div class="page-header mb-4">
+                    <h1 class="h2">Market Data</h1>
+                </div>
                 
                 <ul class="nav nav-tabs" role="tablist">
                     <li class="nav-item">
@@ -727,228 +745,374 @@
     </template>
     
     <!-- Custom Market Portal Layout -->
-    <template id="market_portal_layout" name="Market Portal Layout">
-        <t t-call="portal.portal_layout">
-            <t t-set="breadcrumbs_searchbar" t-value="True"/>
+    <!-- Enhanced Portal Layout with Sidebar -->
+    <template id="market_portal_layout" name="Stock Market Portal Layout">
+        <t t-call="web.frontend_layout">
+            <t t-set="pageName" t-value="'stock_market'"/>
+            <t t-set="no_breadcrumbs" t-value="True"/>
             
-            <!-- Custom Navigation Bar -->
-            <nav class="navbar navbar-expand-lg navbar-dark bg-primary mb-4">
-                <div class="container-fluid">
-                    <a class="navbar-brand" href="/market">
-                        <i class="fa fa-line-chart me-2"></i>Stock Market Portal
-                    </a>
+            <!-- Hide Default Navbar -->
+            <style>
+                /* Hide Odoo's default navbar to prevent duplication */
+                .o_main_navbar,
+                .navbar.navbar-expand.navbar-light.bg-light,
+                header.o_main_navbar {
+                    display: none !important;
+                }
+                
+                /* Ensure our custom layout takes full viewport */
+                .stock-portal-layout {
+                    min-height: 100vh;
+                    position: relative;
+                }
+                
+                /* Custom navbar user dropdown styling */
+                .navbar-user.dropdown {
+                    position: relative;
+                }
+                
+                .user-dropdown-toggle {
+                    display: flex;
+                    align-items: center;
+                    text-decoration: none;
+                    color: inherit;
+                    cursor: pointer;
+                    padding: 0.5rem;
+                    border-radius: 0.375rem;
+                    transition: background-color 0.2s ease;
+                }
+                
+                .user-dropdown-toggle:hover {
+                    background-color: rgba(255, 255, 255, 0.1);
+                    color: inherit;
+                    text-decoration: none;
+                }
+                
+                .navbar-user .dropdown-menu {
+                    min-width: 200px;
+                    border: 1px solid rgba(255, 255, 255, 0.1);
+                    background-color: #fff;
+                    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+                    margin-top: 0.5rem;
+                }
+                
+                .navbar-user .dropdown-item {
+                    padding: 0.75rem 1rem;
+                    color: #374151;
+                    display: flex;
+                    align-items: center;
+                }
+                
+                .navbar-user .dropdown-item:hover {
+                    background-color: #f3f4f6;
+                    color: #1f2937;
+                }
+                
+                .navbar-user .dropdown-item i {
+                    width: 16px;
+                    text-align: center;
+                }
+            </style>
+            
+            <div class="stock-portal-layout">
+                <!-- Sidebar Navigation -->
+                <nav class="stock-sidebar" id="stockSidebar">
+                    <!-- Sidebar Header -->
+                    <div class="stock-sidebar-header">
+                        <a href="/market" class="sidebar-brand">
+                            <div class="sidebar-brand-icon">
+                                <i class="fa fa-chart-line"></i>
+                            </div>
+                            <div class="sidebar-brand-text">Stock Market</div>
+                        </a>
+                        <div class="stock-sidebar-toggle" onclick="toggleStockSidebar()">
+                            <i class="fa fa-angle-left"></i>
+                        </div>
+                    </div>
                     
-                    <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav" aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation">
-                        <span class="navbar-toggler-icon"></span>
-                    </button>
-                    
-                    <div class="collapse navbar-collapse" id="navbarNav">
-                        <ul class="navbar-nav me-auto">
-                            <!-- Dashboard -->
-                            <li class="nav-item">
-                                <a class="nav-link" href="/market">
-                                    <i class="fa fa-dashboard me-1"></i>Dashboard
+                    <!-- Sidebar Navigation -->
+                    <div class="stock-sidebar-nav">
+                        <!-- Main Section -->
+                        <div class="sidebar-section">
+                            <div class="sidebar-section-title">Trading</div>
+                            <a href="/market" class="nav-link" data-page="dashboard">
+                                <i class="fa fa-tachometer-alt"></i>
+                                <span class="nav-text">Dashboard</span>
+                            </a>
+                            <a href="/market/trading" class="nav-link" data-page="trading">
+                                <i class="fa fa-exchange-alt"></i>
+                                <span class="nav-text">Trading</span>
+                            </a>
+                            <t t-if="request.env.user.user_type in ['investor', 'broker']">
+                                <a href="/market/orders" class="nav-link" data-page="orders">
+                                    <i class="fa fa-list-ul"></i>
+                                    <span class="nav-text">Orders</span>
+                                    <span class="nav-badge" t-if="order_count"><t t-esc="order_count"/></span>
                                 </a>
-                            </li>
-                            
-                            <!-- Trading -->
-                            <li class="nav-item dropdown">
-                                <a class="nav-link dropdown-toggle" href="#" role="button" data-bs-toggle="dropdown">
-                                    <i class="fa fa-exchange-alt me-1"></i>Trading
-                                </a>
-                                <ul class="dropdown-menu">
-                                    <li><a class="dropdown-item" href="/market/trading">
-                                        <i class="fa fa-plus me-1"></i>Place Orders
-                                    </a></li>
-                                    <li><a class="dropdown-item" href="/market/orders">
-                                        <i class="fa fa-list me-1"></i>My Orders
-                                    </a></li>
-                                    <li><a class="dropdown-item" href="/my/trades">
-                                        <i class="fa fa-handshake me-1"></i>Trade History
-                                    </a></li>
-                                </ul>
-                            </li>
-                            
-                            <!-- Portfolio -->
-                            <li class="nav-item dropdown">
-                                <a class="nav-link dropdown-toggle" href="#" role="button" data-bs-toggle="dropdown">
-                                    <i class="fa fa-briefcase me-1"></i>Portfolio
-                                </a>
-                                <ul class="dropdown-menu">
-                                    <li><a class="dropdown-item" href="/market/portfolio">
-                                        <i class="fa fa-pie-chart me-1"></i>Holdings
-                                    </a></li>
-                                    <li><a class="dropdown-item" href="/my/positions">
-                                        <i class="fa fa-bar-chart me-1"></i>Positions
-                                    </a></li>
-                                    <li><a class="dropdown-item" href="/my/performance">
-                                        <i class="fa fa-trending-up me-1"></i>Performance
-                                    </a></li>
-                                </ul>
-                            </li>
-                            
-                            <!-- Banking -->
-                            <li class="nav-item dropdown">
-                                <a class="nav-link dropdown-toggle" href="#" role="button" data-bs-toggle="dropdown">
-                                    <i class="fa fa-university me-1"></i>Banking
-                                </a>
-                                <ul class="dropdown-menu">
-                                    <li><a class="dropdown-item" href="/my/deposits">
-                                        <i class="fa fa-piggy-bank me-1"></i>Deposits
-                                    </a></li>
-                                    <li><a class="dropdown-item" href="/my/loans">
-                                        <i class="fa fa-credit-card me-1"></i>Loans
-                                    </a></li>
-                                    <li><a class="dropdown-item" href="/my/banking">
-                                        <i class="fa fa-bank me-1"></i>Banking Dashboard
-                                    </a></li>
-                                </ul>
-                            </li>
-                            
-                            <!-- Market Data -->
-                            <li class="nav-item dropdown">
-                                <a class="nav-link dropdown-toggle" href="#" role="button" data-bs-toggle="dropdown">
-                                    <i class="fa fa-chart-line me-1"></i>Market
-                                </a>
-                                <ul class="dropdown-menu">
-                                    <li><a class="dropdown-item" href="/my/market">
-                                        <i class="fa fa-globe me-1"></i>Market Data
-                                    </a></li>
-                                    <li><a class="dropdown-item" href="/my/securities">
-                                        <i class="fa fa-certificate me-1"></i>Securities
-                                    </a></li>
-                                    <li><a class="dropdown-item" href="/my/watchlist">
-                                        <i class="fa fa-eye me-1"></i>Watchlist
-                                    </a></li>
-                                </ul>
-                            </li>
-                            
-                            <!-- Broker Functions -->
-                            <t t-if="user.user_type == 'broker'">
-                                <li class="nav-item dropdown">
-                                    <a class="nav-link dropdown-toggle" href="#" role="button" data-bs-toggle="dropdown">
-                                        <i class="fa fa-users me-1"></i>Clients
-                                    </a>
-                                    <ul class="dropdown-menu">
-                                        <li><a class="dropdown-item" href="/my/clients">
-                                            <i class="fa fa-user-friends me-1"></i>Client List
-                                        </a></li>
-                                        <li><a class="dropdown-item" href="/my/commissions">
-                                            <i class="fa fa-dollar-sign me-1"></i>Commissions
-                                        </a></li>
-                                        <li><a class="dropdown-item" href="/my/client-orders">
-                                            <i class="fa fa-clipboard-list me-1"></i>Client Orders
-                                        </a></li>
-                                    </ul>
-                                </li>
                             </t>
-                            
-                            <!-- Admin Functions -->
-                            <t t-if="user.user_type == 'admin'">
-                                <li class="nav-item dropdown">
-                                    <a class="nav-link dropdown-toggle" href="#" role="button" data-bs-toggle="dropdown">
-                                        <i class="fa fa-cog me-1"></i>Admin
-                                    </a>
-                                    <ul class="dropdown-menu">
-                                        <li><a class="dropdown-item" href="/web#menu_id=stock_market_simulation.menu_stock_root">
-                                            <i class="fa fa-tachometer-alt me-1"></i>Admin Panel
-                                        </a></li>
-                                        <li><a class="dropdown-item" href="/my/sessions">
-                                            <i class="fa fa-calendar me-1"></i>Sessions
-                                        </a></li>
-                                        <li><a class="dropdown-item" href="/my/reports">
-                                            <i class="fa fa-file-alt me-1"></i>Reports
-                                        </a></li>
-                                    </ul>
-                                </li>
-                            </t>
-                        </ul>
+                        </div>
                         
-                        <!-- User Info -->
-                        <ul class="navbar-nav">
-                            <li class="nav-item dropdown">
-                                <a class="nav-link dropdown-toggle" href="#" role="button" data-bs-toggle="dropdown">
-                                    <i class="fa fa-user-circle me-1"></i><t t-esc="user.name"/>
-                                    <span class="badge bg-light text-dark ms-1"><t t-esc="user.user_type.title()"/></span>
+                        <!-- Portfolio Section -->
+                        <t t-if="request.env.user.user_type in ['investor', 'broker']">
+                            <div class="sidebar-section">
+                                <div class="sidebar-section-title">Portfolio</div>
+                                <a href="/market/portfolio" class="nav-link" data-page="portfolio">
+                                    <i class="fa fa-briefcase"></i>
+                                    <span class="nav-text">Positions</span>
+                                    <span class="nav-badge" t-if="position_count"><t t-esc="position_count"/></span>
                                 </a>
-                                <ul class="dropdown-menu">
-                                    <li><a class="dropdown-item" href="/my/account">
-                                        <i class="fa fa-user me-1"></i>My Account
-                                    </a></li>
-                                    <li><a class="dropdown-item" href="/my/security">
-                                        <i class="fa fa-shield-alt me-1"></i>Security
-                                    </a></li>
-                                    <li><hr class="dropdown-divider"/></li>
-                                    <li><a class="dropdown-item" href="/web/session/logout">
-                                        <i class="fa fa-sign-out-alt me-1"></i>Logout
-                                    </a></li>
-                                </ul>
-                            </li>
-                        </ul>
+                                <a href="/market/trades" class="nav-link" data-page="trades">
+                                    <i class="fa fa-history"></i>
+                                    <span class="nav-text">Trade History</span>
+                                </a>
+                                <a href="/market/performance" class="nav-link" data-page="performance">
+                                    <i class="fa fa-chart-area"></i>
+                                    <span class="nav-text">Performance</span>
+                                </a>
+                            </div>
+                        </t>
+                        
+                        <!-- Banking Section -->
+                        <t t-if="request.env.user.user_type in ['investor', 'banker']">
+                            <div class="sidebar-section">
+                                <div class="sidebar-section-title">Banking</div>
+                                <a href="/market/deposits" class="nav-link" data-page="deposits">
+                                    <i class="fa fa-piggy-bank"></i>
+                                    <span class="nav-text">Deposits</span>
+                                    <span class="nav-badge" t-if="deposit_count"><t t-esc="deposit_count"/></span>
+                                </a>
+                                <a href="/market/loans" class="nav-link" data-page="loans">
+                                    <i class="fa fa-hand-holding-usd"></i>
+                                    <span class="nav-text">Loans</span>
+                                    <span class="nav-badge" t-if="loan_count"><t t-esc="loan_count"/></span>
+                                </a>
+                            </div>
+                        </t>
+                        
+                        <!-- Broker Section -->
+                        <t t-if="request.env.user.user_type == 'broker'">
+                            <div class="sidebar-section">
+                                <div class="sidebar-section-title">Broker Tools</div>
+                                <a href="/market/commissions" class="nav-link" data-page="commissions">
+                                    <i class="fa fa-percentage"></i>
+                                    <span class="nav-text">Commissions</span>
+                                </a>
+                                <a href="/market/clients" class="nav-link" data-page="clients">
+                                    <i class="fa fa-users"></i>
+                                    <span class="nav-text">Clients</span>
+                                </a>
+                            </div>
+                        </t>
+                        
+                        <!-- Market Data Section -->
+                        <div class="sidebar-section">
+                            <div class="sidebar-section-title">Market</div>
+                            <a href="/market/securities" class="nav-link" data-page="securities">
+                                <i class="fa fa-chart-bar"></i>
+                                <span class="nav-text">Securities</span>
+                            </a>
+                            <a href="/market/session" class="nav-link" data-page="session">
+                                <i class="fa fa-clock"></i>
+                                <span class="nav-text">Session Info</span>
+                            </a>
+                            <a href="/market/reports" class="nav-link" data-page="reports">
+                                <i class="fa fa-file-alt"></i>
+                                <span class="nav-text">Reports</span>
+                            </a>
+                        </div>
+                        
+                        <!-- Account Section -->
+                        <div class="sidebar-section">
+                            <div class="sidebar-section-title">Account</div>
+                            <a href="/my/account" class="nav-link" data-page="account">
+                                <i class="fa fa-user-cog"></i>
+                                <span class="nav-text">Settings</span>
+                            </a>
+                            <a href="/web/session/logout" class="nav-link">
+                                <i class="fa fa-sign-out-alt"></i>
+                                <span class="nav-text">Logout</span>
+                            </a>
+                        </div>
                     </div>
-                </div>
-            </nav>
+                </nav>
+                
+                <!-- Main Content -->
+                <main class="stock-main-content">
+                    <!-- Top Navigation Bar -->
+                    <header class="stock-navbar">
+                        <div class="navbar-content">
+                            <div class="navbar-title">
+                                <i class="fa fa-chart-line title-icon"></i>
+                                <span t-esc="page_title or 'Stock Market Portal'"/>
+                            </div>
+                            
+                            <div class="navbar-actions">
+                                <!-- Session Status -->
+                                <t t-if="active_session">
+                                    <div class="navbar-notification" title="Session Active">
+                                        <i class="fa fa-clock text-success"></i>
+                                    </div>
+                                </t>
+                                <t t-if="not active_session">
+                                    <div class="navbar-notification" title="Session Closed">
+                                        <i class="fa fa-clock text-danger"></i>
+                                    </div>
+                                </t>
+                                
+                                <!-- Market Status -->
+                                <div class="navbar-notification" title="Market Status">
+                                    <i class="fa fa-globe" t-attf-style="color: #{active_session and 'var(--stock-success)' or 'var(--stock-danger)'}"></i>
+                                </div>
+                                
+                                <!-- User Info with Dropdown -->
+                                <div class="navbar-user dropdown">
+                                    <a href="#" class="user-dropdown-toggle" data-bs-toggle="dropdown" aria-expanded="false">
+                                        <div class="user-avatar">
+                                            <t t-esc="request.env.user.name[:2].upper()"/>
+                                        </div>
+                                        <div class="user-info">
+                                            <div class="user-name" t-esc="request.env.user.name"/>
+                                            <div class="user-role" t-esc="request.env.user.user_type"/>
+                                        </div>
+                                        <i class="fa fa-chevron-down ms-2"></i>
+                                    </a>
+                                    <ul class="dropdown-menu dropdown-menu-end">
+                                        <li><a class="dropdown-item" href="/my/home"><i class="fa fa-user me-2"></i>My Account</a></li>
+                                        <li><a class="dropdown-item" href="/odoo"><i class="fa fa-th me-2"></i>Backend</a></li>
+                                        <li><hr class="dropdown-divider"/></li>
+                                        <li><a class="dropdown-item" href="/web/session/logout?redirect=/"><i class="fa fa-sign-out me-2"></i>Logout</a></li>
+                                    </ul>
+                                </div>
+                            </div>
+                        </div>
+                    </header>
+                    
+                    <!-- Page Content -->
+                    <div class="container-fluid px-4 py-4">
+                        <!-- Financial Summary Cards -->
+                        <div class="stock-dashboard-stats mb-4">
+                            <div class="stock-stat-card">
+                                <div class="stat-header">
+                                    <h6 class="stat-title">Cash Balance</h6>
+                                    <div class="stat-icon" style="--icon-bg: var(--stock-success-light); --icon-color: var(--stock-success);">
+                                        <i class="fa fa-wallet"></i>
+                                    </div>
+                                </div>
+                                <div class="stat-value">
+                                    <t t-esc="cash_balance or 0.0" t-options='{"widget": "monetary", "display_currency": display_currency}'/>
+                                </div>
+                                <div class="stat-change neutral">
+                                    Available for trading
+                                </div>
+                            </div>
+                            
+                            <div class="stock-stat-card">
+                                <div class="stat-header">
+                                    <h6 class="stat-title">Portfolio Value</h6>
+                                    <div class="stat-icon" style="--icon-bg: var(--stock-info-light); --icon-color: var(--stock-info);">
+                                        <i class="fa fa-briefcase"></i>
+                                    </div>
+                                </div>
+                                <div class="stat-value">
+                                    <t t-esc="portfolio_value or 0.0" t-options='{"widget": "monetary", "display_currency": display_currency}'/>
+                                </div>
+                                <div class="stat-change neutral">
+                                    Current market value
+                                </div>
+                            </div>
+                            
+                            <div class="stock-stat-card">
+                                <div class="stat-header">
+                                    <h6 class="stat-title">Total Assets</h6>
+                                    <div class="stat-icon" style="--icon-bg: var(--stock-primary-light); --icon-color: var(--stock-primary);">
+                                        <i class="fa fa-chart-pie"></i>
+                                    </div>
+                                </div>
+                                <div class="stat-value">
+                                    <t t-esc="total_assets or 0.0" t-options='{"widget": "monetary", "display_currency": display_currency}'/>
+                                </div>
+                                <div class="stat-change neutral">
+                                    Cash + Portfolio
+                                </div>
+                            </div>
+                            
+                            <div class="stock-stat-card" t-attf-class="#{(profit_loss or 0.0) >= 0 and 'profit' or 'loss'}">
+                                <div class="stat-header">
+                                    <h6 class="stat-title">P&amp;L</h6>
+                                    <div class="stat-icon" t-attf-style="--icon-bg: #{(profit_loss or 0.0) >= 0 and 'var(--stock-success-light)' or 'var(--stock-danger-light)'}; --icon-color: #{(profit_loss or 0.0) >= 0 and 'var(--stock-success)' or 'var(--stock-danger)'};">
+                                        <i t-attf-class="fa #{(profit_loss or 0.0) >= 0 and 'fa-arrow-up' or 'fa-arrow-down'}"></i>
+                                    </div>
+                                </div>
+                                <div class="stat-value">
+                                    <t t-esc="profit_loss or 0.0" t-options='{"widget": "monetary", "display_currency": display_currency}'/>
+                                </div>
+                                <div t-attf-class="stat-change #{(profit_loss or 0.0) >= 0 and 'positive' or 'negative'}">
+                                    <i t-attf-class="fa #{(profit_loss or 0.0) >= 0 and 'fa-arrow-up' or 'fa-arrow-down'}"></i>
+                                    <t t-esc="profit_loss_percentage or 0.0"/>%
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Session Status Alert -->
+                        <div class="alert alert-info d-flex align-items-center mb-4" t-if="active_session">
+                            <i class="fa fa-clock me-2"></i>
+                            <div>
+                                <strong>Active Session:</strong> <t t-esc="active_session.name"/> - 
+                                Session ends at <t t-esc="active_session.planned_end_date" t-options='{"widget": "datetime"}'/>
+                            </div>
+                        </div>
+                        <div class="alert alert-warning d-flex align-items-center mb-4" t-if="not active_session">
+                            <i class="fa fa-exclamation-triangle me-2"></i>
+                            <div>
+                                <strong>No Active Session</strong> - Trading is currently closed
+                            </div>
+                        </div>
+
+                        <!-- Main Page Content -->
+                        <t t-raw="0"/>
+                    </div>
+                </main>
+            </div>
+        </t>
+        
+        <!-- JavaScript for Sidebar -->
+        <script>//<![CDATA[
+            function toggleStockSidebar() {
+                const sidebar = document.getElementById('stockSidebar');
+                sidebar.classList.toggle('collapsed');
+                
+                // Save state
+                const isCollapsed = sidebar.classList.contains('collapsed');
+                localStorage.setItem('stock_sidebar_collapsed', isCollapsed);
+            }
             
-            <t t-call="portal.portal_searchbar">
-                <t t-set="title">Stock Market Portal</t>
-            </t>
-
-            <!-- Financial Summary Cards -->
-            <div class="row mb-4">
-                <div class="col-md-3 mb-3">
-                    <div class="card">
-                        <div class="card-body">
-                            <h6 class="text-muted mb-2">Cash Balance</h6>
-                            <h4 class="mb-0">
-                                <t t-esc="cash_balance" t-options='{"widget": "monetary", "display_currency": display_currency}'/>
-                            </h4>
-                        </div>
-                    </div>
-                </div>
-                <div class="col-md-3 mb-3">
-                    <div class="card">
-                        <div class="card-body">
-                            <h6 class="text-muted mb-2">Portfolio Value</h6>
-                            <h4 class="mb-0">
-                                <t t-esc="portfolio_value" t-options='{"widget": "monetary", "display_currency": display_currency}'/>
-                            </h4>
-                        </div>
-                    </div>
-                </div>
-                <div class="col-md-3 mb-3">
-                    <div class="card">
-                        <div class="card-body">
-                            <h6 class="text-muted mb-2">Total Assets</h6>
-                            <h4 class="mb-0">
-                                <t t-esc="total_assets" t-options='{"widget": "monetary", "display_currency": display_currency}'/>
-                            </h4>
-                        </div>
-                    </div>
-                </div>
-                <div class="col-md-3 mb-3">
-                    <div class="card">
-                        <div class="card-body">
-                            <h6 class="text-muted mb-2">P&amp;L</h6>
-                            <h4 class="mb-0" t-attf-class="#{profit_loss >= 0 and 'text-success' or 'text-danger'}">
-                                <t t-esc="profit_loss" t-options='{"widget": "monetary", "display_currency": display_currency}'/>
-                                <small>(<t t-esc="profit_loss_percentage"/>%)</small>
-                            </h4>
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Session Info -->
-            <div class="alert alert-info" t-if="active_session">
-                <strong><i class="fa fa-clock-o"></i> Active Session:</strong>
-                <t t-esc="active_session.name"/> - 
-                Session ends at <t t-esc="active_session.planned_end_date" t-options='{"widget": "datetime"}'/>
-            </div>
-            <div class="alert alert-warning" t-if="not active_session">
-                <strong><i class="fa fa-exclamation-triangle"></i> No Active Session</strong>
-                - Trading is currently closed
-            </div>
-
+            // Load saved sidebar state
+            document.addEventListener('DOMContentLoaded', function() {
+                const isCollapsed = localStorage.getItem('stock_sidebar_collapsed') === 'true';
+                const sidebar = document.getElementById('stockSidebar');
+                if (isCollapsed && sidebar) {
+                    sidebar.classList.add('collapsed');
+                }
+                
+                // Set active navigation
+                const currentPath = window.location.pathname;
+                const navLinks = document.querySelectorAll('.stock-sidebar .nav-link');
+                navLinks.forEach(link => {
+                    link.classList.remove('active');
+                    const href = link.getAttribute('href');
+                    if (href && (currentPath === href || currentPath.startsWith(href + '/'))) {
+                        link.classList.add('active');
+                    }
+                });
+            });
+        //]]></script>
+    </template>
+    
+    <!-- Market Dashboard View -->
+    <template id="market_dashboard_view" name="Market Dashboard View">
+        <t t-call="stock_market_simulation.market_portal_layout">
+            <t t-set="page_title">Dashboard</t>
+            
             <!-- Quick Actions -->
             <div class="row mb-4" t-if="user.user_type == 'investor'">
                 <div class="col-12">
@@ -1143,7 +1307,7 @@
     <template id="market_trading_view" name="Market Trading View">
         <t t-call="stock_market_simulation.market_portal_layout">
             <h4 class="mb-4"><i class="fa fa-exchange-alt me-2"></i>Trading Platform</h4>
-            <t t-call="stock_market_simulation.portal_order_new"/>
+            <t t-call="stock_market_simulation.portal_order_new_content"/>
         </t>
     </template>
     
@@ -1202,21 +1366,24 @@
         </t>
     </template>
     
-    <!-- Remove "Powered by Odoo" Footer -->
+    <!-- Remove "Powered by Odoo" Footer - Disabled for Odoo 18 compatibility -->
+    <!-- 
     <template id="remove_odoo_branding" inherit_id="portal.portal_layout" priority="99">
-        <xpath expr="//div[@class='o_portal_footer']" position="replace">
-            <div class="o_portal_footer bg-light mt-5 py-4">
+        <xpath expr="//footer" position="replace">
+            <footer class="bg-light mt-5 py-4">
                 <div class="container">
                     <div class="text-center text-muted">
                         <p class="mb-0">© <t t-esc="datetime.datetime.now().year"/> Stock Market Simulation Portal</p>
                         <small>Professional Trading Platform</small>
                     </div>
                 </div>
-            </div>
+            </footer>
         </xpath>
     </template>
+    -->
     
-    <!-- Redirect /my to /market -->
+    <!-- Redirect /my to /market - Disabled for Odoo 18 compatibility -->
+    <!--
     <template id="redirect_my_to_market" inherit_id="portal.portal_my_home" priority="99">
         <xpath expr="//div[hasclass('o_portal_wrap')]" position="after">
             <script>
@@ -1225,6 +1392,152 @@
                 }
             </script>
         </xpath>
+    </template>
+    -->
+
+    <!-- WIKI-Style Error Page Template -->
+    <template id="stock_error_page" name="Stock Market Error Page">
+        <t t-call="web.frontend_layout">
+            <t t-set="pageName" t-value="'stock_error'"/>
+            
+            <div class="stock-portal-layout">
+                <!-- Error Page Content -->
+                <div class="container-fluid">
+                    <div class="error-page">
+                        <div class="row justify-content-center">
+                            <div class="col-lg-8 col-xl-6">
+                                <div class="error-content text-center">
+                                    <!-- Error Status -->
+                                    <div class="error-status mb-4">
+                                        <h1 class="error-code" t-esc="status_code"/>
+                                        <h2 class="error-title" t-esc="status_message"/>
+                                        <p class="error-description text-muted" t-esc="description"/>
+                                    </div>
+
+                                    <!-- Action Buttons -->
+                                    <div class="error-actions mb-5">
+                                        <a href="/market" class="btn btn-primary me-2">
+                                            <i class="fa fa-home"/> Back to Market
+                                        </a>
+                                        <a href="javascript:history.back()" class="btn btn-outline-secondary">
+                                            <i class="fa fa-arrow-left"/> Go Back
+                                        </a>
+                                    </div>
+
+                                    <!-- Suggestions (only for 404/403) -->
+                                    <t t-if="show_suggestions">
+                                        <div class="error-suggestions">
+                                            <!-- Active Sessions -->
+                                            <t t-if="suggested_sessions">
+                                                <div class="suggestion-section mb-4">
+                                                    <h5>Active Trading Sessions</h5>
+                                                    <div class="row">
+                                                        <t t-foreach="suggested_sessions" t-as="session">
+                                                            <div class="col-md-6 mb-3">
+                                                                <div class="card h-100">
+                                                                    <div class="card-body">
+                                                                        <h6 class="card-title" t-field="session.name"/>
+                                                                        <p class="card-text text-muted">
+                                                                            <span class="badge" t-attf-class="badge-#{session.state}">
+                                                                                <t t-esc="session.state.title()"/>
+                                                                            </span>
+                                                                        </p>
+                                                                        <a t-attf-href="/market/session/#{session.id}" class="btn btn-sm btn-outline-primary">
+                                                                            View Session
+                                                                        </a>
+                                                                    </div>
+                                                                </div>
+                                                            </div>
+                                                        </t>
+                                                    </div>
+                                                </div>
+                                            </t>
+
+                                            <!-- Popular Securities -->
+                                            <t t-if="popular_securities">
+                                                <div class="suggestion-section">
+                                                    <h5>Available Securities</h5>
+                                                    <div class="row">
+                                                        <t t-foreach="popular_securities" t-as="security">
+                                                            <div class="col-md-4 mb-3">
+                                                                <div class="card h-100">
+                                                                    <div class="card-body">
+                                                                        <h6 class="card-title" t-field="security.name"/>
+                                                                        <p class="card-text">
+                                                                            <small class="text-muted" t-field="security.symbol"/>
+                                                                        </p>
+                                                                        <a t-attf-href="/market/security/#{security.id}" class="btn btn-sm btn-outline-success">
+                                                                            View Details
+                                                                        </a>
+                                                                    </div>
+                                                                </div>
+                                                            </div>
+                                                        </t>
+                                                    </div>
+                                                </div>
+                                            </t>
+                                        </div>
+                                    </t>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Error Page Styles -->
+            <style>
+                .error-page {
+                    min-height: 80vh;
+                    display: flex;
+                    align-items: center;
+                    padding: 2rem 0;
+                }
+                
+                .error-code {
+                    font-size: 6rem;
+                    font-weight: 700;
+                    color: var(--stock-primary);
+                    line-height: 1;
+                    margin-bottom: 0.5rem;
+                }
+                
+                .error-title {
+                    font-size: 2rem;
+                    font-weight: 600;
+                    color: var(--stock-text-primary);
+                    margin-bottom: 1rem;
+                }
+                
+                .error-description {
+                    font-size: 1.1rem;
+                    max-width: 500px;
+                    margin: 0 auto 2rem;
+                }
+                
+                .suggestion-section {
+                    text-align: left;
+                }
+                
+                .suggestion-section h5 {
+                    color: var(--stock-text-primary);
+                    margin-bottom: 1rem;
+                    font-weight: 600;
+                }
+                
+                .badge-active {
+                    background-color: var(--stock-success);
+                }
+                
+                .badge-planned {
+                    background-color: var(--stock-warning);
+                }
+                
+                .badge-closed {
+                    background-color: var(--stock-muted);
+                }
+            </style>
+        </t>
     </template>
     
 </odoo> 
