@@ -5,12 +5,13 @@ access_stock_security_admin,stock.security admin,model_stock_security,group_stoc
 access_stock_security_user,stock.security user,model_stock_security,base.group_portal,1,0,0,0
 access_stock_order_admin,stock.order admin,model_stock_order,group_stock_admin,1,1,1,1
 access_stock_order_investor,stock.order investor,model_stock_order,group_stock_investor,1,1,1,0
-access_stock_order_broker,stock.order broker,model_stock_order,group_stock_broker,1,0,0,0
+access_stock_order_broker,stock.order broker,model_stock_order,group_stock_broker,1,1,1,0
 access_stock_trade_admin,stock.trade admin,model_stock_trade,group_stock_admin,1,1,1,1
 access_stock_trade_investor,stock.trade investor,model_stock_trade,group_stock_investor,1,0,0,0
 access_stock_trade_broker,stock.trade broker,model_stock_trade,group_stock_broker,1,0,0,0
 access_stock_position_admin,stock.position admin,model_stock_position,group_stock_admin,1,1,1,1
 access_stock_position_investor,stock.position investor,model_stock_position,group_stock_investor,1,0,0,0
+access_stock_position_broker,stock.position broker,model_stock_position,group_stock_broker,1,0,0,0
 access_stock_deposit_admin,stock.deposit admin,model_stock_deposit,group_stock_admin,1,1,1,1
 access_stock_deposit_investor,stock.deposit investor,model_stock_deposit,group_stock_investor,1,1,1,0
 access_stock_deposit_banker,stock.deposit banker,model_stock_deposit,group_stock_banker,1,1,1,0
