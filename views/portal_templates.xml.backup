@@ -156,95 +156,76 @@
     
     <!-- Portfolio Page -->
     <template id="portal_my_portfolio" name="My Portfolio">
-        <t t-call="stock_market_simulation.market_portal_layout">
-            <div class="container-fluid">
-                <div class="page-header mb-4">
-                    <h1 class="h2">My Portfolio</h1>
-                </div>
-                
-                <t t-if="not positions">
-                    <div class="alert alert-info">
-                        <i class="fa fa-info-circle"/> You don't have any positions yet.
-                    </div>
-                </t>
-                
-                <t t-if="positions">
-                    <div class="card">
-                        <div class="card-header">
-                            <h5><i class="fa fa-briefcase"/> Portfolio Positions</h5>
-                        </div>
-                        <div class="card-body p-0">
-                            <div class="table-responsive">
-                                <table class="table table-sm">
-                                    <thead>
-                                        <tr class="active">
-                                            <th>Security</th>
-                                            <th class="text-right">Quantity</th>
-                                            <th class="text-right">Avg Cost</th>
-                                            <th class="text-right">Market Value</th>
-                                            <th class="text-right">Unrealized P&amp;L</th>
-                                            <th class="text-right">P&amp;L %</th>
-                                            <th class="text-right">Weight %</th>
-                                        </tr>
-                                    </thead>
-                                    <tbody>
-                                        <t t-foreach="positions" t-as="position">
-                                            <tr>
-                                                <td><t t-esc="position.security_id.symbol"/> - <t t-esc="position.security_id.name"/></td>
-                                                <td class="text-right"><t t-esc="position.quantity"/></td>
-                                                <td class="text-right"><t t-esc="position.average_cost" t-options='{"widget": "float", "precision": 2}'/></td>
-                                                <td class="text-right"><t t-esc="position.market_value or 0.0" t-options='{"widget": "monetary", "display_currency": request.env.company.currency_id}'/></td>
-                                                <td class="text-right">
-                                                    <span t-attf-class="#{(position.unrealized_pnl or 0.0) >= 0 and 'text-success' or 'text-danger'}">
-                                                        <t t-esc="position.unrealized_pnl or 0.0" t-options='{"widget": "monetary", "display_currency": request.env.company.currency_id}'/>
-                                                    </span>
-                                                </td>
-                                                <td class="text-right">
-                                                    <span t-attf-class="#{(position.unrealized_pnl_percent or 0.0) >= 0 and 'text-success' or 'text-danger'}">
-                                                        <t t-esc="position.unrealized_pnl_percent" t-options='{"widget": "float", "precision": 2}'/>%
-                                                    </span>
-                                                </td>
-                                                <td class="text-right"><t t-esc="position.portfolio_weight" t-options='{"widget": "float", "precision": 2}'/>%</td>
-                                            </tr>
-                                        </t>
-                                    </tbody>
-                                </table>
-                            </div>
-                        </div>
-                    </div>
-                </t>
-            </div>
+        <t t-call="portal.portal_layout">
+            <t t-set="breadcrumbs_searchbar" t-value="True"/>
+            
+            <t t-call="portal.portal_searchbar">
+                <t t-set="title">My Portfolio</t>
+            </t>
+            
+            <t t-if="not positions">
+                <p>You don't have any positions yet.</p>
+            </t>
+            
+            <t t-if="positions" t-call="portal.portal_table">
+                <thead>
+                    <tr class="active">
+                        <th>Security</th>
+                        <th class="text-right">Quantity</th>
+                        <th class="text-right">Avg Cost</th>
+                        <th class="text-right">Market Value</th>
+                        <th class="text-right">Unrealized P&amp;L</th>
+                        <th class="text-right">P&amp;L %</th>
+                        <th class="text-right">Weight %</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <t t-foreach="positions" t-as="position">
+                        <tr>
+                            <td><t t-esc="position.security_id.symbol"/> - <t t-esc="position.security_id.name"/></td>
+                            <td class="text-right"><t t-esc="position.quantity"/></td>
+                            <td class="text-right"><t t-esc="position.average_cost" t-options='{"widget": "float", "precision": 2}'/></td>
+                            <td class="text-right"><t t-esc="position.market_value or 0.0" t-options='{"widget": "monetary", "display_currency": request.env.company.currency_id}'/></td>
+                            <td class="text-right">
+                                <span t-attf-class="#{(position.unrealized_pnl or 0.0) >= 0 and 'text-success' or 'text-danger'}">
+                                    <t t-esc="position.unrealized_pnl or 0.0" t-options='{"widget": "monetary", "display_currency": request.env.company.currency_id}'/>
+                                </span>
+                            </td>
+                            <td class="text-right">
+                                <span t-attf-class="#{(position.unrealized_pnl_percent or 0.0) >= 0 and 'text-success' or 'text-danger'}">
+                                    <t t-esc="position.unrealized_pnl_percent" t-options='{"widget": "float", "precision": 2}'/>%
+                                </span>
+                            </td>
+                            <td class="text-right"><t t-esc="position.portfolio_weight" t-options='{"widget": "float", "precision": 2}'/>%</td>
+                        </tr>
+                    </t>
+                </tbody>
+            </t>
         </t>
     </template>
     
     <!-- Order Entry Page -->
     <template id="portal_order_new" name="Place New Order">
-        <t t-call="stock_market_simulation.market_portal_layout">
-            <t t-call="stock_market_simulation.portal_order_new_content"/>
-        </t>
-    </template>
-    
-    <!-- Order Entry Content (for embedding in other templates) -->
-    <template id="portal_order_new_content" name="Place New Order Content">
-        <div class="container-fluid">
-            <div class="page-header mb-4">
-                <h1 class="h2">Place New Order</h1>
-            </div>
+        <t t-call="portal.portal_layout">
+            <t t-set="no_breadcrumbs" t-value="True"/>
             
-            <t t-if="error">
-                <div class="alert alert-danger" role="alert">
-                    <t t-esc="error"/>
-                </div>
-            </t>
+            <div class="container mt-3">
+                <h2>Place New Order</h2>
+                
+                <t t-if="error">
+                    <div class="alert alert-danger" role="alert">
+                        <t t-esc="error"/>
+                    </div>
+                </t>
                 
                 <t t-if="active_session">
                     <div class="row">
                         <div class="col-md-8">
-                            <form id="order_form" onsubmit="return false;">
+                            <form id="order_form" method="post">
                                 <input type="hidden" name="csrf_token" t-att-value="request.csrf_token()"/>
                                 
-                                <!-- Client Selection for Brokers and Admins -->
-                                <t t-if="user.user_type in ['broker', 'admin']">
+                                <!-- Client Selection for Brokers -->
+                                <t t-if="user.user_type == 'broker'">
                                     <div class="form-group">
                                         <label for="client_id">Select Client</label>
                                         <select class="form-control" id="client_id" name="client_id" required="required">
@@ -320,7 +301,7 @@
                                     <p class="form-control-static h4" id="order_value">0.00</p>
                                 </div>
                                 
-                                <button type="submit" id="submit-order-btn" class="btn btn-primary">Submit Order</button>
+                                <button type="submit" class="btn btn-primary">Submit Order</button>
                                 <a href="/my" class="btn btn-secondary">Cancel</a>
                             </form>
                         </div>
@@ -363,243 +344,114 @@
                 </t>
             </div>
             
-            <script>//<![CDATA[
-                // Define functions globally so they're accessible from event handlers
-                
-                // Show notification function
-                function showNotification(title, message, type = 'info') {
-                    // Try to use existing toast system first
-                    if (window.stockPortal && window.stockPortal.showToast) {
-                        window.stockPortal.showToast(message, type);
-                        return;
-                    }
-                    
-                    // Fallback to alert for now
-                    const typeMap = {
-                        'success': 'Success',
-                        'danger': 'Error',
-                        'warning': 'Warning',
-                        'info': 'Info'
-                    };
-                    alert(`${typeMap[type] || 'Notification'}: ${message}`);
-                }
-                
-                // Order submission with enhanced validation and debugging
-                function submitOrder(formData) {
-                    console.log('submitOrder function called');
-                    
-                    const submitBtn = document.querySelector('#submit-order-btn');
-                    if (submitBtn) {
-                        submitBtn.disabled = true;
-                        submitBtn.innerHTML = '<span class="spinner-border spinner-border-sm" role="status"></span> Submitting...';
-                    }
-                    
-                    console.log('Making fetch request to /my/order/submit');
-                    
-                    return fetch('/my/order/submit', {
-                        method: 'POST',
-                        headers: {
-                            'Content-Type': 'application/x-www-form-urlencoded',
-                            'X-Requested-With': 'XMLHttpRequest'
-                        },
-                        body: new URLSearchParams(formData)
-                    })
-                    .then(response => {
-                        console.log('Response received:', response.status, response.statusText);
-                        
-                        if (!response.ok) {
-                            throw new Error(`HTTP error! status: ${response.status}`);
-                        }
-                        
-                        return response.json();
-                    })
-                    .then(data => {
-                        console.log('Response data:', data);
-                        
-                        if (submitBtn) {
-                            submitBtn.disabled = false;
-                            submitBtn.innerHTML = 'Submit Order';
-                        }
-                        
-                        if (data.success) {
-                            showNotification('Success', data.message || 'Order submitted successfully', 'success');
-                            // Clear form on success
-                            const form = document.getElementById('order_form');
-                            if (form) form.reset();
-                            // Refresh portfolio data if function exists
-                            if (typeof refreshPortfolioSummary === 'function') {
-                                setTimeout(refreshPortfolioSummary, 1000);
-                            }
-                        } else {
-                            showNotification('Error', data.error || 'Unknown error occurred', 'danger');
-                        }
-                        
-                        return data;
-                    })
-                    .catch(error => {
-                        console.error('Order submission error:', error);
-                        
-                        if (submitBtn) {
-                            submitBtn.disabled = false;
-                            submitBtn.innerHTML = 'Submit Order';
-                        }
-                        
-                        showNotification('Error', 'Network error occurred: ' + error.message, 'danger');
-                        throw error;
-                    });
-                }
-                
-                // Now setup event listeners when DOM is ready
-                document.addEventListener('DOMContentLoaded', function() {
+            <script>
+                $(document).ready(function() {
                     // Calculate order value
                     function calculateOrderValue() {
-                        var quantityEl = document.getElementById('quantity');
-                        var priceEl = document.getElementById('price');
-                        var orderValueEl = document.getElementById('order_value');
-                        
-                        if (!quantityEl || !priceEl || !orderValueEl) return;
-                        
-                        var quantity = parseFloat(quantityEl.value) || 0;
-                        var price = parseFloat(priceEl.value) || 0;
+                        var quantity = parseFloat($('#quantity').val()) || 0;
+                        var price = parseFloat($('#price').val()) || 0;
                         var value = quantity * price;
-                        orderValueEl.textContent = value.toFixed(2);
+                        $('#order_value').text(value.toFixed(2));
                     }
                     
-                    // Attach event listeners for calculation
-                    var quantityEl = document.getElementById('quantity');
-                    var priceEl = document.getElementById('price');
-                    if (quantityEl) quantityEl.addEventListener('input', calculateOrderValue);
-                    if (priceEl) priceEl.addEventListener('input', calculateOrderValue);
+                    $('#quantity, #price').on('input', calculateOrderValue);
                     
                     // Handle order type change
-                    var orderTypeInputs = document.querySelectorAll('input[name="order_type"]');
-                    orderTypeInputs.forEach(function(input) {
-                        input.addEventListener('change', function() {
-                            var priceGroup = document.getElementById('price_group');
-                            var priceInput = document.getElementById('price');
-                            if (this.value === 'market') {
-                                if (priceGroup) priceGroup.style.display = 'none';
-                                if (priceInput) priceInput.required = false;
-                            } else {
-                                if (priceGroup) priceGroup.style.display = 'block';
-                                if (priceInput) priceInput.required = true;
-                            }
-                        });
+                    $('input[name="order_type"]').change(function() {
+                        if ($(this).val() === 'market') {
+                            $('#price_group').hide();
+                            $('#price').prop('required', false);
+                        } else {
+                            $('#price_group').show();
+                            $('#price').prop('required', true);
+                        }
                     });
                     
                     // Handle side change
-                    var sideInputs = document.querySelectorAll('input[name="side"]');
-                    sideInputs.forEach(function(input) {
-                        input.addEventListener('change', function() {
-                            var positionsCard = document.getElementById('positions_card');
-                            if (positionsCard) {
-                                if (this.value === 'sell') {
-                                    positionsCard.style.display = 'block';
-                                } else {
-                                    positionsCard.style.display = 'none';
-                                }
-                            }
-                        });
+                    $('input[name="side"]').change(function() {
+                        if ($(this).val() === 'sell') {
+                            $('#positions_card').show();
+                        } else {
+                            $('#positions_card').hide();
+                        }
                     });
                     
                     // Set current price when security changes
-                    var securitySelect = document.getElementById('security_id');
-                    if (securitySelect) {
-                        securitySelect.addEventListener('change', function() {
-                            var selectedOption = this.options[this.selectedIndex];
-                            var currentPrice = selectedOption.getAttribute('data-price');
-                            var priceEl = document.getElementById('price');
-                            if (currentPrice && priceEl) {
-                                priceEl.value = currentPrice;
-                                calculateOrderValue();
-                            }
-                        });
-                    }
+                    $('#security_id').change(function() {
+                        var selectedOption = $(this).find('option:selected');
+                        var currentPrice = selectedOption.data('price');
+                        if (currentPrice) {
+                            $('#price').val(currentPrice);
+                            calculateOrderValue();
+                        }
+                    });
                     
-                    // Handle client selection change (for brokers and admins)
-                    var clientSelect = document.getElementById('client_id');
-                    if (clientSelect) {
-                        clientSelect.addEventListener('change', function() {
-                            var selectedOption = this.options[this.selectedIndex];
-                            var clientCash = selectedOption.getAttribute('data-cash');
-                            var clientCashEl = document.getElementById('client_cash');
-                            var clientInfoEl = document.getElementById('client_info');
-                            
-                            if (clientCash !== null && clientCash !== undefined && clientCashEl && clientInfoEl) {
-                                var cashValue = parseFloat(clientCash);
-                                clientCashEl.textContent = 'Cash Balance: $' + cashValue.toLocaleString('en-US', {minimumFractionDigits: 2});
-                                clientInfoEl.style.display = 'block';
-                            } else if (clientInfoEl) {
-                                clientInfoEl.style.display = 'none';
-                            }
-                        });
-                    }
+                    // Handle client selection change (for brokers)
+                    $('#client_id').change(function() {
+                        var selectedOption = $(this).find('option:selected');
+                        var clientCash = selectedOption.data('cash');
+                        if (clientCash !== undefined) {
+                            $('#client_cash').text('Cash Balance: $' + clientCash.toLocaleString('en-US', {minimumFractionDigits: 2}));
+                            $('#client_info').show();
+                        } else {
+                            $('#client_info').hide();
+                        }
+                    });
                     
-                    // Modern form submission with better UX - with enhanced debugging
-                    var orderForm = document.getElementById('order_form');
-                    if (orderForm) {
-                        orderForm.addEventListener('submit', function(e) {
-                            console.log('Form submit event triggered');
-                            e.preventDefault();
-                            e.stopPropagation();
-                            
-                            console.log('Form submission prevented, processing...');
-                            
-                            // Collect form data
-                            const formData = new FormData(this);
-                            
-                            // Add client_id if broker/admin is placing order
-                            var clientIdEl = document.getElementById('client_id');
-                            if (clientIdEl && clientIdEl.value) {
-                                formData.set('client_id', clientIdEl.value);
-                            } else if (clientIdEl) {
-                                showNotification('Error', 'Please select a client', 'danger');
-                                return false;
+                    // Submit order
+                    $('#order_form').submit(function(e) {
+                        e.preventDefault();
+                        
+                        var formData = {
+                            security_id: $('#security_id').val(),
+                            side: $('input[name="side"]:checked').val(),
+                            order_type: $('input[name="order_type"]:checked').val(),
+                            quantity: $('#quantity').val(),
+                            price: $('#price').val()
+                        };
+                        
+                        // Add client_id if broker is placing order
+                        if ($('#client_id').length) {
+                            formData.client_id = $('#client_id').val();
+                            if (!formData.client_id) {
+                                alert('Please select a client');
+                                return;
                             }
-                            
-                            console.log('Calling submitOrder function...');
-                            
-                            // Submit using the modern function
-                            if (window.stockPortal && window.stockPortal.submitOrder) {
-                                window.stockPortal.submitOrder(formData);
-                            } else {
-                                // Fallback to direct fetch
-                                submitOrder(formData);
+                        }
+                        
+                        $.ajax({
+                            url: '/my/order/create',
+                            type: 'POST',
+                            contentType: 'application/json',
+                            data: JSON.stringify(formData),
+                            headers: {
+                                'X-Csrf-Token': $('input[name="csrf_token"]').val()
+                            },
+                            success: function(result) {
+                                if (result.success) {
+                                    alert(result.message);
+                                    window.location.href = '/my/orders';
+                                } else {
+                                    alert('Error: ' + result.error);
+                                }
+                            },
+                            error: function() {
+                                alert('Error submitting order');
                             }
-                            
-                            return false; // Ensure form doesn't submit normally
                         });
-                    }
-                    
-                    // Direct button click handler to bypass any form submission
-                    var submitBtn = document.getElementById('submit-order-btn');
-                    if (submitBtn) {
-                        submitBtn.addEventListener('click', function(e) {
-                            console.log('Submit button clicked - preventing default and calling handler');
-                            e.preventDefault();
-                            e.stopPropagation();
-                            
-                            // Directly trigger the form submit event which has preventDefault
-                            var orderForm = document.getElementById('order_form');
-                            if (orderForm) {
-                                var event = new Event('submit', {bubbles: true, cancelable: true});
-                                orderForm.dispatchEvent(event);
-                            }
-                            
-                            return false;
-                        });
-                    }
+                    });
                 });
-            //]]></script>
+            </script>
+        </t>
     </template>
     
     <!-- Market Data Page -->
     <template id="portal_market_data" name="Market Data">
-        <t t-call="stock_market_simulation.market_portal_layout">
-            <div class="container-fluid">
-                <div class="page-header mb-4">
-                    <h1 class="h2">Market Data</h1>
-                </div>
+        <t t-call="portal.portal_layout">
+            <t t-set="no_breadcrumbs" t-value="True"/>
+            
+            <div class="container mt-3">
+                <h2>Market Data</h2>
                 
                 <ul class="nav nav-tabs" role="tablist">
                     <li class="nav-item">
@@ -784,6 +636,74 @@
                 });
             }
             
+            // Order submission with enhanced validation
+            function submitOrder(formData) {
+                const submitBtn = document.querySelector('#submit-order-btn');
+                if (submitBtn) {
+                    submitBtn.disabled = true;
+                    submitBtn.innerHTML = '<span class="spinner-border spinner-border-sm" role="status"></span> Submitting...';
+                }
+                
+                return fetch('/my/order/submit', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/x-www-form-urlencoded',
+                        'X-Requested-With': 'XMLHttpRequest'
+                    },
+                    body: new URLSearchParams(formData)
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (submitBtn) {
+                        submitBtn.disabled = false;
+                        submitBtn.innerHTML = 'Submit Order';
+                    }
+                    
+                    if (data.success) {
+                        showNotification('Success', data.message, 'success');
+                        // Refresh portfolio data
+                        setTimeout(refreshPortfolioSummary, 1000);
+                    } else {
+                        showNotification('Error', data.error, 'danger');
+                    }
+                    
+                    return data;
+                })
+                .catch(error => {
+                    if (submitBtn) {
+                        submitBtn.disabled = false;
+                        submitBtn.innerHTML = 'Submit Order';
+                    }
+                    console.error('Order submission error:', error);
+                    showNotification('Error', 'Network error occurred', 'danger');
+                    throw error;
+                });
+            }
+            
+            // Notification system
+            function showNotification(title, message, type) {
+                // Remove existing notifications
+                const existing = document.querySelectorAll('.stock-notification');
+                existing.forEach(el => el.remove());
+                
+                const notification = document.createElement('div');
+                notification.className = `alert alert-${type} alert-dismissible stock-notification`;
+                notification.style.cssText = 'position: fixed; top: 20px; right: 20px; z-index: 9999; min-width: 300px;';
+                notification.innerHTML = `
+                    <strong>${title}</strong> ${message}
+                    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                `;
+                
+                document.body.appendChild(notification);
+                
+                // Auto-remove after 5 seconds
+                setTimeout(() => {
+                    if (notification.parentNode) {
+                        notification.remove();
+                    }
+                }, 5000);
+            }
+            
             // Initialize when DOM is loaded
             document.addEventListener('DOMContentLoaded', function() {
                 // Start periodic updates for real-time data
@@ -799,7 +719,6 @@
             });
             
             // Expose functions globally
-            window.stockPortal = window.stockPortal || {};
             window.stockPortal.refreshPortfolioSummary = refreshPortfolioSummary;
             window.stockPortal.refreshMarketQuotes = refreshMarketQuotes;
             window.stockPortal.submitOrder = submitOrder;
@@ -810,72 +729,9 @@
     <!-- Custom Market Portal Layout -->
     <!-- Enhanced Portal Layout with Sidebar -->
     <template id="market_portal_layout" name="Stock Market Portal Layout">
-        <t t-call="web.frontend_layout">
-            <t t-set="pageName" t-value="'stock_market'"/>
+        <t t-call="portal.portal_layout">
             <t t-set="no_breadcrumbs" t-value="True"/>
-            
-            <!-- Hide Default Navbar -->
-            <style>
-                /* Hide Odoo's default navbar to prevent duplication */
-                .o_main_navbar,
-                .navbar.navbar-expand.navbar-light.bg-light,
-                header.o_main_navbar {
-                    display: none !important;
-                }
-                
-                /* Ensure our custom layout takes full viewport */
-                .stock-portal-layout {
-                    min-height: 100vh;
-                    position: relative;
-                }
-                
-                /* Custom navbar user dropdown styling */
-                .navbar-user.dropdown {
-                    position: relative;
-                }
-                
-                .user-dropdown-toggle {
-                    display: flex;
-                    align-items: center;
-                    text-decoration: none;
-                    color: inherit;
-                    cursor: pointer;
-                    padding: 0.5rem;
-                    border-radius: 0.375rem;
-                    transition: background-color 0.2s ease;
-                }
-                
-                .user-dropdown-toggle:hover {
-                    background-color: rgba(255, 255, 255, 0.1);
-                    color: inherit;
-                    text-decoration: none;
-                }
-                
-                .navbar-user .dropdown-menu {
-                    min-width: 200px;
-                    border: 1px solid rgba(255, 255, 255, 0.1);
-                    background-color: #fff;
-                    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
-                    margin-top: 0.5rem;
-                }
-                
-                .navbar-user .dropdown-item {
-                    padding: 0.75rem 1rem;
-                    color: #374151;
-                    display: flex;
-                    align-items: center;
-                }
-                
-                .navbar-user .dropdown-item:hover {
-                    background-color: #f3f4f6;
-                    color: #1f2937;
-                }
-                
-                .navbar-user .dropdown-item i {
-                    width: 16px;
-                    text-align: center;
-                }
-            </style>
+            <t t-set="no_footer" t-value="False"/>
             
             <div class="stock-portal-layout">
                 <!-- Sidebar Navigation -->
@@ -884,14 +740,13 @@
                     <div class="stock-sidebar-header">
                         <a href="/market" class="sidebar-brand">
                             <div class="sidebar-brand-icon">
-                                <i class="fa fa-line-chart"></i>
+                                <i class="fa fa-chart-line"></i>
                             </div>
-                            <span class="sidebar-brand-text">Stock Market</span>
+                            <div class="sidebar-brand-text">Stock Market</div>
                         </a>
-                        <button type="button" class="stock-sidebar-toggle-icon" aria-label="Toggle sidebar" tabindex="0">
-                            <i class="fa fa-angle-left sidebar-toggle-collapse"></i>
-                            <i class="fa fa-angle-right sidebar-toggle-expand"></i>
-                        </button>
+                        <div class="stock-sidebar-toggle" onclick="toggleStockSidebar()">
+                            <i class="fa fa-angle-left"></i>
+                        </div>
                     </div>
                     
                     <!-- Sidebar Navigation -->
@@ -899,17 +754,17 @@
                         <!-- Main Section -->
                         <div class="sidebar-section">
                             <div class="sidebar-section-title">Trading</div>
-                            <a href="/market" class="nav-link" data-page="dashboard" data-tooltip="Dashboard">
-                                <i class="fa fa-tachometer"></i>
+                            <a href="/market" class="nav-link" data-page="dashboard">
+                                <i class="fa fa-tachometer-alt"></i>
                                 <span class="nav-text">Dashboard</span>
                             </a>
-                            <a href="/market/trading" class="nav-link" data-page="trading" data-tooltip="Trading">
-                                <i class="fa fa-exchange"></i>
+                            <a href="/market/trading" class="nav-link" data-page="trading">
+                                <i class="fa fa-exchange-alt"></i>
                                 <span class="nav-text">Trading</span>
                             </a>
                             <t t-if="request.env.user.user_type in ['investor', 'broker']">
-                                <a href="/market/orders" class="nav-link" data-page="orders" data-tooltip="Orders">
-                                    <i class="fa fa-list"></i>
+                                <a href="/market/orders" class="nav-link" data-page="orders">
+                                    <i class="fa fa-list-ul"></i>
                                     <span class="nav-text">Orders</span>
                                     <span class="nav-badge" t-if="order_count"><t t-esc="order_count"/></span>
                                 </a>
@@ -920,31 +775,33 @@
                         <t t-if="request.env.user.user_type in ['investor', 'broker']">
                             <div class="sidebar-section">
                                 <div class="sidebar-section-title">Portfolio</div>
-                                <a href="/market/portfolio" class="nav-link" data-page="portfolio" data-tooltip="Positions">
+                                <a href="/market/portfolio" class="nav-link" data-page="portfolio">
                                     <i class="fa fa-briefcase"></i>
                                     <span class="nav-text">Positions</span>
                                     <span class="nav-badge" t-if="position_count"><t t-esc="position_count"/></span>
                                 </a>
-                                <a href="/market/trades" class="nav-link" data-page="trades" data-tooltip="Trade History">
+                                <a href="/market/trades" class="nav-link" data-page="trades">
                                     <i class="fa fa-history"></i>
                                     <span class="nav-text">Trade History</span>
                                 </a>
-                                <a href="/market/performance" class="nav-link" data-page="performance" data-tooltip="Performance">
-                                    <i class="fa fa-area-chart"></i>
+                                <a href="/market/performance" class="nav-link" data-page="performance">
+                                    <i class="fa fa-chart-area"></i>
                                     <span class="nav-text">Performance</span>
                                 </a>
                             </div>
-                        </t>                        <!-- Banking Section -->
+                        </t>
+                        
+                        <!-- Banking Section -->
                         <t t-if="request.env.user.user_type in ['investor', 'banker']">
                             <div class="sidebar-section">
                                 <div class="sidebar-section-title">Banking</div>
-                                <a href="/market/deposits" class="nav-link" data-page="deposits" data-tooltip="Deposits">
-                                    <i class="fa fa-bank"></i>
+                                <a href="/market/deposits" class="nav-link" data-page="deposits">
+                                    <i class="fa fa-piggy-bank"></i>
                                     <span class="nav-text">Deposits</span>
                                     <span class="nav-badge" t-if="deposit_count"><t t-esc="deposit_count"/></span>
                                 </a>
-                                <a href="/market/loans" class="nav-link" data-page="loans" data-tooltip="Loans">
-                                    <i class="fa fa-money"></i>
+                                <a href="/market/loans" class="nav-link" data-page="loans">
+                                    <i class="fa fa-hand-holding-usd"></i>
                                     <span class="nav-text">Loans</span>
                                     <span class="nav-badge" t-if="loan_count"><t t-esc="loan_count"/></span>
                                 </a>
@@ -955,11 +812,11 @@
                         <t t-if="request.env.user.user_type == 'broker'">
                             <div class="sidebar-section">
                                 <div class="sidebar-section-title">Broker Tools</div>
-                                <a href="/market/commissions" class="nav-link" data-page="commissions" data-tooltip="Commissions">
+                                <a href="/market/commissions" class="nav-link" data-page="commissions">
                                     <i class="fa fa-percentage"></i>
                                     <span class="nav-text">Commissions</span>
                                 </a>
-                                <a href="/market/clients" class="nav-link" data-page="clients" data-tooltip="Clients">
+                                <a href="/market/clients" class="nav-link" data-page="clients">
                                     <i class="fa fa-users"></i>
                                     <span class="nav-text">Clients</span>
                                 </a>
@@ -969,16 +826,16 @@
                         <!-- Market Data Section -->
                         <div class="sidebar-section">
                             <div class="sidebar-section-title">Market</div>
-                            <a href="/market/securities" class="nav-link" data-page="securities" data-tooltip="Securities">
-                                <i class="fa fa-bar-chart"></i>
+                            <a href="/market/securities" class="nav-link" data-page="securities">
+                                <i class="fa fa-chart-bar"></i>
                                 <span class="nav-text">Securities</span>
                             </a>
-                            <a href="/market/session" class="nav-link" data-page="session" data-tooltip="Session Info">
-                                <i class="fa fa-clock-o"></i>
+                            <a href="/market/session" class="nav-link" data-page="session">
+                                <i class="fa fa-clock"></i>
                                 <span class="nav-text">Session Info</span>
                             </a>
-                            <a href="/market/reports" class="nav-link" data-page="reports" data-tooltip="Reports">
-                                <i class="fa fa-file-text"></i>
+                            <a href="/market/reports" class="nav-link" data-page="reports">
+                                <i class="fa fa-file-alt"></i>
                                 <span class="nav-text">Reports</span>
                             </a>
                         </div>
@@ -986,12 +843,12 @@
                         <!-- Account Section -->
                         <div class="sidebar-section">
                             <div class="sidebar-section-title">Account</div>
-                            <a href="/my/account" class="nav-link" data-page="account" data-tooltip="Settings">
-                                <i class="fa fa-cog"></i>
+                            <a href="/my/account" class="nav-link" data-page="account">
+                                <i class="fa fa-user-cog"></i>
                                 <span class="nav-text">Settings</span>
                             </a>
-                            <a href="/web/session/logout" class="nav-link" data-tooltip="Logout">
-                                <i class="fa fa-sign-out"></i>
+                            <a href="/web/session/logout" class="nav-link">
+                                <i class="fa fa-sign-out-alt"></i>
                                 <span class="nav-text">Logout</span>
                             </a>
                         </div>
@@ -1004,7 +861,7 @@
                     <header class="stock-navbar">
                         <div class="navbar-content">
                             <div class="navbar-title">
-                                <i class="fa fa-line-chart title-icon"></i>
+                                <i class="fa fa-chart-line title-icon"></i>
                                 <span t-esc="page_title or 'Stock Market Portal'"/>
                             </div>
                             
@@ -1026,24 +883,15 @@
                                     <i class="fa fa-globe" t-attf-style="color: #{active_session and 'var(--stock-success)' or 'var(--stock-danger)'}"></i>
                                 </div>
                                 
-                                <!-- User Info with Dropdown -->
-                                <div class="navbar-user dropdown">
-                                    <a href="#" class="user-dropdown-toggle" data-bs-toggle="dropdown" aria-expanded="false">
-                                        <div class="user-avatar">
-                                            <t t-esc="request.env.user.name[:2].upper()"/>
-                                        </div>
-                                        <div class="user-info">
-                                            <div class="user-name" t-esc="request.env.user.name"/>
-                                            <div class="user-role" t-esc="request.env.user.user_type"/>
-                                        </div>
-                                        <i class="fa fa-chevron-down ms-2"></i>
-                                    </a>
-                                    <ul class="dropdown-menu dropdown-menu-end">
-                                        <li><a class="dropdown-item" href="/my/home"><i class="fa fa-user me-2"></i>My Account</a></li>
-                                        <li><a class="dropdown-item" href="/odoo"><i class="fa fa-th me-2"></i>Backend</a></li>
-                                        <li><hr class="dropdown-divider"/></li>
-                                        <li><a class="dropdown-item" href="/web/session/logout?redirect=/"><i class="fa fa-sign-out me-2"></i>Logout</a></li>
-                                    </ul>
+                                <!-- User Info -->
+                                <div class="navbar-user">
+                                    <div class="user-avatar">
+                                        <t t-esc="request.env.user.name[:2].upper()"/>
+                                    </div>
+                                    <div class="user-info">
+                                        <div class="user-name" t-esc="request.env.user.name"/>
+                                        <div class="user-role" t-esc="request.env.user.user_type"/>
+                                    </div>
                                 </div>
                             </div>
                         </div>
@@ -1057,7 +905,7 @@
                                 <div class="stat-header">
                                     <h6 class="stat-title">Cash Balance</h6>
                                     <div class="stat-icon" style="--icon-bg: var(--stock-success-light); --icon-color: var(--stock-success);">
-                                        <i class="fa fa-money"></i>
+                                        <i class="fa fa-wallet"></i>
                                     </div>
                                 </div>
                                 <div class="stat-value">
@@ -1087,7 +935,7 @@
                                 <div class="stat-header">
                                     <h6 class="stat-title">Total Assets</h6>
                                     <div class="stat-icon" style="--icon-bg: var(--stock-primary-light); --icon-color: var(--stock-primary);">
-                                        <i class="fa fa-pie-chart"></i>
+                                        <i class="fa fa-chart-pie"></i>
                                     </div>
                                 </div>
                                 <div class="stat-value">
@@ -1137,122 +985,39 @@
             </div>
         </t>
         
-        <!-- Pre-paint Initialization - Prevent UI Flicker -->
+        <!-- JavaScript for Sidebar -->
         <script>//<![CDATA[
-            // Execute immediately before paint to prevent flash
-            (function() {
-                'use strict';
-                const savedState = localStorage.getItem('stock_sidebar_collapsed');
-                if (savedState === 'true') {
-                    document.documentElement.classList.add('stock-sidebar-init-collapsed');
+            function toggleStockSidebar() {
+                const sidebar = document.getElementById('stockSidebar');
+                sidebar.classList.toggle('collapsed');
+                
+                // Save state
+                const isCollapsed = sidebar.classList.contains('collapsed');
+                localStorage.setItem('stock_sidebar_collapsed', isCollapsed);
+            }
+            
+            // Load saved sidebar state
+            document.addEventListener('DOMContentLoaded', function() {
+                const isCollapsed = localStorage.getItem('stock_sidebar_collapsed') === 'true';
+                const sidebar = document.getElementById('stockSidebar');
+                if (isCollapsed && sidebar) {
+                    sidebar.classList.add('collapsed');
                 }
-            })();
-        //]]></script>
-        
-        <!-- Sidebar Toggle Logic -->
-        <script>//<![CDATA[
-            (function() {
-                'use strict';
                 
-                // Configuration
-                const SIDEBAR_STATE_KEY = 'stock_sidebar_collapsed';
-                const MOBILE_BREAKPOINT = 768;
-                
-                // Global toggle function
-                window.toggleStockSidebar = function() {
-                    const sidebar = document.getElementById('stockSidebar');
-                    if (!sidebar) return;
-                    
-                    sidebar.classList.toggle('collapsed');
-                    
-                    // Save state to localStorage
-                    const isCollapsed = sidebar.classList.contains('collapsed');
-                    try {
-                        localStorage.setItem(SIDEBAR_STATE_KEY, isCollapsed.toString());
-                    } catch (e) {
-                        console.warn('Failed to save sidebar state:', e);
+                // Set active navigation
+                const currentPath = window.location.pathname;
+                const navLinks = document.querySelectorAll('.stock-sidebar .nav-link');
+                navLinks.forEach(link => {
+                    link.classList.remove('active');
+                    const href = link.getAttribute('href');
+                    if (href && (currentPath === href || currentPath.startsWith(href + '/'))) {
+                        link.classList.add('active');
                     }
-                };
-                
-                // Initialize when DOM is ready
-                function initSidebar() {
-                    const sidebar = document.getElementById('stockSidebar');
-                    if (!sidebar) return;
-                    
-                    const isMobile = window.innerWidth <= MOBILE_BREAKPOINT;
-                    
-                    // Load saved state (desktop only)
-                    if (!isMobile) {
-                        const savedState = localStorage.getItem(SIDEBAR_STATE_KEY);
-                        if (savedState === 'true') {
-                            sidebar.classList.add('collapsed');
-                        }
-                    } else {
-                        // Force collapsed on mobile
-                        sidebar.classList.add('collapsed');
-                    }
-                    
-                    // Remove initialization class to enable transitions
-                    document.documentElement.classList.remove('stock-sidebar-init-collapsed');
-                    
-                    // Setup toggle button click handler
-                    const toggleBtn = sidebar.querySelector('.stock-sidebar-toggle-icon');
-                    if (toggleBtn) {
-                        toggleBtn.addEventListener('click', toggleStockSidebar);
-                        
-                        // Keyboard support
-                        toggleBtn.addEventListener('keydown', function(e) {
-                            if (e.key === 'Enter' || e.key === ' ') {
-                                e.preventDefault();
-                                toggleStockSidebar();
-                            }
-                        });
-                    }
-                    
-                    // Set active navigation
-                    setActiveNavigation();
-                    
-                    // Handle window resize
-                    let resizeTimer;
-                    window.addEventListener('resize', function() {
-                        clearTimeout(resizeTimer);
-                        resizeTimer = setTimeout(function() {
-                            const newIsMobile = window.innerWidth <= MOBILE_BREAKPOINT;
-                            if (newIsMobile !== isMobile) {
-                                location.reload();
-                            }
-                        }, 250);
-                    });
-                }
-                
-                function setActiveNavigation() {
-                    const currentPath = window.location.pathname;
-                    const navLinks = document.querySelectorAll('.stock-sidebar .nav-link');
-                    
-                    navLinks.forEach(link => {
-                        link.classList.remove('active');
-                        const href = link.getAttribute('href');
-                        if (href && (currentPath === href || currentPath.startsWith(href + '/'))) {
-                            link.classList.add('active');
-                        }
-                    });
-                }
-                
-                // Initialize
-                if (document.readyState === 'loading') {
-                    document.addEventListener('DOMContentLoaded', initSidebar);
-                } else {
-                    initSidebar();
-                }
-            })();
+                });
+            });
         //]]></script>
     </template>
-    
-    <!-- Market Dashboard View -->
-    <template id="market_dashboard_view" name="Market Dashboard View">
-        <t t-call="stock_market_simulation.market_portal_layout">
-            <t t-set="page_title">Dashboard</t>
-            
+
             <!-- Quick Actions -->
             <div class="row mb-4" t-if="user.user_type == 'investor'">
                 <div class="col-12">
@@ -1350,7 +1115,7 @@
                 <div class="col-12">
                     <div class="card">
                         <div class="card-header">
-                            <h5 class="mb-0"><i class="fa fa-line-chart"></i> All Securities</h5>
+                            <h5 class="mb-0"><i class="fa fa-chart-line"></i> All Securities</h5>
                         </div>
                         <div class="card-body p-0">
                             <div class="table-responsive">
@@ -1446,8 +1211,8 @@
     <!-- Market Trading View -->
     <template id="market_trading_view" name="Market Trading View">
         <t t-call="stock_market_simulation.market_portal_layout">
-            <h4 class="mb-4"><i class="fa fa-exchange me-2"></i>Trading Platform</h4>
-            <t t-call="stock_market_simulation.portal_order_new_content"/>
+            <h4 class="mb-4"><i class="fa fa-exchange-alt me-2"></i>Trading Platform</h4>
+            <t t-call="stock_market_simulation.portal_order_new"/>
         </t>
     </template>
     
@@ -1456,7 +1221,7 @@
         <t t-call="stock_market_simulation.market_portal_layout">
             <div class="card">
                 <div class="card-header">
-                    <h4 class="mb-0"><i class="fa fa-list me-2"></i>My Orders</h4>
+                    <h4 class="mb-0"><i class="fa fa-list-ul me-2"></i>My Orders</h4>
                 </div>
                 <div class="card-body">
                     <div class="table-responsive">
@@ -1534,150 +1299,5 @@
         </xpath>
     </template>
     -->
-
-    <!-- WIKI-Style Error Page Template -->
-    <template id="stock_error_page" name="Stock Market Error Page">
-        <t t-call="web.frontend_layout">
-            <t t-set="pageName" t-value="'stock_error'"/>
-            
-            <div class="stock-portal-layout">
-                <!-- Error Page Content -->
-                <div class="container-fluid">
-                    <div class="error-page">
-                        <div class="row justify-content-center">
-                            <div class="col-lg-8 col-xl-6">
-                                <div class="error-content text-center">
-                                    <!-- Error Status -->
-                                    <div class="error-status mb-4">
-                                        <h1 class="error-code" t-esc="status_code"/>
-                                        <h2 class="error-title" t-esc="status_message"/>
-                                        <p class="error-description text-muted" t-esc="description"/>
-                                    </div>
-
-                                    <!-- Action Buttons -->
-                                    <div class="error-actions mb-5">
-                                        <a href="/market" class="btn btn-primary me-2">
-                                            <i class="fa fa-home"/> Back to Market
-                                        </a>
-                                        <a href="javascript:history.back()" class="btn btn-outline-secondary">
-                                            <i class="fa fa-arrow-left"/> Go Back
-                                        </a>
-                                    </div>
-
-                                    <!-- Suggestions (only for 404/403) -->
-                                    <t t-if="show_suggestions">
-                                        <div class="error-suggestions">
-                                            <!-- Active Sessions -->
-                                            <t t-if="suggested_sessions">
-                                                <div class="suggestion-section mb-4">
-                                                    <h5>Active Trading Sessions</h5>
-                                                    <div class="row">
-                                                        <t t-foreach="suggested_sessions" t-as="session">
-                                                            <div class="col-md-6 mb-3">
-                                                                <div class="card h-100">
-                                                                    <div class="card-body">
-                                                                        <h6 class="card-title" t-field="session.name"/>
-                                                                        <p class="card-text text-muted">
-                                                                            <span class="badge" t-attf-class="badge-#{session.state}">
-                                                                                <t t-esc="session.state.title()"/>
-                                                                            </span>
-                                                                        </p>
-                                                                        <a t-attf-href="/market/session/#{session.id}" class="btn btn-sm btn-outline-primary">
-                                                                            View Session
-                                                                        </a>
-                                                                    </div>
-                                                                </div>
-                                                            </div>
-                                                        </t>
-                                                    </div>
-                                                </div>
-                                            </t>
-
-                                            <!-- Popular Securities -->
-                                            <t t-if="popular_securities">
-                                                <div class="suggestion-section">
-                                                    <h5>Available Securities</h5>
-                                                    <div class="row">
-                                                        <t t-foreach="popular_securities" t-as="security">
-                                                            <div class="col-md-4 mb-3">
-                                                                <div class="card h-100">
-                                                                    <div class="card-body">
-                                                                        <h6 class="card-title" t-field="security.name"/>
-                                                                        <p class="card-text">
-                                                                            <small class="text-muted" t-field="security.symbol"/>
-                                                                        </p>
-                                                                        <a t-attf-href="/market/security/#{security.id}" class="btn btn-sm btn-outline-success">
-                                                                            View Details
-                                                                        </a>
-                                                                    </div>
-                                                                </div>
-                                                            </div>
-                                                        </t>
-                                                    </div>
-                                                </div>
-                                            </t>
-                                        </div>
-                                    </t>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Error Page Styles -->
-            <style>
-                .error-page {
-                    min-height: 80vh;
-                    display: flex;
-                    align-items: center;
-                    padding: 2rem 0;
-                }
-                
-                .error-code {
-                    font-size: 6rem;
-                    font-weight: 700;
-                    color: var(--stock-primary);
-                    line-height: 1;
-                    margin-bottom: 0.5rem;
-                }
-                
-                .error-title {
-                    font-size: 2rem;
-                    font-weight: 600;
-                    color: var(--stock-text-primary);
-                    margin-bottom: 1rem;
-                }
-                
-                .error-description {
-                    font-size: 1.1rem;
-                    max-width: 500px;
-                    margin: 0 auto 2rem;
-                }
-                
-                .suggestion-section {
-                    text-align: left;
-                }
-                
-                .suggestion-section h5 {
-                    color: var(--stock-text-primary);
-                    margin-bottom: 1rem;
-                    font-weight: 600;
-                }
-                
-                .badge-active {
-                    background-color: var(--stock-success);
-                }
-                
-                .badge-planned {
-                    background-color: var(--stock-warning);
-                }
-                
-                .badge-closed {
-                    background-color: var(--stock-muted);
-                }
-            </style>
-        </t>
-    </template>
     
 </odoo> 
