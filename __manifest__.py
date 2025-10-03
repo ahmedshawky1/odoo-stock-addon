@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 {
     'name': 'Stock Market Trading Simulator',
-    'version': '1.0',
+    'version': '1.0.3',
     'category': 'Trading',
     'summary': 'Complete stock market trading simulation with order matching, settlement, and reporting',
     'description': """

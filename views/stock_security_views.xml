@@ -59,6 +59,7 @@
                             <group>
                                 <group string="Market Data">
                                     <field name="session_start_price"/>
+                                    <field name="price_to_compare_with"/>
                                     <field name="previous_close"/>
                                     <field name="vwap"/>
                                     <field name="value_today" widget="monetary"/>

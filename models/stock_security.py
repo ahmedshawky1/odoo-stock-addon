@@ -1,5 +1,6 @@
 # -*- coding: utf-8 -*-
 
+from decimal import Decimal
 from odoo import models, fields, api
 from odoo.exceptions import ValidationError
 
@@ -51,6 +52,12 @@ class StockSecurity(models.Model):
         string='Session Start Price',
         digits=(16, 4),
         help='Price at the start of current session'
+    )
+    
+    price_to_compare_with = fields.Float(
+        string='Price to Compare With',
+        digits=(16, 4),
+        help='Reference price for comparison (updated at session start/end)'
     )
     
     previous_close = fields.Float(
@@ -242,8 +249,11 @@ class StockSecurity(models.Model):
             
             # Check if price is valid according to tick size
             if security.tick_size > 0:
-                remainder = round(security.current_price % security.tick_size, 6)
-                if remainder > 0.000001:  # Small tolerance for floating point
+                # Use Decimal for precise validation
+                price_decimal = Decimal(str(security.current_price))
+                tick_decimal = Decimal(str(security.tick_size))
+                remainder = price_decimal % tick_decimal
+                if remainder > Decimal('0.000001'):  # Small tolerance
                     raise ValidationError(
                         f"Price {security.current_price} is not valid for tick size {security.tick_size}"
                     )
@@ -254,8 +264,11 @@ class StockSecurity(models.Model):
         
         # Check tick size
         if self.tick_size > 0:
-            remainder = round(new_price % self.tick_size, 6)
-            if remainder > 0.000001:
+            # Use Decimal for precise validation
+            price_decimal = Decimal(str(new_price))
+            tick_decimal = Decimal(str(self.tick_size))
+            remainder = price_decimal % tick_decimal
+            if remainder > Decimal('0.000001'):
                 raise ValidationError(
                     f"Price {new_price} is not valid for tick size {self.tick_size}"
                 )
@@ -293,7 +306,7 @@ class StockSecurity(models.Model):
             'name': f'Order Book - {self.symbol}',
             'type': 'ir.actions.act_window',
             'res_model': 'stock.order',
-            'view_mode': 'tree,form',
+            'view_mode': 'list,form',
             'domain': [
                 ('security_id', '=', self.id),
                 ('status', 'in', ['pending', 'partial'])
@@ -311,7 +324,7 @@ class StockSecurity(models.Model):
             'name': f'Trades - {self.symbol}',
             'type': 'ir.actions.act_window',
             'res_model': 'stock.trade',
-            'view_mode': 'tree,form',
+            'view_mode': 'list,form',
             'domain': [('security_id', '=', self.id)],
             'context': {'default_security_id': self.id}
         } 

@@ -318,4 +318,30 @@ class StockDeposit(models.Model):
                 deposit.message_post(
                     body=f"Failed to auto-mature deposit: {str(e)}",
                     message_type='comment'
-                ) 
+                )
+    
+    def _calculate_interest(self):
+        """Calculate and apply interest for active deposits (called at session end)"""
+        self.ensure_one()
+        
+        if self.status != 'approved':
+            return
+        
+        try:
+            # Calculate interest based on deposit type
+            if self.deposit_type == 'fixed':
+                # Simple interest calculation
+                days_elapsed = (fields.Date.today() - self.deposit_date).days
+                if days_elapsed > 0:
+                    interest = (self.amount * self.interest_rate * days_elapsed) / (365 * 100)
+                    new_value = self.current_value + interest
+                    
+                    self.write({
+                        'current_value': new_value,
+                        'interest_earned': self.interest_earned + interest,
+                    })
+                    
+                    _logger.info(f"Deposit {self.name}: Added interest {interest:.2f}, new value {new_value:.2f}")
+        except Exception as e:
+            _logger.error(f"Error calculating interest for deposit {self.name}: {str(e)}")
+            raise 

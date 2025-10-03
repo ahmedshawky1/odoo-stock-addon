@@ -533,6 +533,30 @@ class StockLoan(models.Model):
                     body=f"Failed to check margin call: {str(e)}",
                     message_type='comment'
                 )
+    
+    def _calculate_interest(self):
+        """Calculate and apply interest for active loans (called at session end)"""
+        self.ensure_one()
+        
+        if self.status != 'approved':
+            return
+        
+        try:
+            # Calculate accrued interest
+            days_elapsed = (fields.Date.today() - self.disbursement_date).days
+            if days_elapsed > 0:
+                interest = (self.amount * self.interest_rate * days_elapsed) / (365 * 100)
+                new_outstanding = self.outstanding_balance + interest
+                
+                self.write({
+                    'outstanding_balance': new_outstanding,
+                    'total_interest': self.total_interest + interest,
+                })
+                
+                _logger.info(f"Loan {self.name}: Added interest {interest:.2f}, new outstanding {new_outstanding:.2f}")
+        except Exception as e:
+            _logger.error(f"Error calculating interest for loan {self.name}: {str(e)}")
+            raise
 
 
 class StockLoanPayment(models.Model):

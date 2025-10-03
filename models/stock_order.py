@@ -1,5 +1,6 @@
 # -*- coding: utf-8 -*-
 
+from decimal import Decimal
 from odoo import models, fields, api
 from odoo.exceptions import ValidationError, UserError
 from datetime import datetime
@@ -252,8 +253,11 @@ class StockOrder(models.Model):
                 
                 # Check tick size
                 if order.security_id.tick_size > 0:
-                    remainder = round(order.price % order.security_id.tick_size, 6)
-                    if remainder > 0.000001:
+                    # Use Decimal for precise validation
+                    price_decimal = Decimal(str(order.price))
+                    tick_decimal = Decimal(str(order.security_id.tick_size))
+                    remainder = price_decimal % tick_decimal
+                    if remainder > Decimal('0.000001'):
                         raise ValidationError(
                             f"Price must be a multiple of tick size ({order.security_id.tick_size})"
                         )
@@ -265,8 +269,11 @@ class StockOrder(models.Model):
                 
                 # Check tick size for stop price
                 if order.security_id.tick_size > 0:
-                    remainder = round(order.stop_price % order.security_id.tick_size, 6)
-                    if remainder > 0.000001:
+                    # Use Decimal for precise validation
+                    price_decimal = Decimal(str(order.stop_price))
+                    tick_decimal = Decimal(str(order.security_id.tick_size))
+                    remainder = price_decimal % tick_decimal
+                    if remainder > Decimal('0.000001'):
                         raise ValidationError(
                             f"Stop price must be a multiple of tick size ({order.security_id.tick_size})"
                         )

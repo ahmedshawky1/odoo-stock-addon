@@ -36,9 +36,17 @@
                         </h1>
                     </div>
                     <group>
-                        <group string="Session Details">
-                            <field name="start_date"/>
-                            <field name="end_date"/>
+                        <group string="Planned Schedule (Optional)">
+                            <field name="actual_start_date" invisible="1"/>
+                            <field name="actual_end_date" invisible="1"/>
+                            <field name="planned_start_date" readonly="actual_start_date"/>
+                            <field name="planned_end_date" readonly="actual_end_date"/>
+                            <field name="planned_duration" string="Planned Duration (hours)" readonly="1"/>
+                        </group>
+                        <group string="Actual Timing">
+                            <field name="actual_start_date" readonly="1"/>
+                            <field name="actual_end_date" readonly="1"/>
+                            <field name="actual_duration" string="Actual Duration (hours)" readonly="1"/>
                         </group>
                         <group string="Statistics">
                             <field name="total_volume"/>
@@ -101,8 +109,11 @@
         <field name="arch" type="xml">
             <list string="Trading Sessions" decoration-success="state == 'open'" decoration-muted="state == 'settled'">
                 <field name="name"/>
-                <field name="start_date"/>
-                <field name="end_date"/>
+                <field name="planned_start_date" optional="hide"/>
+                <field name="planned_end_date" optional="hide"/>
+                <field name="actual_start_date" optional="show"/>
+                <field name="actual_end_date" optional="show"/>
+                <field name="actual_duration" string="Duration (hrs)" optional="show"/>
                 <field name="state"/>
                 <field name="total_orders"/>
                 <field name="total_trades"/>
@@ -120,8 +131,9 @@
             <kanban>
                 <field name="name"/>
                 <field name="state"/>
-                <field name="start_date"/>
-                <field name="end_date"/>
+                <field name="planned_start_date"/>
+                <field name="actual_start_date"/>
+                <field name="actual_end_date"/>
                 <field name="total_value"/>
                 <templates>
                     <t t-name="kanban-box">
@@ -131,7 +143,12 @@
                                     <field name="name"/>
                                 </strong>
                                 <div class="text-muted">
-                                    <field name="start_date" widget="date"/> - <field name="end_date" widget="date"/>
+                                    <t t-if="record.actual_start_date.raw_value">
+                                        <field name="actual_start_date" widget="date"/> - <field name="actual_end_date" widget="date"/>
+                                    </t>
+                                    <t t-else="">
+                                        Planned: <field name="planned_start_date" widget="date"/>
+                                    </t>
                                 </div>
                                 <div>
                                     <span class="badge badge-pill" t-attf-class="#{record.state.raw_value == 'open' ? 'badge-success' : (record.state.raw_value == 'draft' ? 'badge-info' : 'badge-secondary')}">
@@ -166,7 +183,8 @@
                 <separator/>
                 <group expand="0" string="Group By">
                     <filter string="State" name="group_by_state" context="{'group_by': 'state'}"/>
-                    <filter string="Start Date" name="group_by_start" context="{'group_by': 'start_date:month'}"/>
+                    <filter string="Planned Start Date" name="group_by_planned_start" context="{'group_by': 'planned_start_date:month'}"/>
+                    <filter string="Actual Start Date" name="group_by_actual_start" context="{'group_by': 'actual_start_date:month'}"/>
                 </group>
             </search>
         </field>

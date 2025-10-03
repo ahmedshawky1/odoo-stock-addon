@@ -78,7 +78,8 @@ class StockPriceHistory(models.Model):
         ('manual', 'Manual Adjustment'),
         ('ipo', 'IPO Pricing'),
         ('corporate', 'Corporate Action'),
-        ('circuit', 'Circuit Breaker')
+        ('circuit', 'Circuit Breaker'),
+        ('session_end', 'Session End Snapshot'),
     ], string='Change Reason', default='trade')
     
     notes = fields.Text(

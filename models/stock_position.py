@@ -260,7 +260,7 @@ class StockPosition(models.Model):
             'name': f'Trades - {self.security_id.symbol}',
             'type': 'ir.actions.act_window',
             'res_model': 'stock.trade',
-            'view_mode': 'tree,form',
+            'view_mode': 'list,form',
             'domain': domain,
             'context': {
                 'default_security_id': self.security_id.id,

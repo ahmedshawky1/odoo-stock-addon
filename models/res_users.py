@@ -32,9 +32,9 @@ class ResUsers(models.Model):
     # Relationships
     broker_id = fields.Many2one(
         'res.users',
-        string='Broker',
+        string='Default Broker',
         domain=[('user_type', '=', 'broker')],
-        help='Assigned broker for this investor'
+        help='Optional: Default broker for this investor. Investors can work with any broker.'
     )
     
     client_ids = fields.One2many(
@@ -194,11 +194,12 @@ class ResUsers(models.Model):
     
     @api.constrains('user_type', 'broker_id')
     def _check_broker_assignment(self):
+        """Validate broker assignment - investors can optionally have a default broker"""
         for user in self:
-            if user.user_type == 'investor' and not user.broker_id:
-                raise ValidationError("Investors must be assigned to a broker.")
+            # Only check that non-investors don't have a broker assigned
             if user.user_type != 'investor' and user.broker_id:
                 raise ValidationError("Only investors can have an assigned broker.")
+            # Note: Investors are NOT required to have a broker - they can work with any broker
     
     @api.constrains('cash_balance')
     def _check_cash_balance(self):
@@ -213,7 +214,7 @@ class ResUsers(models.Model):
             'name': f"{self.name}'s Portfolio",
             'type': 'ir.actions.act_window',
             'res_model': 'stock.position',
-            'view_mode': 'tree,form',
+            'view_mode': 'list,form',
             'domain': [('user_id', '=', self.id)],
             'context': {'default_user_id': self.id}
         }
@@ -225,7 +226,7 @@ class ResUsers(models.Model):
             'name': f"{self.name}'s Orders",
             'type': 'ir.actions.act_window',
             'res_model': 'stock.order',
-            'view_mode': 'tree,form',
+            'view_mode': 'list,form',
             'domain': [('user_id', '=', self.id)],
             'context': {'default_user_id': self.id}
         } 

@@ -2,7 +2,16 @@
 <odoo>
     <data noupdate="1">
         
-        <!-- Data records will be added here -->
+        <!-- Initial Trading Session -->
+        <record id="session_01" model="stock.session">
+            <field name="name">Session 01</field>
+            <field name="state">draft</field>
+            <field name="price_change_threshold">15.0</field>
+            <field name="broker_commission_rate">0.5</field>
+            <field name="tick_size">0.01</field>
+            <field name="circuit_breaker_upper">10.0</field>
+            <field name="circuit_breaker_lower">10.0</field>
+        </record>
         
     </data>
 </odoo>
