@@ -49,36 +49,8 @@ class StockMarketPortal(CustomerPortal):
 
     @http.route(['/my', '/my/home'], type='http', auth="user", website=True)
     def home(self, **kw):
-        values = self._prepare_portal_layout_values()
-        user = request.env.user
-        
-        # Add user type specific data
-        values.update({
-            'user': user,  # Add user to context for template
-            'user_type': user.user_type,
-            'cash_balance': user.cash_balance or 0.0,
-            'portfolio_value': user.portfolio_value or 0.0,
-            'total_assets': user.total_assets or 0.0,
-            'profit_loss': user.profit_loss or 0.0,
-            'profit_loss_percentage': user.profit_loss_percentage or 0.0,
-            'display_currency': request.env.company.currency_id,
-        })
-        
-        # Get active session
-        active_session = request.env['stock.session'].sudo().search([('state', '=', 'open')], limit=1)
-        values['active_session'] = active_session
-        
-        # Get market movers
-        securities = request.env['stock.security'].sudo().search([('active', '=', True)])
-        gainers = securities.filtered(lambda s: s.change_percentage > 0).sorted('change_percentage', reverse=True)[:5]
-        losers = securities.filtered(lambda s: s.change_percentage < 0).sorted('change_percentage')[:5]
-        
-        values.update({
-            'top_gainers': gainers,
-            'top_losers': losers,
-        })
-        
-        return request.render("portal.portal_my_home", values)
+        """Redirect /my to /market to make it the main entry point"""
+        return request.redirect('/market')
 
     # Portfolio View
     @http.route(['/my/portfolio', '/my/portfolio/page/<int:page>'], type='http', auth="user", website=True)

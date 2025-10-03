@@ -731,6 +731,164 @@
         <t t-call="portal.portal_layout">
             <t t-set="breadcrumbs_searchbar" t-value="True"/>
             
+            <!-- Custom Navigation Bar -->
+            <nav class="navbar navbar-expand-lg navbar-dark bg-primary mb-4">
+                <div class="container-fluid">
+                    <a class="navbar-brand" href="/market">
+                        <i class="fa fa-line-chart me-2"></i>Stock Market Portal
+                    </a>
+                    
+                    <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav" aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation">
+                        <span class="navbar-toggler-icon"></span>
+                    </button>
+                    
+                    <div class="collapse navbar-collapse" id="navbarNav">
+                        <ul class="navbar-nav me-auto">
+                            <!-- Dashboard -->
+                            <li class="nav-item">
+                                <a class="nav-link" href="/market">
+                                    <i class="fa fa-dashboard me-1"></i>Dashboard
+                                </a>
+                            </li>
+                            
+                            <!-- Trading -->
+                            <li class="nav-item dropdown">
+                                <a class="nav-link dropdown-toggle" href="#" role="button" data-bs-toggle="dropdown">
+                                    <i class="fa fa-exchange-alt me-1"></i>Trading
+                                </a>
+                                <ul class="dropdown-menu">
+                                    <li><a class="dropdown-item" href="/market/trading">
+                                        <i class="fa fa-plus me-1"></i>Place Orders
+                                    </a></li>
+                                    <li><a class="dropdown-item" href="/market/orders">
+                                        <i class="fa fa-list me-1"></i>My Orders
+                                    </a></li>
+                                    <li><a class="dropdown-item" href="/my/trades">
+                                        <i class="fa fa-handshake me-1"></i>Trade History
+                                    </a></li>
+                                </ul>
+                            </li>
+                            
+                            <!-- Portfolio -->
+                            <li class="nav-item dropdown">
+                                <a class="nav-link dropdown-toggle" href="#" role="button" data-bs-toggle="dropdown">
+                                    <i class="fa fa-briefcase me-1"></i>Portfolio
+                                </a>
+                                <ul class="dropdown-menu">
+                                    <li><a class="dropdown-item" href="/market/portfolio">
+                                        <i class="fa fa-pie-chart me-1"></i>Holdings
+                                    </a></li>
+                                    <li><a class="dropdown-item" href="/my/positions">
+                                        <i class="fa fa-bar-chart me-1"></i>Positions
+                                    </a></li>
+                                    <li><a class="dropdown-item" href="/my/performance">
+                                        <i class="fa fa-trending-up me-1"></i>Performance
+                                    </a></li>
+                                </ul>
+                            </li>
+                            
+                            <!-- Banking -->
+                            <li class="nav-item dropdown">
+                                <a class="nav-link dropdown-toggle" href="#" role="button" data-bs-toggle="dropdown">
+                                    <i class="fa fa-university me-1"></i>Banking
+                                </a>
+                                <ul class="dropdown-menu">
+                                    <li><a class="dropdown-item" href="/my/deposits">
+                                        <i class="fa fa-piggy-bank me-1"></i>Deposits
+                                    </a></li>
+                                    <li><a class="dropdown-item" href="/my/loans">
+                                        <i class="fa fa-credit-card me-1"></i>Loans
+                                    </a></li>
+                                    <li><a class="dropdown-item" href="/my/banking">
+                                        <i class="fa fa-bank me-1"></i>Banking Dashboard
+                                    </a></li>
+                                </ul>
+                            </li>
+                            
+                            <!-- Market Data -->
+                            <li class="nav-item dropdown">
+                                <a class="nav-link dropdown-toggle" href="#" role="button" data-bs-toggle="dropdown">
+                                    <i class="fa fa-chart-line me-1"></i>Market
+                                </a>
+                                <ul class="dropdown-menu">
+                                    <li><a class="dropdown-item" href="/my/market">
+                                        <i class="fa fa-globe me-1"></i>Market Data
+                                    </a></li>
+                                    <li><a class="dropdown-item" href="/my/securities">
+                                        <i class="fa fa-certificate me-1"></i>Securities
+                                    </a></li>
+                                    <li><a class="dropdown-item" href="/my/watchlist">
+                                        <i class="fa fa-eye me-1"></i>Watchlist
+                                    </a></li>
+                                </ul>
+                            </li>
+                            
+                            <!-- Broker Functions -->
+                            <t t-if="user.user_type == 'broker'">
+                                <li class="nav-item dropdown">
+                                    <a class="nav-link dropdown-toggle" href="#" role="button" data-bs-toggle="dropdown">
+                                        <i class="fa fa-users me-1"></i>Clients
+                                    </a>
+                                    <ul class="dropdown-menu">
+                                        <li><a class="dropdown-item" href="/my/clients">
+                                            <i class="fa fa-user-friends me-1"></i>Client List
+                                        </a></li>
+                                        <li><a class="dropdown-item" href="/my/commissions">
+                                            <i class="fa fa-dollar-sign me-1"></i>Commissions
+                                        </a></li>
+                                        <li><a class="dropdown-item" href="/my/client-orders">
+                                            <i class="fa fa-clipboard-list me-1"></i>Client Orders
+                                        </a></li>
+                                    </ul>
+                                </li>
+                            </t>
+                            
+                            <!-- Admin Functions -->
+                            <t t-if="user.user_type == 'admin'">
+                                <li class="nav-item dropdown">
+                                    <a class="nav-link dropdown-toggle" href="#" role="button" data-bs-toggle="dropdown">
+                                        <i class="fa fa-cog me-1"></i>Admin
+                                    </a>
+                                    <ul class="dropdown-menu">
+                                        <li><a class="dropdown-item" href="/web#menu_id=stock_market_simulation.menu_stock_root">
+                                            <i class="fa fa-tachometer-alt me-1"></i>Admin Panel
+                                        </a></li>
+                                        <li><a class="dropdown-item" href="/my/sessions">
+                                            <i class="fa fa-calendar me-1"></i>Sessions
+                                        </a></li>
+                                        <li><a class="dropdown-item" href="/my/reports">
+                                            <i class="fa fa-file-alt me-1"></i>Reports
+                                        </a></li>
+                                    </ul>
+                                </li>
+                            </t>
+                        </ul>
+                        
+                        <!-- User Info -->
+                        <ul class="navbar-nav">
+                            <li class="nav-item dropdown">
+                                <a class="nav-link dropdown-toggle" href="#" role="button" data-bs-toggle="dropdown">
+                                    <i class="fa fa-user-circle me-1"></i><t t-esc="user.name"/>
+                                    <span class="badge bg-light text-dark ms-1"><t t-esc="user.user_type.title()"/></span>
+                                </a>
+                                <ul class="dropdown-menu">
+                                    <li><a class="dropdown-item" href="/my/account">
+                                        <i class="fa fa-user me-1"></i>My Account
+                                    </a></li>
+                                    <li><a class="dropdown-item" href="/my/security">
+                                        <i class="fa fa-shield-alt me-1"></i>Security
+                                    </a></li>
+                                    <li><hr class="dropdown-divider"/></li>
+                                    <li><a class="dropdown-item" href="/web/session/logout">
+                                        <i class="fa fa-sign-out-alt me-1"></i>Logout
+                                    </a></li>
+                                </ul>
+                            </li>
+                        </ul>
+                    </div>
+                </div>
+            </nav>
+            
             <t t-call="portal.portal_searchbar">
                 <t t-set="title">Stock Market Portal</t>
             </t>
@@ -1042,6 +1200,31 @@
                 </div>
             </div>
         </t>
+    </template>
+    
+    <!-- Remove "Powered by Odoo" Footer -->
+    <template id="remove_odoo_branding" inherit_id="portal.portal_layout" priority="99">
+        <xpath expr="//div[@class='o_portal_footer']" position="replace">
+            <div class="o_portal_footer bg-light mt-5 py-4">
+                <div class="container">
+                    <div class="text-center text-muted">
+                        <p class="mb-0">© <t t-esc="datetime.datetime.now().year"/> Stock Market Simulation Portal</p>
+                        <small>Professional Trading Platform</small>
+                    </div>
+                </div>
+            </div>
+        </xpath>
+    </template>
+    
+    <!-- Redirect /my to /market -->
+    <template id="redirect_my_to_market" inherit_id="portal.portal_my_home" priority="99">
+        <xpath expr="//div[hasclass('o_portal_wrap')]" position="after">
+            <script>
+                if (window.location.pathname === '/my' || window.location.pathname === '/my/') {
+                    window.location.href = '/market';
+                }
+            </script>
+        </xpath>
     </template>
     
 </odoo> 
