@@ -30,6 +30,13 @@ class StockOrder(models.Model):
         tracking=True
     )
     
+    broker_id = fields.Many2one(
+        'res.users', string='Broker',
+        related='user_id.broker_id',
+        store=True, index=True,
+        readonly=True
+    )
+    
     session_id = fields.Many2one(
         'stock.session', string='Trading Session',
         required=True, index=True,

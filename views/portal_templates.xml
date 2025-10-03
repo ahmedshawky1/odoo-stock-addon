@@ -224,6 +224,27 @@
                             <form id="order_form" method="post">
                                 <input type="hidden" name="csrf_token" t-att-value="request.csrf_token()"/>
                                 
+                                <!-- Client Selection for Brokers -->
+                                <t t-if="user.user_type == 'broker'">
+                                    <div class="form-group">
+                                        <label for="client_id">Select Client</label>
+                                        <select class="form-control" id="client_id" name="client_id" required="required">
+                                            <option value="">-- Select Client --</option>
+                                            <t t-foreach="clients" t-as="client">
+                                                <option t-att-value="client.id" t-att-data-cash="client.cash_balance">
+                                                    <t t-esc="client.name"/> (Cash: $<t t-esc="'{:,.2f}'.format(client.cash_balance)"/>)
+                                                </option>
+                                            </t>
+                                        </select>
+                                    </div>
+                                    
+                                    <div id="client_info" class="alert alert-info" style="display: none;">
+                                        <strong>Client Info:</strong>
+                                        <div id="client_cash">Cash Balance: $0.00</div>
+                                        <div id="client_portfolio">Portfolio Value: $0.00</div>
+                                    </div>
+                                </t>
+                                
                                 <div class="form-group">
                                     <label for="side">Order Type</label>
                                     <div>
@@ -365,6 +386,18 @@
                         }
                     });
                     
+                    // Handle client selection change (for brokers)
+                    $('#client_id').change(function() {
+                        var selectedOption = $(this).find('option:selected');
+                        var clientCash = selectedOption.data('cash');
+                        if (clientCash !== undefined) {
+                            $('#client_cash').text('Cash Balance: $' + clientCash.toLocaleString('en-US', {minimumFractionDigits: 2}));
+                            $('#client_info').show();
+                        } else {
+                            $('#client_info').hide();
+                        }
+                    });
+                    
                     // Submit order
                     $('#order_form').submit(function(e) {
                         e.preventDefault();
@@ -376,6 +409,15 @@
                             quantity: $('#quantity').val(),
                             price: $('#price').val()
                         };
+                        
+                        // Add client_id if broker is placing order
+                        if ($('#client_id').length) {
+                            formData.client_id = $('#client_id').val();
+                            if (!formData.client_id) {
+                                alert('Please select a client');
+                                return;
+                            }
+                        }
                         
                         $.ajax({
                             url: '/my/order/create',
@@ -876,7 +918,7 @@
                                             <td class="text-end" t-attf-class="#{sec.change_percentage >= 0 and 'text-success' or 'text-danger'}">
                                                 <t t-esc="sec.change_percentage"/>%
                                             </td>
-                                            <td class="text-end"><t t-esc="sec.volume"/></td>
+                                            <td class="text-end"><t t-esc="sec.volume_today"/></td>
                                         </tr>
                                     </tbody>
                                 </table>

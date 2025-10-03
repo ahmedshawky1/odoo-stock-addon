@@ -31,6 +31,7 @@
                     <group>
                         <group string="Order Details">
                             <field name="user_id" options="{'no_create': True}"/>
+                            <field name="broker_id" readonly="1" options="{'no_create': True}"/>
                             <field name="session_id" options="{'no_create': True}" domain="[('state', '=', 'open')]"/>
                             <field name="security_id" options="{'no_create': True}"/>
                         </group>
@@ -89,6 +90,7 @@
                 <field name="name"/>
                 <field name="order_date"/>
                 <field name="user_id"/>
+                <field name="broker_id"/>
                 <field name="security_id"/>
                 <field name="side"/>
                 <field name="order_type"/>
@@ -169,6 +171,7 @@
             <search string="Orders">
                 <field name="name"/>
                 <field name="user_id"/>
+                <field name="broker_id"/>
                 <field name="security_id"/>
                 <filter string="My Orders" name="filter_my_orders" domain="[('user_id', '=', uid)]"/>
                 <separator/>
@@ -185,6 +188,7 @@
                 <separator/>
                 <group expand="0" string="Group By">
                     <filter string="User" name="group_by_user" context="{'group_by': 'user_id'}"/>
+                    <filter string="Broker" name="group_by_broker" context="{'group_by': 'broker_id'}"/>
                     <filter string="Security" name="group_by_security" context="{'group_by': 'security_id'}"/>
                     <filter string="Side" name="group_by_side" context="{'group_by': 'side'}"/>
                     <filter string="Status" name="group_by_status" context="{'group_by': 'status'}"/>

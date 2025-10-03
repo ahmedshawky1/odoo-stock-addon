@@ -201,10 +201,15 @@ class StockMarketPortal(CustomerPortal):
     # Order Entry
     @http.route(['/my/order/new'], type='http', auth="user", website=True)
     def portal_order_new(self, **kw):
+        """Order creation page - restricted to brokers only"""
         values = self._prepare_portal_layout_values()
         user = request.env.user
         
-        if user.user_type != 'investor':
+        # Only brokers can access order creation to place orders for clients
+        if user.user_type == 'investor':
+            values['error'] = "Investors cannot place orders directly. Please contact your broker to place orders on your behalf."
+            return request.render("stock_market_simulation.portal_access_denied", values)
+        elif user.user_type != 'broker':
             return request.redirect('/my')
         
         # Get active session
@@ -216,18 +221,24 @@ class StockMarketPortal(CustomerPortal):
         # Get securities
         securities = request.env['stock.security'].sudo().search([('active', '=', True)])
         
-        # Get user positions for sell orders
-        positions = request.env['stock.position'].search([
-            ('user_id', '=', user.id),
+        # Get broker's clients
+        clients = request.env['res.users'].search([
+            ('broker_id', '=', user.id),
+            ('user_type', '=', 'investor')
+        ])
+        
+        # Get positions for all clients (for sell orders)
+        client_positions = request.env['stock.position'].search([
+            ('user_id', 'in', clients.ids),
             ('available_quantity', '>', 0)
         ])
         
         values.update({
             'user': user,
             'securities': securities,
-            'positions': positions,
+            'clients': clients,
+            'client_positions': client_positions,
             'active_session': active_session,
-            'cash_balance': user.cash_balance or 0.0,
             'display_currency': request.env.company.currency_id,
         })
         
@@ -237,7 +248,21 @@ class StockMarketPortal(CustomerPortal):
     def portal_order_create(self, **kw):
         user = request.env.user
         
-        if user.user_type != 'investor':
+        # Allow brokers to place orders on behalf of clients
+        if user.user_type == 'broker':
+            client_id = kw.get('client_id')
+            if not client_id:
+                return {'error': 'Client must be selected'}
+            
+            client = request.env['res.users'].browse(int(client_id))
+            if not client or client.broker_id.id != user.id:
+                return {'error': 'Invalid client selected'}
+            
+            # Use client for order creation
+            order_user = client
+        elif user.user_type == 'investor':
+            return {'error': 'Investors cannot place orders directly. Please contact your broker.'}
+        else:
             return {'error': 'Unauthorized'}
         
         # Get active session
@@ -246,9 +271,9 @@ class StockMarketPortal(CustomerPortal):
             return {'error': 'No active trading session'}
         
         try:
-            # Create order
+            # Create order on behalf of client
             order_vals = {
-                'user_id': user.id,
+                'user_id': order_user.id,  # Client who owns the order
                 'session_id': active_session.id,
                 'security_id': int(kw.get('security_id')),
                 'side': kw.get('side'),
@@ -267,46 +292,40 @@ class StockMarketPortal(CustomerPortal):
             if price * quantity < 100:  # Assuming min order value of $100
                 return {'error': f'Order value (${price * quantity:.2f}) is below minimum required ($100.00)', 'type': 'validation'}
             
-            # Check user cash balance for buy orders
+            # Check client cash balance for buy orders
             if side == 'buy':
                 required_cash = price * quantity
-                if user.cash_balance < required_cash:
-                    return {'error': f'Insufficient funds. Required: ${required_cash:,.2f}, Available: ${user.cash_balance:,.2f}', 'type': 'validation'}
+                if order_user.cash_balance < required_cash:
+                    return {'error': f'Client insufficient funds. Required: ${required_cash:,.2f}, Available: ${order_user.cash_balance:,.2f}', 'type': 'validation'}
             
-            # Check position for sell orders
+            # Check client position for sell orders
             if side == 'sell':
                 position = request.env['stock.position'].search([
-                    ('user_id', '=', user.id),
-                    ('security_id', '=', security.id)
+                    ('user_id', '=', order_user.id),
+                    ('security_id', '=', int(kw.get('security_id')))
                 ], limit=1)
-                available_quantity = position.quantity if position else 0
-                if available_quantity < quantity:
-                    return {'error': f'Insufficient shares. Required: {quantity}, Available: {available_quantity}', 'type': 'validation'}
+                
+                if not position or position.available_quantity < quantity:
+                    available = position.available_quantity if position else 0
+                    return {'error': f'Client insufficient shares. Required: {quantity:,}, Available: {available:,}', 'type': 'validation'}
             
-            order = request.env['stock.order'].create(order_vals)
+            # Create the order
+            order = request.env['stock.order'].sudo().create(order_vals)
             
-            # Submit order
-            order.action_submit()
+            # Log the broker action
+            order.message_post(
+                body=f"Order placed by broker {user.name} on behalf of client {order_user.name}",
+                message_type='comment'
+            )
             
             return {
                 'success': True,
-                'order_id': order.id,
-                'order_name': order.name,
-                'message': f'Order {order.name} for {quantity} shares of {security.symbol} submitted successfully'
+                'message': f'Order #{order.name} placed successfully for client {order_user.name}',
+                'order_id': order.id
             }
             
-        except ValidationError as e:
-            _logger.warning(f"Validation error in order submission: {str(e)}")
-            return {'error': str(e), 'type': 'validation'}
-        except UserError as e:
-            _logger.warning(f"User error in order submission: {str(e)}")
-            return {'error': str(e), 'type': 'user_error'}
-        except AccessError as e:
-            _logger.warning(f"Access error in order submission: {str(e)}")
-            return {'error': 'You do not have permission to perform this action.', 'type': 'access'}
         except Exception as e:
-            _logger.error(f"Unexpected error in order submission: {str(e)}", exc_info=True)
-            return {'error': 'An unexpected error occurred. Please try again later or contact support.', 'type': 'system'}
+            return {'error': str(e)}
 
     # Market Data
     @http.route(['/market', '/market/home'], type='http', auth="user", website=True)
@@ -371,10 +390,11 @@ class StockMarketPortal(CustomerPortal):
     
     @http.route(['/market/trading'], type='http', auth="user", website=True)
     def market_trading(self, **kw):
-        """Trading view in market portal"""
+        """Trading view in market portal - for brokers to place orders on behalf of clients"""
         user = request.env.user
         
-        if user.user_type != 'investor':
+        # Only brokers can access trading interface to place orders for clients
+        if user.user_type != 'broker':
             return request.redirect('/market')
         
         # Get active session
@@ -386,18 +406,24 @@ class StockMarketPortal(CustomerPortal):
         # Get all active securities
         securities = request.env['stock.security'].sudo().search([('active', '=', True)])
         
-        # Get user positions for selling
-        positions = request.env['stock.position'].search([
-            ('user_id', '=', user.id),
+        # Get broker's clients (investors assigned to this broker)
+        clients = request.env['res.users'].search([
+            ('broker_id', '=', user.id),
+            ('user_type', '=', 'investor')
+        ])
+        
+        # Get positions for all clients (for sell orders)
+        client_positions = request.env['stock.position'].search([
+            ('user_id', 'in', clients.ids),
             ('available_quantity', '>', 0)
         ])
         
         values = {
             'user': user,
             'securities': securities,
-            'positions': positions,
+            'clients': clients,
+            'client_positions': client_positions,
             'active_session': active_session,
-            'cash_balance': user.cash_balance or 0.0,
             'display_currency': request.env.company.currency_id,
             'page_name': 'trading',
         }
