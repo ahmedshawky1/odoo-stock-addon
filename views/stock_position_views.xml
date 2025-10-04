@@ -34,7 +34,7 @@
                             <field name="average_cost"/>
                             <field name="cost_basis" widget="monetary"/>
                             <field name="market_value" widget="monetary"/>
-                            <field name="portfolio_weight" widget="percentage"/>
+                            <field name="portfolio_weight" widget="percentage" options="{'factor': 1.0}"/>
                         </group>
                     </group>
                     <group>
@@ -42,7 +42,7 @@
                             <field name="unrealized_pnl" widget="monetary" 
                                    decoration-success="unrealized_pnl > 0" 
                                    decoration-danger="unrealized_pnl &lt; 0"/>
-                            <field name="unrealized_pnl_percent" widget="percentage"
+                <field name="unrealized_pnl_percent" widget="percentage" options="{'factor': 1.0}"
                                    decoration-success="unrealized_pnl_percent > 0" 
                                    decoration-danger="unrealized_pnl_percent &lt; 0"/>
                         </group>
@@ -72,10 +72,10 @@
                 <field name="unrealized_pnl" widget="monetary"
                        decoration-success="unrealized_pnl > 0" 
                        decoration-danger="unrealized_pnl &lt; 0"/>
-                <field name="unrealized_pnl_percent" widget="percentage"
+          <field name="unrealized_pnl_percent" widget="percentage" options="{'factor': 1.0}"
                        decoration-success="unrealized_pnl_percent > 0" 
                        decoration-danger="unrealized_pnl_percent &lt; 0"/>
-                <field name="portfolio_weight" widget="percentage"/>
+          <field name="portfolio_weight" widget="percentage" options="{'factor': 1.0}"/>
             </list>
         </field>
     </record>

@@ -52,7 +52,7 @@
                             <field name="filled_value" widget="monetary"/>
                         </group>
                         <group string="Fees &amp; Commissions">
-                            <field name="broker_commission_rate" widget="percentage"/>
+                            <field name="broker_commission_rate" widget="percentage" options="{'factor': 1.0}"/>
                             <field name="broker_commission" widget="monetary"/>
                         </group>
                     </group>
@@ -86,7 +86,7 @@
         <field name="name">stock.order.tree</field>
         <field name="model">stock.order</field>
         <field name="arch" type="xml">
-            <list string="Orders" create="true" decoration-success="status == 'filled'" decoration-warning="status == 'partial'" decoration-danger="status in ['cancelled', 'rejected']">
+            <list string="Orders" create="true" decoration-success="status == 'filled'" decoration-warning="status == 'partial'" decoration-danger="status in ['cancelled', 'rejected']" default_order="session_id desc, create_date desc">
                 <field name="name"/>
                 <field name="order_date"/>
                 <field name="user_id"/>
@@ -187,6 +187,7 @@
                 <filter string="Cancelled" name="filter_cancelled" domain="[('status', '=', 'cancelled')]"/>
                 <separator/>
                 <group expand="0" string="Group By">
+                    <filter string="Session" name="group_by_session" context="{'group_by': 'session_id'}"/>
                     <filter string="User" name="group_by_user" context="{'group_by': 'user_id'}"/>
                     <filter string="Broker" name="group_by_broker" context="{'group_by': 'broker_id'}"/>
                     <filter string="Security" name="group_by_security" context="{'group_by': 'security_id'}"/>
@@ -203,7 +204,7 @@
         <field name="name">Orders</field>
         <field name="res_model">stock.order</field>
         <field name="view_mode">list,kanban,form</field>
-        <field name="context">{}</field>
+    <field name="context">{'search_default_group_by_session': 1}</field>
         <field name="help" type="html">
             <p class="o_view_nocontent_smiling_face">
                 Place a new order

@@ -30,7 +30,7 @@
                             <field name="banker_id" options="{'no_create': True}"/>
                             <field name="loan_type"/>
                             <field name="amount" widget="monetary"/>
-                            <field name="interest_rate" widget="percentage"/>
+                            <field name="interest_rate" widget="percentage" options="{'factor': 1.0}"/>
                             <field name="term_months"/>
                             <field name="emi_amount" widget="monetary"/>
                         </group>
@@ -45,7 +45,7 @@
                             <field name="collateral_security_id" options="{'no_create': True}"/>
                             <field name="collateral_quantity"/>
                             <field name="collateral_value" widget="monetary"/>
-                            <field name="ltv_ratio" widget="percentage"/>
+                            <field name="ltv_ratio" widget="percentage" options="{'factor': 1.0}"/>
                             <field name="margin_call_price" invisible="loan_type != 'margin'"/>
                         </group>
                     </group>
@@ -56,7 +56,7 @@
                             <field name="total_outstanding" widget="monetary"/>
                         </group>
                         <group string="Risk Metrics">
-                            <field name="ltv_ratio" widget="percentage"/>
+                            <field name="ltv_ratio" widget="percentage" options="{'factor': 1.0}"/>
                             <field name="margin_call_triggered"/>
                             <field name="penalty_amount" widget="monetary"/>
                         </group>
@@ -82,7 +82,7 @@
                 <field name="banker_id"/>
                 <field name="loan_type"/>
                 <field name="amount" widget="monetary"/>
-                <field name="interest_rate" widget="percentage"/>
+                <field name="interest_rate" widget="percentage" options="{'factor': 1.0}"/>
                 <field name="disbursement_date"/>
                 <field name="maturity_date"/>
                 <field name="status" decoration-info="status == 'draft'" decoration-success="status == 'paid'" decoration-warning="status == 'active'" decoration-danger="status == 'defaulted'"/>

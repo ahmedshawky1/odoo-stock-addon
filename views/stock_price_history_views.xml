@@ -12,7 +12,7 @@
                 <field name="old_price"/>
                 <field name="new_price"/>
                 <field name="change_amount" decoration-success="change_amount > 0" decoration-danger="change_amount &lt; 0"/>
-                <field name="change_percentage" widget="percentage" decoration-success="change_percentage > 0" decoration-danger="change_percentage &lt; 0"/>
+                <field name="change_percentage" widget="percentage" options="{'factor': 1.0}" decoration-success="change_percentage > 0" decoration-danger="change_percentage &lt; 0"/>
                 <field name="change_reason"/>
                 <field name="session_id"/>
             </list>

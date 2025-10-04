@@ -23,7 +23,7 @@
                             <field name="total_loans"/>
                             <field name="total_assets"/>
                             <field name="profit_loss"/>
-                            <field name="profit_loss_percentage" widget="percentage"/>
+                            <field name="profit_loss_percentage" widget="percentage" options="{'factor': 1.0}"/>
                             <field name="total_commission" invisible="user_type != 'broker'"/>
                         </group>
                     </group>
@@ -54,7 +54,7 @@
                 <field name="portfolio_value" widget="monetary"/>
                 <field name="total_assets" widget="monetary"/>
                 <field name="profit_loss" widget="monetary" decoration-success="profit_loss > 0" decoration-danger="profit_loss &lt; 0"/>
-                <field name="profit_loss_percentage" widget="percentage"/>
+                <field name="profit_loss_percentage" widget="percentage" options="{'factor': 1.0}"/>
             </list>
         </field>
     </record>
