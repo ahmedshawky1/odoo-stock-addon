@@ -59,7 +59,11 @@ class StockMarketPortal(CustomerPortal):
         values = self._prepare_portal_layout_values()
         user = request.env.user
         
-        if user.user_type not in ['investor', 'banker']:
+        try:
+            is_system_admin = request.env.user.has_group('base.group_system')
+        except Exception:
+            is_system_admin = False
+        if user.user_type not in ['investor', 'banker'] and not is_system_admin:
             return request.redirect('/my')
         
         Position = request.env['stock.position']
@@ -108,7 +112,11 @@ class StockMarketPortal(CustomerPortal):
         values = self._prepare_portal_layout_values()
         user = request.env.user
         
-        if user.user_type != 'investor':
+        try:
+            is_system_admin = request.env.user.has_group('base.group_system')
+        except Exception:
+            is_system_admin = False
+        if user.user_type != 'investor' and not is_system_admin:
             return request.redirect('/my')
         
         Order = request.env['stock.order']
@@ -179,7 +187,11 @@ class StockMarketPortal(CustomerPortal):
         user = request.env.user
         
         # Allow investors, brokers, and admins
-        if user.user_type not in ['investor', 'broker', 'admin']:
+        try:
+            is_system_admin = request.env.user.has_group('base.group_system')
+        except Exception:
+            is_system_admin = False
+        if user.user_type not in ['investor', 'broker', 'admin'] and not is_system_admin:
             return request.redirect('/my')
         
         # Get active session
@@ -227,7 +239,11 @@ class StockMarketPortal(CustomerPortal):
         user = request.env.user
         
         # Allow brokers and admins to place orders on behalf of clients
-        if user.user_type in ['broker', 'admin']:
+        try:
+            is_system_admin = request.env.user.has_group('base.group_system')
+        except Exception:
+            is_system_admin = False
+        if user.user_type in ['broker', 'admin'] or is_system_admin:
             client_id = kw.get('client_id')
             if not client_id:
                 return {'error': 'Client must be selected'}
@@ -314,6 +330,10 @@ class StockMarketPortal(CustomerPortal):
         _logger.info(f"ORDER SUBMIT DATA: {kw}")
         try:
             user = request.env.user
+            try:
+                is_system_admin = request.env.user.has_group('base.group_system')
+            except Exception:
+                is_system_admin = False
             
             # Validate required fields
             required_fields = ['security_id', 'side', 'order_type', 'quantity']
@@ -325,7 +345,7 @@ class StockMarketPortal(CustomerPortal):
                     )
             
             # Allow brokers and admins to place orders on behalf of clients
-            if user.user_type in ['broker', 'admin']:
+            if user.user_type in ['broker', 'admin'] or is_system_admin:
                 client_id = kw.get('client_id')
                 if not client_id:
                     return request.make_response(
@@ -483,7 +503,11 @@ class StockMarketPortal(CustomerPortal):
         """Portfolio view in market portal"""
         user = request.env.user
         
-        if user.user_type != 'investor':
+        try:
+            is_system_admin = request.env.user.has_group('base.group_system')
+        except Exception:
+            is_system_admin = False
+        if user.user_type != 'investor' and not is_system_admin:
             return request.redirect('/market')
         
         # Get positions
@@ -515,7 +539,11 @@ class StockMarketPortal(CustomerPortal):
         user = request.env.user
         
         # Allow brokers and admins to access trading interface
-        if user.user_type not in ['broker', 'admin']:
+        try:
+            is_system_admin = request.env.user.has_group('base.group_system')
+        except Exception:
+            is_system_admin = False
+        if user.user_type not in ['broker', 'admin'] and not is_system_admin:
             return request.redirect('/market')
         
         # Get active session
@@ -557,7 +585,11 @@ class StockMarketPortal(CustomerPortal):
         user = request.env.user
         
         # Allow investors, brokers, and admins to view orders
-        if user.user_type not in ['investor', 'broker', 'admin']:
+        try:
+            is_system_admin = request.env.user.has_group('base.group_system')
+        except Exception:
+            is_system_admin = False
+        if user.user_type not in ['investor', 'broker', 'admin'] and not is_system_admin:
             return request.redirect('/market')
         
         # Determine scope: current session or all
@@ -638,7 +670,11 @@ class StockMarketPortal(CustomerPortal):
         values = self._prepare_portal_layout_values()
         user = request.env.user
         
-        if user.user_type not in ['broker', 'admin']:
+        try:
+            is_system_admin = request.env.user.has_group('base.group_system')
+        except Exception:
+            is_system_admin = False
+        if user.user_type not in ['broker', 'admin'] and not is_system_admin:
             return request.redirect('/my')
         
         # Get commission data based on user type
@@ -647,7 +683,7 @@ class StockMarketPortal(CustomerPortal):
             trades = request.env['stock.trade'].search([
                 '|', ('buy_broker_id', '=', user.id), ('sell_broker_id', '=', user.id)
             ])
-        else:  # admin
+        else:  # admin or system admin
             # Admins see all commissions
             trades = request.env['stock.trade'].search([])
         
@@ -712,11 +748,173 @@ class StockMarketPortal(CustomerPortal):
         }
         return request.render("stock_market_simulation.market_portal_layout", values)
 
+    # IPO: Render page (admin/banker only)
+    @http.route(['/market/ipo'], type='http', auth="user", website=True)
+    def market_ipo_page(self, **kw):
+        user = request.env.user
+        try:
+            is_system_admin = request.env.user.has_group('base.group_system')
+        except Exception:
+            is_system_admin = False
+        if user.user_type not in ['admin', 'banker'] and not is_system_admin:
+            return request.redirect('/market')
+        securities = request.env['stock.security'].search([])
+        active_session = request.env['stock.session'].search([('state', '=', 'open')], limit=1)
+        values = {
+            'user': user,
+            'page_title': 'IPO & Allocations',
+            'securities': securities,
+            'active_session': active_session,
+        }
+        return request.render("stock_market_simulation.portal_ipo_page", values)
+
+    # IPO: Create or price IPO for a security and process IPO orders
+    @http.route(['/market/ipo/create'], type='json', auth="user", methods=['POST'])
+    def market_ipo_create(self, security_id=None, ipo_price=None, total_shares=None, ipo_quantity=None):
+        try:
+            user = request.env.user
+            try:
+                is_system_admin = request.env.user.has_group('base.group_system')
+            except Exception:
+                is_system_admin = False
+            if user.user_type not in ['admin', 'banker'] and not is_system_admin:
+                return {'success': False, 'error': 'Access denied'}
+            if not security_id or not ipo_price:
+                return {'success': False, 'error': 'Missing security_id or ipo_price'}
+            # Parse inputs
+            try:
+                sec_id = int(security_id)
+                price = float(ipo_price)
+                qty = int(ipo_quantity) if ipo_quantity not in (None, '', False) else 0
+                total_sh = int(total_shares) if total_shares not in (None, '', False) else None
+            except Exception:
+                return {'success': False, 'error': 'Invalid numeric values for IPO inputs'}
+
+            if price <= 0:
+                return {'success': False, 'error': 'IPO price must be greater than zero'}
+
+            sec = request.env['stock.security'].browse(sec_id)
+            if not sec.exists():
+                return {'success': False, 'error': 'Security not found'}
+            # Update IPO details
+            vals = {'ipo_price': price}
+            if total_sh is not None:
+                if total_sh < 0:
+                    return {'success': False, 'error': 'Total shares cannot be negative'}
+                vals['total_shares'] = total_sh
+            sec.write(vals)
+            # Process IPO allocations if quantity provided
+            if qty:
+                # Enforce total_shares cap if provided
+                if sec.total_shares and sec.total_shares > 0:
+                    existing_qty = sum(request.env['stock.position'].search([
+                        ('security_id', '=', sec.id)
+                    ]).mapped('quantity'))
+                    remaining_cap = max(sec.total_shares - existing_qty, 0)
+                    if remaining_cap <= 0:
+                        return {'success': False, 'error': 'No remaining shares to allocate based on total_shares cap'}
+                    if qty > remaining_cap:
+                        qty = remaining_cap
+                engine = request.env['stock.matching.engine']
+                engine.cron_run_matching()  # ensure env ready
+                engine.process_ipo_orders(sec.id, qty, price)
+            return {'success': True, 'data': 'IPO processed'}
+        except Exception as e:
+            _logger.error(f"Error IPO create: {str(e)}")
+            return {'success': False, 'error': str(e)}
+
+    # Direct allocation: grant shares directly to an investor (admin/banker)
+    @http.route(['/market/allocation/direct'], type='json', auth="user", methods=['POST'])
+    def market_direct_allocation(self, user_id=None, security_id=None, quantity=None, price=None):
+        try:
+            current = request.env.user
+            try:
+                is_system_admin = request.env.user.has_group('base.group_system')
+            except Exception:
+                is_system_admin = False
+            if current.user_type not in ['admin', 'banker'] and not is_system_admin:
+                return {'success': False, 'error': 'Access denied'}
+            if not user_id or not security_id or not quantity or not price:
+                return {'success': False, 'error': 'Missing required fields'}
+            # Parse numeric inputs safely
+            try:
+                inv_id = int(user_id)
+                sec_id = int(security_id)
+                qty = int(quantity)
+                px = float(price)
+            except Exception:
+                return {'success': False, 'error': 'Invalid numeric values'}
+            investor = request.env['res.users'].browse(inv_id)
+            if not investor.exists() or investor.user_type != 'investor':
+                return {'success': False, 'error': 'Invalid investor'}
+            sec = request.env['stock.security'].browse(sec_id)
+            if not sec.exists():
+                return {'success': False, 'error': 'Security not found'}
+            if qty <= 0 or px <= 0:
+                return {'success': False, 'error': 'Quantity and price must be positive'}
+            # Enforce total_shares cap if defined
+            if sec.total_shares and sec.total_shares > 0:
+                existing_qty = sum(request.env['stock.position'].search([
+                    ('security_id', '=', sec.id)
+                ]).mapped('quantity'))
+                remaining_cap = max(sec.total_shares - existing_qty, 0)
+                if remaining_cap <= 0:
+                    return {'success': False, 'error': 'No remaining shares available to allocate'}
+                if qty > remaining_cap:
+                    qty = remaining_cap
+            # Upsert position
+            position = request.env['stock.position'].search([
+                ('user_id', '=', investor.id),
+                ('security_id', '=', sec.id)
+            ], limit=1)
+            if position:
+                position.update_position(qty, px, transaction_type='buy')
+            else:
+                request.env['stock.position'].create({
+                    'user_id': investor.id,
+                    'security_id': sec.id,
+                    'quantity': qty,
+                    'average_cost': px,
+                    'first_purchase_date': fields.Datetime.now(),
+                    'last_transaction_date': fields.Datetime.now(),
+                })
+            # Optional: record a synthetic IPO trade for audit
+            session = request.env['stock.session'].search([('state', '=', 'open')], limit=1) or request.env['stock.session'].search([], limit=1)
+            buy_order = request.env['stock.order'].create({
+                'user_id': investor.id,
+                'session_id': session.id if session else False,
+                'security_id': sec.id,
+                'side': 'buy',
+                'order_type': 'limit',
+                'price': px,
+                'quantity': qty,
+                'status': 'filled',
+                'entered_by_id': current.id,
+            })
+            request.env['stock.trade'].create({
+                'buy_order_id': buy_order.id,
+                'sell_order_id': False,
+                'session_id': session.id if session else False,
+                'security_id': sec.id,
+                'quantity': qty,
+                'price': px,
+                'value': qty * px,
+                'trade_type': 'block',
+            })
+            return {'success': True, 'data': 'Allocation completed'}
+        except Exception as e:
+            _logger.error(f"Direct allocation error: {str(e)}")
+            return {'success': False, 'error': str(e)}
+
     @http.route(['/market/deposits'], type='http', auth="user", website=True)
     def market_deposits(self, **kw):
         user = request.env.user
         # Investors, bankers, and admins can view deposits page
-        if user.user_type not in ['investor', 'banker', 'admin']:
+        try:
+            is_system_admin = request.env.user.has_group('base.group_system')
+        except Exception:
+            is_system_admin = False
+        if user.user_type not in ['investor', 'banker', 'admin'] and not is_system_admin:
             return request.redirect('/market')
         values = {
             'user': user,
@@ -727,7 +925,11 @@ class StockMarketPortal(CustomerPortal):
     @http.route(['/market/loans'], type='http', auth="user", website=True)
     def market_loans(self, **kw):
         user = request.env.user
-        if user.user_type not in ['investor', 'banker', 'admin']:
+        try:
+            is_system_admin = request.env.user.has_group('base.group_system')
+        except Exception:
+            is_system_admin = False
+        if user.user_type not in ['investor', 'banker', 'admin'] and not is_system_admin:
             return request.redirect('/market')
         values = {
             'user': user,
@@ -738,7 +940,11 @@ class StockMarketPortal(CustomerPortal):
     @http.route(['/market/clients'], type='http', auth="user", website=True)
     def market_clients(self, **kw):
         user = request.env.user
-        if user.user_type not in ['broker', 'admin']:
+        try:
+            is_system_admin = request.env.user.has_group('base.group_system')
+        except Exception:
+            is_system_admin = False
+        if user.user_type not in ['broker', 'admin'] and not is_system_admin:
             return request.redirect('/market')
         values = {
             'user': user,
@@ -787,11 +993,15 @@ class StockMarketPortal(CustomerPortal):
         """Get portfolio summary for current user or specified user (admin only)"""
         try:
             user = request.env.user
+            try:
+                is_system_admin = request.env.user.has_group('base.group_system')
+            except Exception:
+                is_system_admin = False
             
             # Determine which user's portfolio to query
             if user.user_type == 'investor':
                 target_user = user
-            elif user.user_type == 'admin':
+            elif user.user_type == 'admin' or is_system_admin:
                 # Admins can query specific users or their own
                 user_id = kw.get('user_id')
                 if user_id:
@@ -850,7 +1060,11 @@ class StockMarketPortal(CustomerPortal):
         values = self._prepare_portal_layout_values()
         user = request.env.user
         
-        if user.user_type not in ['banker', 'admin']:
+        try:
+            is_system_admin = request.env.user.has_group('base.group_system')
+        except Exception:
+            is_system_admin = False
+        if user.user_type not in ['banker', 'admin'] and not is_system_admin:
             return request.redirect('/my')
         
         # Get banking statistics based on user type
@@ -858,7 +1072,7 @@ class StockMarketPortal(CustomerPortal):
             # Bankers see only their own operations
             deposits = request.env['stock.deposit'].search([('banker_id', '=', user.id)])
             loans = request.env['stock.loan'].search([('banker_id', '=', user.id)])
-        else:  # admin
+        else:  # admin or system admin
             # Admins see all banking operations
             deposits = request.env['stock.deposit'].search([])
             loans = request.env['stock.loan'].search([])

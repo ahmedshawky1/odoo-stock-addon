@@ -51,6 +51,7 @@ Technical Features:
         # Data
         'data/ir_sequence_data.xml',
         'data/stock_data.xml',
+    'data/cron.xml',
         
         # Views - Backend
         'views/res_users_views.xml',

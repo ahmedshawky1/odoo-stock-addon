@@ -65,6 +65,7 @@ class StockOrder(models.Model):
         ('limit', 'Limit'),
         ('stop_loss', 'Stop Loss'),
         ('stop_limit', 'Stop Limit'),
+        ('ipo', 'IPO'),
     ], string='Order Type', required=True, default='limit', tracking=True,
        readonly="status != 'draft'")
     
@@ -235,6 +236,9 @@ class StockOrder(models.Model):
             else:
                 # For market sell, use a low price to ensure execution
                 vals['price'] = security.current_price * 0.9
+        elif vals.get('order_type') == 'ipo':
+            # IPO orders don't require a price at placement; set to 0 as placeholder
+            vals.setdefault('price', 0.0)
         
         # Ensure the entered_by_id is set to the current env user if not provided
         if not vals.get('entered_by_id'):
@@ -307,8 +311,8 @@ class StockOrder(models.Model):
         if self.session_id.state != 'open':
             raise UserError("Cannot submit order to a closed session.")
         
-        # Check security is active
-        if not self.security_id.active:
+        # Check security is active (except for IPO orders which can be placed before activation)
+        if self.order_type != 'ipo' and not self.security_id.active:
             raise UserError("Cannot trade inactive securities.")
         
         # Check quantity
@@ -373,8 +377,8 @@ class StockOrder(models.Model):
             elif self.side == 'buy' and self.stop_price <= current_price:
                 raise UserError("Stop price for buy orders must be above current market price.")
         
-        # For buy orders, check available cash
-        if self.side == 'buy':
+        # For buy orders, check available cash (skip for IPO orders; validated at allocation time)
+        if self.side == 'buy' and self.order_type != 'ipo':
             # Calculate required amount including commission
             if self.order_type == 'market':
                 # For market orders, use current price + 10% buffer
@@ -470,13 +474,12 @@ class StockOrder(models.Model):
             order._validate_order()
             
             # Set appropriate status based on order type
-            if order.order_type in ['stop_loss', 'stop_limit']:
+            if order.order_type in ['stop_loss', 'stop_limit', 'ipo']:
                 order.status = 'submitted'  # Stop orders wait for trigger
             else:
                 order.status = 'open'  # Regular orders are immediately open
             
-            # Trigger matching engine
-            self.env['stock.matching.engine'].match_all_securities(order.session_id)
+            # Matching is now handled by a cron job every minute
             
             # Log the action
             order.message_post(body=f"Order submitted at {fields.Datetime.now()}")

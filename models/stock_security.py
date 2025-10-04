@@ -72,6 +72,13 @@ class StockSecurity(models.Model):
         help='Initial public offering price'
     )
     
+    # Shares Outstanding
+    total_shares = fields.Integer(
+        string='Total Shares',
+        default=0,
+        help='Total shares outstanding or issued. Used for IPO and position limits.'
+    )
+    
     # Trading Rules
     tick_size = fields.Float(
         string='Tick Size',

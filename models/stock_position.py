@@ -298,20 +298,27 @@ class StockPosition(models.Model):
         }
     
     def _apply_ir_rules(self, query, mode='read'):
-        """Override to check user_type instead of relying only on groups"""
-        if self.env.user.user_type in ['broker', 'admin']:
-            # Brokers and admins can see all positions
+        """Override to allow full access for system admins and relax for broker/admin user_type"""
+        try:
+            is_system_admin = self.env.user.has_group('base.group_system')
+        except Exception:
+            is_system_admin = False
+        if is_system_admin or self.env.user.user_type in ['broker', 'admin']:
+            # System admins, brokers, and admins can see all positions
             return super(StockPosition, self)._apply_ir_rules(query, mode)
-        else:
-            # Other users only see their own positions
-            query.where_clause += ' AND "stock_position"."user_id" = %s'
-            query.where_clause_params.append(self.env.user.id)
-            return super(StockPosition, self)._apply_ir_rules(query, mode)
+        # Other users only see their own positions
+        query.where_clause += ' AND "stock_position"."user_id" = %s'
+        query.where_clause_params.append(self.env.user.id)
+        return super(StockPosition, self)._apply_ir_rules(query, mode)
     
     @api.model
     def _search(self, domain, offset=0, limit=None, order=None):
-        """Override search to apply user_type based filtering"""
-        if self.env.user.user_type not in ['broker', 'admin']:
+        """Override search to apply user_type/group based filtering"""
+        try:
+            is_system_admin = self.env.user.has_group('base.group_system')
+        except Exception:
+            is_system_admin = False
+        if not is_system_admin and self.env.user.user_type not in ['broker', 'admin']:
             # Add domain filter for non-broker/admin users
-            domain += [('user_id', '=', self.env.user.id)]
-        return super(StockPosition, self)._search(domain, offset=offset, limit=limit, order=order) 
+            domain = list(domain) + [('user_id', '=', self.env.user.id)]
+        return super(StockPosition, self)._search(domain, offset=offset, limit=limit, order=order)

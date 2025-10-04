@@ -981,6 +981,12 @@
                                 <i class="fa fa-file-text"></i>
                                 <span class="nav-text">Reports</span>
                             </a>
+                            <t t-if="request.env.user.user_type in ['banker', 'admin']">
+                                <a href="/market/ipo" class="nav-link" data-page="ipo" data-tooltip="IPO &amp; Allocation">
+                                    <i class="fa fa-rocket"></i>
+                                    <span class="nav-text">IPO &amp; Allocation</span>
+                                </a>
+                            </t>
                         </div>
                         
                         <!-- Account Section -->
@@ -1246,6 +1252,130 @@
                 }
             })();
         //]]></script>
+    </template>
+
+    <!-- IPO & Direct Allocation Page -->
+    <template id="portal_ipo_page" name="IPO &amp; Allocation">
+        <t t-call="stock_market_simulation.market_portal_layout">
+            <div class="container-fluid">
+                <div class="page-header mb-4">
+                    <h1 class="h2"><i class="fa fa-rocket"/> IPO &amp; Direct Allocation</h1>
+                </div>
+                <div class="row">
+                    <div class="col-md-6">
+                        <div class="card">
+                            <div class="card-header">
+                                <h5>IPO Configuration</h5>
+                            </div>
+                            <div class="card-body">
+                                <div class="form-group">
+                                    <label>Security</label>
+                                    <select class="form-control" id="ipo_security">
+                                        <option value="">-- Select --</option>
+                                        <t t-foreach="securities" t-as="sec">
+                                            <option t-att-value="sec.id"><t t-esc="sec.symbol"/> - <t t-esc="sec.name"/></option>
+                                        </t>
+                                    </select>
+                                </div>
+                                <div class="form-group">
+                                    <label>IPO Price</label>
+                                    <input type="number" class="form-control" id="ipo_price" step="0.01" min="0.01"/>
+                                </div>
+                                <div class="form-group">
+                                    <label>Total Shares</label>
+                                    <input type="number" class="form-control" id="ipo_total_shares" min="0" placeholder="Optional"/>
+                                </div>
+                                <div class="form-group">
+                                    <label>Allocation Quantity</label>
+                                    <input type="number" class="form-control" id="ipo_alloc_qty" min="0" placeholder="Optional"/>
+                                </div>
+                                <button class="btn btn-primary" id="btn_run_ipo">Run IPO</button>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="card">
+                            <div class="card-header">
+                                <h5>Direct Allocation</h5>
+                            </div>
+                            <div class="card-body">
+                                <div class="form-group">
+                                    <label>Investor ID</label>
+                                    <input type="number" class="form-control" id="alloc_user_id" placeholder="res.users ID"/>
+                                </div>
+                                <div class="form-group">
+                                    <label>Security</label>
+                                    <select class="form-control" id="alloc_security">
+                                        <option value="">-- Select --</option>
+                                        <t t-foreach="securities" t-as="sec">
+                                            <option t-att-value="sec.id"><t t-esc="sec.symbol"/> - <t t-esc="sec.name"/></option>
+                                        </t>
+                                    </select>
+                                </div>
+                                <div class="form-group">
+                                    <label>Quantity</label>
+                                    <input type="number" class="form-control" id="alloc_qty" min="1"/>
+                                </div>
+                                <div class="form-group">
+                                    <label>Price</label>
+                                    <input type="number" class="form-control" id="alloc_price" step="0.01" min="0.01"/>
+                                </div>
+                                <button class="btn btn-success" id="btn_direct_alloc">Allocate</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <script>//<![CDATA[
+            document.addEventListener('DOMContentLoaded', function() {
+                const btnIPO = document.getElementById('btn_run_ipo');
+                const btnAlloc = document.getElementById('btn_direct_alloc');
+                function toast(msg, type='info') {
+                    if (window.stockPortal && window.stockPortal.showNotification) {
+                        window.stockPortal.showNotification('Info', msg, type);
+                    } else { alert(msg); }
+                }
+                if (btnIPO) {
+                    btnIPO.addEventListener('click', async function() {
+                        const security_id = document.getElementById('ipo_security').value;
+                        const ipo_price = document.getElementById('ipo_price').value;
+                        const total_shares = document.getElementById('ipo_total_shares').value;
+                        const ipo_quantity = document.getElementById('ipo_alloc_qty').value;
+                        try {
+                            const resp = await fetch('/market/ipo/create', {
+                                method: 'POST',
+                                headers: {'Content-Type': 'application/json'},
+                                body: JSON.stringify({security_id, ipo_price, total_shares, ipo_quantity})
+                            });
+                            const raw = await resp.json();
+                            const payload = raw?.result || raw;
+                            if (payload.success) toast('IPO processed', 'success');
+                            else toast(payload.error || 'IPO failed', 'danger');
+                        } catch (e) { toast('Network error', 'danger'); }
+                    });
+                }
+                if (btnAlloc) {
+                    btnAlloc.addEventListener('click', async function() {
+                        const user_id = document.getElementById('alloc_user_id').value;
+                        const security_id = document.getElementById('alloc_security').value;
+                        const quantity = document.getElementById('alloc_qty').value;
+                        const price = document.getElementById('alloc_price').value;
+                        try {
+                            const resp = await fetch('/market/allocation/direct', {
+                                method: 'POST',
+                                headers: {'Content-Type': 'application/json'},
+                                body: JSON.stringify({user_id, security_id, quantity, price})
+                            });
+                            const raw = await resp.json();
+                            const payload = raw?.result || raw;
+                            if (payload.success) toast('Allocation done', 'success');
+                            else toast(payload.error || 'Allocation failed', 'danger');
+                        } catch (e) { toast('Network error', 'danger'); }
+                    });
+                }
+            });
+            //]]></script>
+        </t>
     </template>
     
     <!-- Market Dashboard View -->

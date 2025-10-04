@@ -11,6 +11,21 @@ class StockMatchingEngine(models.TransientModel):
     _description = 'Order Matching Engine'
     
     @api.model
+    def cron_run_matching(self):
+        """Cron entrypoint: run matching for all open sessions every minute."""
+        sessions = self.env['stock.session'].search([('state', '=', 'open')])
+        if not sessions:
+            _logger.info("[MATCH] No open sessions. Skipping.")
+            return
+        for session in sessions:
+            try:
+                _logger.info(f"[MATCH] Start session={session.id} {session.name}")
+                self.match_all_securities(session)
+                _logger.info(f"[MATCH] Done session={session.id} {session.name}")
+            except Exception as e:
+                _logger.error(f"[MATCH] Error session={session.id} {session.name}: {e}")
+                continue
+    @api.model
     def match_all_securities(self, session):
         """Match orders for all active securities in the session"""
         # Check and activate stop orders first
@@ -23,7 +38,9 @@ class StockMatchingEngine(models.TransientModel):
             try:
                 # Create a savepoint for each security matching
                 with self.env.cr.savepoint():
+                    _logger.info(f"[MATCH] Sec={security.id} {security.symbol}: begin")
                     self._match_security_orders(security, session)
+                    _logger.info(f"[MATCH] Sec={security.id} {security.symbol}: end")
             except Exception as e:
                 _logger.error(f"Failed to match orders for security {security.symbol}: {str(e)}")
                 # Continue with next security even if one fails
@@ -58,7 +75,7 @@ class StockMatchingEngine(models.TransientModel):
                     # Price is already set for stop limit orders
                 
                 order.status = 'open'
-                _logger.info(f"Stop order {order.name} triggered at price {current_price}")
+                _logger.info(f"[MATCH] StopTriggered order={order.name} sym={order.security_id.symbol} side={order.side} stop={order.stop_price} px={current_price}")
     
     def _match_security_orders(self, security, session):
         """Match buy and sell orders for a specific security"""
@@ -272,8 +289,8 @@ class StockMatchingEngine(models.TransientModel):
         
         # Log the trade
         _logger.info(
-            f"Trade executed: {trade_quantity} shares of {sell_order.security_id.symbol} "
-            f"at {trade_price} between {buy_order.user_id.name} and {sell_order.user_id.name}"
+            f"[MATCH] Trade sym={sell_order.security_id.symbol} qty={trade_quantity} px={trade_price} "
+            f"buyOrder={buy_order.name} sellOrder={sell_order.name} buyer={buy_order.user_id.id} seller={sell_order.user_id.id}"
         )
         
         # Check if price update is needed
@@ -377,18 +394,45 @@ class StockMatchingEngine(models.TransientModel):
         security = self.env['stock.security'].browse(security_id)
         if not security:
             return
+        # Require an open session to record trades
+        session = self.env['stock.session'].search([('state', '=', 'open')], limit=1)
+        if not session:
+            _logger.error("[MATCH][IPO] No open session for IPO processing")
+            raise UserError("No open trading session to process IPO")
         
         try:
             with self.env.cr.savepoint():
+                # Respect total_shares cap if defined (> 0)
+                remaining_ipo_quantity = int(ipo_quantity)
+                if security.total_shares and security.total_shares > 0:
+                    # Sum already issued/outstanding shares (positions)
+                    existing_qty = sum(self.env['stock.position'].search([
+                        ('security_id', '=', security_id)
+                    ]).mapped('quantity'))
+                    remaining_cap = max(security.total_shares - existing_qty, 0)
+                    if remaining_cap <= 0:
+                        _logger.info(f"[MATCH][IPO] No remaining shares to allocate for {security.symbol}")
+                        # Still ensure the security is activated/priced
+                        security.write({
+                            'active': True,
+                            'ipo_price': ipo_price,
+                            'current_price': ipo_price,
+                            'session_start_price': ipo_price
+                        })
+                        self.env.cr.commit()
+                        return
+                    # Cap requested IPO quantity to remaining capacity
+                    if remaining_ipo_quantity > remaining_cap:
+                        _logger.info(f"[MATCH][IPO] Capping IPO allocation from {remaining_ipo_quantity} to remaining cap {remaining_cap} for {security.symbol}")
+                        remaining_ipo_quantity = remaining_cap
                 # Get all IPO orders (orders placed before security was active)
                 ipo_orders = self.env['stock.order'].search([
                     ('security_id', '=', security_id),
                     ('side', '=', 'buy'),
-                    ('status', '=', 'pending'),
+                    ('status', 'in', ['submitted', 'open']),
                     ('order_type', '=', 'ipo')  # Special IPO order type
                 ], order='create_date asc')
                 
-                remaining_ipo_quantity = ipo_quantity
                 
                 for order in ipo_orders:
                     if remaining_ipo_quantity <= 0:
@@ -414,6 +458,7 @@ class StockMatchingEngine(models.TransientModel):
                     self.env['stock.trade'].create({
                         'buy_order_id': order.id,
                         'sell_order_id': False,  # No sell order for IPO
+                        'session_id': session.id,
                         'security_id': security_id,
                         'quantity': allocation,
                         'price': ipo_price,
