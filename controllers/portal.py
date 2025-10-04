@@ -558,29 +558,37 @@ class StockMarketPortal(CustomerPortal):
         if user.user_type not in ['investor', 'broker', 'admin']:
             return request.redirect('/market')
         
-        # Get orders based on user type
+        # Determine scope: current session or all
+        scope = kw.get('scope') or 'current'  # default to current session
+
+        # Build domain based on user type
+        domain = []
         if user.user_type == 'investor':
             # Investors see only their own orders
-            orders = request.env['stock.order'].search([
-                ('user_id', '=', user.id)
-            ], order='create_date desc', limit=50)
+            domain.append(('user_id', '=', user.id))
         elif user.user_type == 'broker':
             # Brokers see orders they've placed for clients
-            orders = request.env['stock.order'].search([
-                ('broker_id', '=', user.id)
-            ], order='create_date desc', limit=50)
-        else:  # admin
-            # Admins see all orders
-            orders = request.env['stock.order'].search([
-            ], order='create_date desc', limit=100)
-        
-        # Get active session
+            domain.append(('broker_id', '=', user.id))
+        else:
+            # Admins see all orders by default
+            pass
+
+        # Get active session (used for optional filtering and display)
         active_session = request.env['stock.session'].sudo().search([('state', '=', 'open')], limit=1)
+
+        # If scope is current and there's an active session, filter by it
+        if scope == 'current' and active_session:
+            domain.append(('session_id', '=', active_session.id))
+
+        # Fetch orders
+        limit = 50 if user.user_type in ['investor', 'broker'] else 100
+        orders = request.env['stock.order'].search(domain, order='create_date desc', limit=limit)
         
         values = {
             'user': user,
             'orders': orders,
             'active_session': active_session,
+            'scope': scope,
             'display_currency': request.env.company.currency_id,
             'page_name': 'orders',
         }

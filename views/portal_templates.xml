@@ -1456,7 +1456,18 @@
         <t t-call="stock_market_simulation.market_portal_layout">
             <div class="card">
                 <div class="card-header">
-                    <h4 class="mb-0"><i class="fa fa-list me-2"></i>My Orders</h4>
+                    <div class="d-flex justify-content-between align-items-center">
+                        <h4 class="mb-0"><i class="fa fa-list me-2"></i>My Orders</h4>
+                        <div class="btn-group btn-group-sm" role="group" aria-label="Order scope">
+                            <a t-attf-href="/market/orders?scope=current" t-attf-class="btn btn-outline-primary #{scope == 'current' and 'active' or ''}">
+                                <i class="fa fa-clock-o"></i> Current Session
+                            </a>
+                            <a t-attf-href="/market/orders?scope=all" t-attf-class="btn btn-outline-secondary #{scope == 'all' and 'active' or ''}">
+                                <i class="fa fa-th-list"></i> All
+                            </a>
+                        </div>
+                    </div>
+                    <small class="text-muted" t-if="active_session and scope == 'current'">Showing orders for session: <t t-esc="active_session.name"/></small>
                 </div>
                 <div class="card-body">
                     <div class="table-responsive">
@@ -1464,6 +1475,7 @@
                             <thead>
                                 <tr>
                                     <th>Order ID</th>
+                                    <th>Session</th>
                                     <th>Security</th>
                                     <th>Side</th>
                                     <th>Type</th>
@@ -1476,6 +1488,7 @@
                             <tbody>
                                 <tr t-foreach="orders" t-as="order">
                                     <td><span class="badge bg-secondary"><t t-esc="order.name"/></span></td>
+                                    <td><small><t t-esc="order.session_id.name or '-'"/></small></td>
                                     <td><strong><t t-esc="order.security_id.symbol"/></strong></td>
                                     <td>
                                         <span t-attf-class="badge #{order.side == 'buy' and 'bg-success' or 'bg-danger'}">
