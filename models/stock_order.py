@@ -37,6 +37,13 @@ class StockOrder(models.Model):
         readonly=True
     )
     
+    # Who entered/created the order (broker/admin). This differs from broker_id (investor's default broker).
+    entered_by_id = fields.Many2one(
+        'res.users', string='Entered By',
+        index=True, readonly=True, tracking=True,
+        help='User who placed the order in the portal (usually a broker or admin).'
+    )
+    
     session_id = fields.Many2one(
         'stock.session', string='Trading Session',
         required=True, index=True,
@@ -228,6 +235,10 @@ class StockOrder(models.Model):
             else:
                 # For market sell, use a low price to ensure execution
                 vals['price'] = security.current_price * 0.9
+        
+        # Ensure the entered_by_id is set to the current env user if not provided
+        if not vals.get('entered_by_id'):
+            vals['entered_by_id'] = self.env.user.id
         
         return super().create(vals)
     
@@ -521,8 +532,16 @@ class StockOrder(models.Model):
     
     @api.model
     def _search(self, domain, offset=0, limit=None, order=None):
-        """Override search to apply user_type based filtering"""
-        if self.env.user.user_type not in ['broker', 'admin']:
-            # Add domain filter for non-broker/admin users
-            domain += [('user_id', '=', self.env.user.id)]
-        return super(StockOrder, self)._search(domain, offset=offset, limit=limit, order=order) 
+        """Override search to apply user visibility filtering unless explicitly skipped.
+        - Skip filtering when context key 'skip_portal_order_filter' is True (controllers control domain).
+        - Never restrict system administrators (base.group_system).
+        - For other users who are not brokers/admins (by user_type), restrict to their own orders.
+        """
+        if not self.env.context.get('skip_portal_order_filter'):
+            try:
+                is_system_admin = self.env.user.has_group('base.group_system')
+            except Exception:
+                is_system_admin = False
+            if not is_system_admin and self.env.user.user_type not in ['broker', 'admin']:
+                domain = list(domain) + [('user_id', '=', self.env.user.id)]
+        return super(StockOrder, self)._search(domain, offset=offset, limit=limit, order=order)

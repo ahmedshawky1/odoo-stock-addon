@@ -258,6 +258,7 @@ class StockMarketPortal(CustomerPortal):
                 'order_type': kw.get('order_type'),
                 'quantity': int(kw.get('quantity')),
                 'price': float(kw.get('price', 0)),
+                'entered_by_id': user.id,
             }
             
             # Additional validation with user-friendly messages
@@ -288,6 +289,7 @@ class StockMarketPortal(CustomerPortal):
                     return {'error': f'Client insufficient shares. Required: {quantity:,}, Available: {available:,}', 'type': 'validation'}
             
             # Create the order
+            # Use sudo for creation but explicitly set entered_by_id to current user
             order = request.env['stock.order'].sudo().create(order_vals)
             
             # Log the broker action
@@ -410,13 +412,13 @@ class StockMarketPortal(CustomerPortal):
             # Create the order
             order_data = {
                 'user_id': order_user.id,
-                'broker_id': user.id,
                 'security_id': int(kw.get('security_id')),
                 'session_id': active_session.id,
                 'side': side,
                 'order_type': order_type,
                 'quantity': quantity,
-                'status': 'submitted'
+                'status': 'submitted',
+                'entered_by_id': user.id,
             }
             
             if order_type == 'limit':
@@ -561,17 +563,24 @@ class StockMarketPortal(CustomerPortal):
         # Determine scope: current session or all
         scope = kw.get('scope') or 'current'  # default to current session
 
-        # Build domain based on user type
+        # Build domain based on user type (treat technical Administrators as admins regardless of user_type)
         domain = []
+        try:
+            is_system_admin = request.env.user.has_group('base.group_system')
+        except Exception:
+            is_system_admin = False
         if user.user_type == 'investor':
             # Investors see only their own orders
             domain.append(('user_id', '=', user.id))
         elif user.user_type == 'broker':
-            # Brokers see orders they've placed for clients
-            domain.append(('broker_id', '=', user.id))
-        else:
+            # Brokers see orders they entered
+            domain = ['|', ('entered_by_id', '=', user.id), ('create_uid', '=', user.id)]
+        elif user.user_type == 'admin' or is_system_admin:
             # Admins see all orders by default
             pass
+        else:
+            # Default safe fallback: restrict to own orders
+            domain.append(('user_id', '=', user.id))
 
         # Get active session (used for optional filtering and display)
         active_session = request.env['stock.session'].sudo().search([('state', '=', 'open')], limit=1)
@@ -580,9 +589,15 @@ class StockMarketPortal(CustomerPortal):
         if scope == 'current' and active_session:
             domain.append(('session_id', '=', active_session.id))
 
+        _logger.info(f"[portal] /market/orders user={user.id}({user.user_type}) scope={scope} is_sys_admin={is_system_admin} domain={domain}")
+
         # Fetch orders
         limit = 50 if user.user_type in ['investor', 'broker'] else 100
-        orders = request.env['stock.order'].search(domain, order='create_date desc', limit=limit)
+        orders = request.env['stock.order'].with_context(skip_portal_order_filter=True).search(domain, order='create_date desc', limit=limit)
+        try:
+            _logger.info(f"[portal] /market/orders result count={len(orders)} ids={orders.ids}")
+        except Exception:
+            pass
         
         values = {
             'user': user,
@@ -666,6 +681,70 @@ class StockMarketPortal(CustomerPortal):
         })
         
         return request.render("stock_market_simulation.portal_broker_commissions", values)
+
+    # Placeholder routes for sidebar links (securities, session, reports, deposits, loans, clients)
+    @http.route(['/market/securities'], type='http', auth="user", website=True)
+    def market_securities(self, **kw):
+        user = request.env.user
+        values = {
+            'user': user,
+            'page_title': 'Securities',
+        }
+        return request.render("stock_market_simulation.market_portal_layout", values)
+
+    @http.route(['/market/session'], type='http', auth="user", website=True)
+    def market_session_info(self, **kw):
+        user = request.env.user
+        active_session = request.env['stock.session'].sudo().search([('state', '=', 'open')], limit=1)
+        values = {
+            'user': user,
+            'active_session': active_session,
+            'page_title': 'Session Info',
+        }
+        return request.render("stock_market_simulation.market_portal_layout", values)
+
+    @http.route(['/market/reports'], type='http', auth="user", website=True)
+    def market_reports(self, **kw):
+        user = request.env.user
+        values = {
+            'user': user,
+            'page_title': 'Reports',
+        }
+        return request.render("stock_market_simulation.market_portal_layout", values)
+
+    @http.route(['/market/deposits'], type='http', auth="user", website=True)
+    def market_deposits(self, **kw):
+        user = request.env.user
+        # Investors, bankers, and admins can view deposits page
+        if user.user_type not in ['investor', 'banker', 'admin']:
+            return request.redirect('/market')
+        values = {
+            'user': user,
+            'page_title': 'Deposits',
+        }
+        return request.render("stock_market_simulation.market_portal_layout", values)
+
+    @http.route(['/market/loans'], type='http', auth="user", website=True)
+    def market_loans(self, **kw):
+        user = request.env.user
+        if user.user_type not in ['investor', 'banker', 'admin']:
+            return request.redirect('/market')
+        values = {
+            'user': user,
+            'page_title': 'Loans',
+        }
+        return request.render("stock_market_simulation.market_portal_layout", values)
+
+    @http.route(['/market/clients'], type='http', auth="user", website=True)
+    def market_clients(self, **kw):
+        user = request.env.user
+        if user.user_type not in ['broker', 'admin']:
+            return request.redirect('/market')
+        values = {
+            'user': user,
+            'page_title': 'Clients',
+        }
+        return request.render("stock_market_simulation.market_portal_layout", values)
 
     # API Endpoints for AJAX calls
     @http.route(['/api/market/quotes'], type='json', auth="user", methods=['POST'])
@@ -831,13 +910,13 @@ class StockMarketPortal(CustomerPortal):
                     'session_start_price': security.session_start_price,
                     'price_change': round(price_change, 2),
                     'change_percentage': round(change_percentage, 2),
-                    'volume': security.today_volume,
+                    'volume': security.volume_today,
                     'last_update': security.write_date.strftime('%H:%M:%S') if security.write_date else '',
                 })
             
             # Get market statistics
-            total_volume = sum(s.today_volume for s in securities)
-            total_value = sum(s.current_price * s.today_volume for s in securities)
+            total_volume = sum(s.volume_today for s in securities)
+            total_value = sum(s.value_today for s in securities)
             gainers = len([s for s in securities if s.current_price > s.session_start_price])
             losers = len([s for s in securities if s.current_price < s.session_start_price])
             

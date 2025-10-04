@@ -907,7 +907,7 @@
                                 <i class="fa fa-exchange"></i>
                                 <span class="nav-text">Trading</span>
                             </a>
-                            <t t-if="request.env.user.user_type in ['investor', 'broker']">
+                            <t t-if="request.env.user.user_type in ['investor', 'broker', 'admin']">
                                 <a href="/market/orders" class="nav-link" data-page="orders" data-tooltip="Orders">
                                     <i class="fa fa-list"></i>
                                     <span class="nav-text">Orders</span>
@@ -917,7 +917,7 @@
                         </div>
                         
                         <!-- Portfolio Section -->
-                        <t t-if="request.env.user.user_type in ['investor', 'broker']">
+                        <t t-if="request.env.user.user_type in ['investor', 'broker', 'admin']">
                             <div class="sidebar-section">
                                 <div class="sidebar-section-title">Portfolio</div>
                                 <a href="/market/portfolio" class="nav-link" data-page="portfolio" data-tooltip="Positions">
@@ -935,7 +935,7 @@
                                 </a>
                             </div>
                         </t>                        <!-- Banking Section -->
-                        <t t-if="request.env.user.user_type in ['investor', 'banker']">
+                        <t t-if="request.env.user.user_type in ['investor', 'banker', 'admin']">
                             <div class="sidebar-section">
                                 <div class="sidebar-section-title">Banking</div>
                                 <a href="/market/deposits" class="nav-link" data-page="deposits" data-tooltip="Deposits">
@@ -952,7 +952,7 @@
                         </t>
                         
                         <!-- Broker Section -->
-                        <t t-if="request.env.user.user_type == 'broker'">
+                        <t t-if="request.env.user.user_type in ['broker', 'admin']">
                             <div class="sidebar-section">
                                 <div class="sidebar-section-title">Broker Tools</div>
                                 <a href="/market/commissions" class="nav-link" data-page="commissions" data-tooltip="Commissions">
@@ -1477,6 +1477,7 @@
                                     <th>Order ID</th>
                                     <th>Session</th>
                                     <th>Security</th>
+                                    <th>Entered By</th>
                                     <th>Side</th>
                                     <th>Type</th>
                                     <th>Quantity</th>
@@ -1490,6 +1491,7 @@
                                     <td><span class="badge bg-secondary"><t t-esc="order.name"/></span></td>
                                     <td><small><t t-esc="order.session_id.name or '-'"/></small></td>
                                     <td><strong><t t-esc="order.security_id.symbol"/></strong></td>
+                                    <td><small><t t-esc="order.entered_by_id and order.entered_by_id.name or '-'"/></small></td>
                                     <td>
                                         <span t-attf-class="badge #{order.side == 'buy' and 'bg-success' or 'bg-danger'}">
                                             <t t-esc="order.side.upper()"/>
