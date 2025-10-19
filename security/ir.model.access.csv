@@ -32,3 +32,7 @@ access_stock_bond_trade_admin,stock.bond.trade admin,model_stock_bond_trade,base
 access_stock_bond_trade_portal,stock.bond.trade portal,model_stock_bond_trade,base.group_portal,1,0,0,0
 access_stock_bond_position_admin,stock.bond.position admin,model_stock_bond_position,base.group_user,1,1,1,1
 access_stock_bond_position_portal,stock.bond.position portal,model_stock_bond_position,base.group_portal,1,1,0,0
+access_session_end_ipo_wizard_admin,session.end.ipo.wizard admin,model_session_end_ipo_wizard,base.group_user,1,1,1,1
+access_session_end_ipo_wizard_portal,session.end.ipo.wizard portal,model_session_end_ipo_wizard,base.group_portal,1,0,0,0
+access_session_end_ipo_wizard_line_admin,session.end.ipo.wizard.line admin,model_session_end_ipo_wizard_line,base.group_user,1,1,1,1
+access_session_end_ipo_wizard_line_portal,session.end.ipo.wizard.line portal,model_session_end_ipo_wizard_line,base.group_portal,1,0,0,0

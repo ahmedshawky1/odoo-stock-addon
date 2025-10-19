@@ -35,6 +35,9 @@
                 <button name="action_view_orders" type="object" class="oe_stat_button" icon="fa-shopping-cart" invisible="user_type not in ['investor']">
                     <field name="order_count" widget="statinfo" string="Orders"/>
                 </button>
+                <button name="action_seed_cash_from_initial" type="object" class="oe_stat_button" icon="fa-money" groups="base.group_system">
+                    <field name="cash_balance" widget="statinfo" string="Seed Cash"/>
+                </button>
             </xpath>
         </field>
     </record>

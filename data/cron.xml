@@ -36,5 +36,19 @@
             <field name="active">True</field>
             <field name="user_id" ref="base.user_admin"/>
         </record>
+        
+            <!-- One-time seeding cron: seeds cash from initial capital, then disables itself -->
+            <record id="ir_cron_seed_investor_cash_once" model="ir.cron">
+                <field name="name">Seed Investor Cash (One-Time)</field>
+                <field name="model_id" ref="base.model_res_users"/>
+                <field name="state">code</field>
+                <field name="code">env['res.users'].cron_backfill_cash_from_initial()</field>
+                <field name="interval_number">1</field>
+                <field name="interval_type">days</field>
+                <field name="nextcall" eval="(datetime.now()).strftime('%Y-%m-%d %H:%M:%S')"/>
+                <field name="active">True</field>
+                <field name="user_id" ref="base.user_admin"/>
+            </record>
+
     </data>
 </odoo>

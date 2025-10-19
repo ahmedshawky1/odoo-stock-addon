@@ -239,6 +239,26 @@ class ResUsers(models.Model):
         for user in self:
             if user.cash_balance < 0:
                 raise ValidationError("Cash balance cannot be negative.")
+
+    @api.model
+    def create(self, vals):
+        """Seed investor wallet with initial capital on creation if cash_balance not provided."""
+        # Support batch creates
+        def _prepare(v):
+            user_type = v.get('user_type') or 'investor'
+            # Only seed for investors and only when not explicitly provided
+            if user_type == 'investor' and 'cash_balance' not in v:
+                init_cap = v.get('initial_capital')
+                if init_cap is None:
+                    # Fall back to field default (100000.0)
+                    init_cap = 100000.0
+                v = dict(v, cash_balance=init_cap)
+            return v
+        if isinstance(vals, list):
+            vals = [_prepare(v) for v in vals]
+        else:
+            vals = _prepare(vals)
+        return super().create(vals)
     
     def action_view_portfolio(self):
         """Open portfolio view for this user"""
@@ -287,3 +307,37 @@ class ResUsers(models.Model):
             'domain': [('user_id', '=', self.id)],
             'context': {'default_user_id': self.id}
         } 
+
+    def action_seed_cash_from_initial(self):
+        """Set cash_balance to initial_capital for this user if eligible.
+        Eligibility: user_type == 'investor' (or unset), initial_capital > 0, and current cash <= 0.
+        """
+        for usr in self.sudo():
+            if usr.user_type not in ('investor', False):
+                continue
+            if usr.initial_capital and usr.initial_capital > 0 and (not usr.cash_balance or usr.cash_balance <= 0.0):
+                usr.cash_balance = usr.initial_capital
+        return True
+
+    @api.model
+    def cron_backfill_cash_from_initial(self):
+        """One-time backfill: set cash_balance to initial_capital for eligible users.
+        Eligibility: initial_capital > 0, cash_balance == 0, user_type in ('investor', False).
+        After executing, the cron deactivates itself.
+        """
+        # Use sudo to avoid access issues in scheduler context
+        users = self.sudo().search([('initial_capital', '>', 0)])
+        patched = 0
+        for usr in users:
+            if (not usr.cash_balance or usr.cash_balance == 0.0) and (usr.user_type in ('investor', False)):
+                usr.cash_balance = usr.initial_capital
+                patched += 1
+        # Deactivate the cron if present
+        try:
+            cron = self.env.ref('stock_market_simulation.ir_cron_seed_investor_cash_once')
+            if cron and cron.active:
+                cron.active = False
+        except Exception:
+            # If ref not found or any issue, ignore
+            pass
+        return patched

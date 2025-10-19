@@ -389,7 +389,7 @@ class StockMatchingEngine(models.TransientModel):
                 _logger.error(f"Failed to update price: {str(e)}")
     
     @api.model
-    def process_ipo_orders(self, security_id, ipo_quantity, ipo_price):
+    def process_ipo_orders(self, security_id, ipo_quantity, ipo_price, session_id=None):
         """
         Process IPO orders for a security
         Implements special IPO handling from C#
@@ -398,7 +398,14 @@ class StockMatchingEngine(models.TransientModel):
         if not security:
             return
         # Require an open session to record trades
-        session = self.env['stock.session'].search([('state', '=', 'open')], limit=1)
+        session = None
+        if session_id:
+            session = self.env['stock.session'].browse(session_id)
+            if not session or session.state != 'open':
+                _logger.error(f"[MATCH][IPO] Provided session {session_id} is not open for IPO processing")
+                raise UserError("No open trading session to process IPO")
+        else:
+            session = self.env['stock.session'].search([('state', '=', 'open')], limit=1)
         if not session:
             _logger.error("[MATCH][IPO] No open session for IPO processing")
             raise UserError("No open trading session to process IPO")
@@ -424,7 +431,7 @@ class StockMatchingEngine(models.TransientModel):
                             'current_price': ipo_price,
                             'session_start_price': ipo_price
                         })
-                        self.env.cr.commit()
+                        # Do not commit inside savepoint; let caller manage transaction
                         return
                     # Cap requested IPO quantity to remaining capacity
                     if remaining_ipo_quantity > remaining_cap:
@@ -442,7 +449,7 @@ class StockMatchingEngine(models.TransientModel):
                 # Calculate total demand
                 total_demand = sum(ipo_orders.mapped('quantity'))
                 
-                _logger.info(f"[MATCH][IPO] {security.symbol}: Total demand {total_demand}, Available {remaining_ipo_quantity}")
+                _logger.info(f"[MATCH][IPO] session={session.id} {session.name} sec={security.symbol}: Total demand {total_demand}, Available {remaining_ipo_quantity}")
                 
                 if total_demand <= remaining_ipo_quantity:
                     # Sufficient supply - fill all orders completely (FIFO)
@@ -471,8 +478,9 @@ class StockMatchingEngine(models.TransientModel):
                             break
                 
                 # Set security as active and tradeable with IPO price as initial trading price
+                # IMPORTANT: update canonical 'status' (not computed 'ipo_status')
                 security.write({
-                    'ipo_status': 'trading',  # Change from IPO/PO to trading
+                    'status': 'trade',  # Move to trading state
                     'active': True,
                     'ipo_price': ipo_price,
                     'current_price': ipo_price,  # Start trading at IPO price
@@ -481,9 +489,7 @@ class StockMatchingEngine(models.TransientModel):
                 })
                 
                 _logger.info(f"[MATCH][IPO] {security.symbol}: IPO processing complete, changed to trading status at ${ipo_price}")
-                
-                # Commit IPO processing
-                self.env.cr.commit()
+                # Do not commit here; HTTP request transaction will commit if no errors
                 
         except Exception as e:
             _logger.error(f"Failed to process IPO orders: {str(e)}")

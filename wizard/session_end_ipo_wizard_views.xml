@@ -15,6 +15,7 @@
                     </div>
                     <field name="line_ids" widget="one2many">
                         <list editable="bottom" create="false" delete="false">
+                            <field name="security_id" invisible="1"/>
                             <field name="symbol" readonly="1"/>
                             <field name="security_name" readonly="1"/>
                             <field name="current_status" readonly="1"/>

@@ -481,7 +481,7 @@ class StockSecurity(models.Model):
         
         # Update for new PO round
         self.write({
-            'ipo_status': 'po',  # Change to PO status
+            'status': 'po',  # Change to PO status (canonical field)
             'offering_round': self.offering_round + 1,
             'current_offering_quantity': quantity,
             'ipo_price': price,  # New PO price
