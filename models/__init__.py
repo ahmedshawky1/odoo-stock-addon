@@ -11,3 +11,7 @@ from . import stock_deposit
 from . import stock_loan
 from . import res_users
 from . import stock_config
+from . import stock_user_block
+from . import stock_news
+from . import stock_bond
+from . import stock_bond_order

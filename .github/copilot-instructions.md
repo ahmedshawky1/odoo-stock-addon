@@ -56,6 +56,7 @@ Refer to the official Odoo documentation for best practices in model design, vie
 
 ## Core Rules
 - we are converting this from C# code to odoo module , C# code is reference only path "/var/STOCK_SOURCE_FILES" check their for reference
+- **Bussiness source of truth** Stock_Market_Trading_System_User_Stories.md
 - **Always** restart container + upgrade module after ANY changes
 - **Portal-first**: Apply changes to portal views unless specified otherwise  
 - **No @import**: Use asset bundle loading order in `__manifest__.py`

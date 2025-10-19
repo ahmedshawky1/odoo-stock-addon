@@ -54,21 +54,7 @@ class StockTrade(models.Model):
         readonly=True
     )
     
-    buy_broker_id = fields.Many2one(
-        'res.users',
-        string='Buy Broker',
-        related='buy_order_id.user_id.broker_id',
-        store=True,
-        readonly=True
-    )
-    
-    sell_broker_id = fields.Many2one(
-        'res.users',
-        string='Sell Broker',
-        related='sell_order_id.user_id.broker_id',
-        store=True,
-        readonly=True
-    )
+    # Removed: buy_broker_id and sell_broker_id fields (default broker functionality removed)
     
     # Security and Session
     security_id = fields.Many2one(

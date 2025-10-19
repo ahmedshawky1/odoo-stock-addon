@@ -210,6 +210,13 @@ class StockMatchingEngine(models.TransientModel):
             _logger.info(f"Preventing self-trade for user {buy_order.user_id.name}")
             return False
         
+        # Prevent same team trading (as per User Stories business rules)
+        # Check if both users have the same team_members (indicating same team)
+        if (buy_order.user_id.team_members and sell_order.user_id.team_members and
+            buy_order.user_id.team_members == sell_order.user_id.team_members):
+            _logger.info(f"Preventing same-team trade between {buy_order.user_id.name} and {sell_order.user_id.name}")
+            return False
+        
         # Both orders must have remaining quantity
         if buy_order.remaining_quantity <= 0 or sell_order.remaining_quantity <= 0:
             return False
@@ -273,11 +280,7 @@ class StockMatchingEngine(models.TransientModel):
         buy_order.user_id.cash_balance -= buyer_total_cost
         sell_order.user_id.cash_balance += seller_net_proceeds
         
-        # Update broker balances
-        if buy_order.broker_id:
-            buy_order.broker_id.cash_balance += buyer_commission
-        if sell_order.broker_id:
-            sell_order.broker_id.cash_balance += seller_commission
+        # Broker commission distribution removed (no default broker relationships)
         
         # Update positions
         self._update_positions(buy_order.user_id, sell_order.user_id, 
@@ -402,8 +405,10 @@ class StockMatchingEngine(models.TransientModel):
         
         try:
             with self.env.cr.savepoint():
+                # Use current_offering_quantity if set, otherwise fall back to ipo_quantity parameter
+                remaining_ipo_quantity = security.current_offering_quantity if security.current_offering_quantity > 0 else int(ipo_quantity)
+                
                 # Respect total_shares cap if defined (> 0)
-                remaining_ipo_quantity = int(ipo_quantity)
                 if security.total_shares and security.total_shares > 0:
                     # Sum already issued/outstanding shares (positions)
                     existing_qty = sum(self.env['stock.position'].search([
@@ -434,84 +439,115 @@ class StockMatchingEngine(models.TransientModel):
                 ], order='create_date asc')
                 
                 
-                for order in ipo_orders:
-                    if remaining_ipo_quantity <= 0:
-                        break
-                    
-                    # Allocate IPO shares
-                    allocation = min(order.quantity, remaining_ipo_quantity)
-                    
-                    # Create IPO trade
-                    trade_value = allocation * ipo_price
-                    commission = trade_value * order.broker_commission_rate / 100
-                    total_cost = trade_value + commission
-                    
-                    # Check buyer has funds
-                    if order.user_id.cash_balance < total_cost:
-                        order.write({
-                            'status': 'rejected',
-                            'rejection_reason': 'Insufficient funds for IPO allocation'
-                        })
-                        continue
-                    
-                    # Create trade
-                    self.env['stock.trade'].create({
-                        'buy_order_id': order.id,
-                        'sell_order_id': False,  # No sell order for IPO
-                        'session_id': session.id,
-                        'security_id': security_id,
-                        'quantity': allocation,
-                        'price': ipo_price,
-                        'value': trade_value,
-                        'buy_commission': commission,
-                        'sell_commission': 0,
-                        'trade_type': 'ipo'
-                    })
-                    
-                    # Update buyer's cash and position
-                    order.user_id.cash_balance -= total_cost
-                    if order.broker_id:
-                        order.broker_id.cash_balance += commission
-                    
-                    # Create/update position
-                    position = self.env['stock.position'].search([
-                        ('user_id', '=', order.user_id.id),
-                        ('security_id', '=', security_id)
-                    ], limit=1)
-                    
-                    if position:
-                        total_cost = (position.quantity * position.average_cost) + \
-                                   (allocation * ipo_price)
-                        total_quantity = position.quantity + allocation
-                        position.write({
-                            'quantity': total_quantity,
-                            'average_cost': total_cost / total_quantity
-                        })
-                    else:
-                        self.env['stock.position'].create({
-                            'user_id': order.user_id.id,
-                            'security_id': security_id,
-                            'quantity': allocation,
-                            'average_cost': ipo_price
-                        })
-                    
-                    # Update order
-                    order.update_filled_quantity(allocation)
-                    remaining_ipo_quantity -= allocation
-                    
-                    _logger.info(f"IPO allocation: {allocation} shares to {order.user_id.name}")
+                # Calculate total demand
+                total_demand = sum(ipo_orders.mapped('quantity'))
                 
-                # Set security as active and tradeable
+                _logger.info(f"[MATCH][IPO] {security.symbol}: Total demand {total_demand}, Available {remaining_ipo_quantity}")
+                
+                if total_demand <= remaining_ipo_quantity:
+                    # Sufficient supply - fill all orders completely (FIFO)
+                    _logger.info(f"[MATCH][IPO] {security.symbol}: Sufficient supply, filling all orders")
+                    for order in ipo_orders:
+                        allocation = order.quantity
+                        self._process_ipo_allocation(order, allocation, ipo_price, session, security_id)
+                        remaining_ipo_quantity -= allocation
+                else:
+                    # Insufficient supply - proportional allocation (C# style)
+                    _logger.info(f"[MATCH][IPO] {security.symbol}: Insufficient supply, using proportional allocation")
+                    allocation_ratio = remaining_ipo_quantity / total_demand
+                    
+                    for order in ipo_orders:
+                        # Proportional allocation with round down (int()) for fractional shares
+                        allocation = int(order.quantity * allocation_ratio)  # Round down as requested
+                        
+                        # Don't exceed remaining quantity
+                        allocation = min(allocation, remaining_ipo_quantity)
+                        
+                        if allocation > 0:
+                            self._process_ipo_allocation(order, allocation, ipo_price, session, security_id)
+                            remaining_ipo_quantity -= allocation
+                        
+                        if remaining_ipo_quantity <= 0:
+                            break
+                
+                # Set security as active and tradeable with IPO price as initial trading price
                 security.write({
+                    'ipo_status': 'trading',  # Change from IPO/PO to trading
                     'active': True,
                     'ipo_price': ipo_price,
-                    'current_price': ipo_price,
-                    'session_start_price': ipo_price
+                    'current_price': ipo_price,  # Start trading at IPO price
+                    'session_start_price': ipo_price,
+                    'current_offering_quantity': 0  # Clear offering quantity
                 })
+                
+                _logger.info(f"[MATCH][IPO] {security.symbol}: IPO processing complete, changed to trading status at ${ipo_price}")
                 
                 # Commit IPO processing
                 self.env.cr.commit()
                 
         except Exception as e:
             _logger.error(f"Failed to process IPO orders: {str(e)}")
-            raise UserError(f"IPO processing failed: {str(e)}") 
+            raise UserError(f"IPO processing failed: {str(e)}")
+    
+    def _process_ipo_allocation(self, order, allocation, ipo_price, session, security_id):
+        """Process individual IPO allocation"""
+        if allocation <= 0:
+            return False
+            
+        # Create IPO trade
+        trade_value = allocation * ipo_price
+        commission = trade_value * order.broker_commission_rate / 100
+        total_cost = trade_value + commission
+        
+        # Check buyer has funds
+        if order.user_id.cash_balance < total_cost:
+            order.write({
+                'status': 'rejected',
+                'rejection_reason': 'Insufficient funds for IPO allocation'
+            })
+            return False
+                    
+        # Create trade
+        self.env['stock.trade'].create({
+            'buy_order_id': order.id,
+            'sell_order_id': False,  # No sell order for IPO
+            'session_id': session.id,
+            'security_id': security_id,
+            'quantity': allocation,
+            'price': ipo_price,
+            'value': trade_value,
+            'buy_commission': commission,
+            'sell_commission': 0,
+            'trade_type': 'ipo'
+        })
+        
+        # Update buyer's cash and position
+        order.user_id.cash_balance -= total_cost
+        # Broker commission distribution removed (no default broker relationships)
+        
+        # Create/update position
+        position = self.env['stock.position'].search([
+            ('user_id', '=', order.user_id.id),
+            ('security_id', '=', security_id)
+        ], limit=1)
+        
+        if position:
+            total_cost_pos = (position.quantity * position.average_cost) + (allocation * ipo_price)
+            total_quantity = position.quantity + allocation
+            position.write({
+                'quantity': total_quantity,
+                'average_cost': total_cost_pos / total_quantity
+            })
+        else:
+            self.env['stock.position'].create({
+                'user_id': order.user_id.id,
+                'security_id': security_id,
+                'quantity': allocation,
+                'average_cost': ipo_price
+            })
+        
+        # Update order
+        order.update_filled_quantity(allocation)
+        
+        _logger.info(f"IPO allocation: {allocation} shares to {order.user_id.name}")
+        return True 

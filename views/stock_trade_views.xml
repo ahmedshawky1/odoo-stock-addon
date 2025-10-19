@@ -31,22 +31,20 @@
                         <group string="Trade Value">
                             <field name="quantity"/>
                             <field name="price"/>
-                            <field name="value" widget="monetary"/>
-                            <field name="total_commission" widget="monetary"/>
+                            <field name="value"/>
+                            <field name="total_commission"/>
                         </group>
                     </group>
                     <group>
                         <group string="Buyer">
                             <field name="buyer_id"/>
-                            <field name="buy_broker_id"/>
-                            <field name="buy_commission" widget="monetary"/>
-                            <field name="buyer_pnl" widget="monetary"/>
+                            <field name="buy_commission"/>
+                            <field name="buyer_pnl"/>
                         </group>
                         <group string="Seller">
                             <field name="seller_id"/>
-                            <field name="sell_broker_id"/>
-                            <field name="sell_commission" widget="monetary"/>
-                            <field name="seller_pnl" widget="monetary"/>
+                            <field name="sell_commission"/>
+                            <field name="seller_pnl"/>
                         </group>
                     </group>
                     <group string="Settlement">
@@ -72,8 +70,8 @@
                 <field name="seller_id"/>
                 <field name="quantity"/>
                 <field name="price"/>
-                <field name="value" widget="monetary"/>
-                <field name="total_commission" widget="monetary"/>
+                <field name="value"/>
+                <field name="total_commission"/>
                 <field name="settlement_status"/>
             </list>
         </field>

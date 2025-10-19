@@ -20,3 +20,15 @@ access_stock_price_history_portal,stock.price.history portal,model_stock_price_h
 access_stock_matching_engine_admin,stock.matching.engine admin,model_stock_matching_engine,base.group_user,1,1,1,1
 access_stock_config_admin,stock.config admin,model_stock_config,base.group_user,1,1,1,1
 access_stock_config_portal,stock.config portal,model_stock_config,base.group_portal,1,0,0,0
+access_stock_user_block_admin,stock.user.block admin,model_stock_user_block,base.group_user,1,1,1,1
+access_stock_user_block_portal,stock.user.block portal,model_stock_user_block,base.group_portal,1,0,0,0
+access_stock_news_admin,stock.news admin,model_stock_news,base.group_user,1,1,1,1
+access_stock_news_portal,stock.news portal,model_stock_news,base.group_portal,1,0,0,0
+access_stock_bond_admin,stock.bond admin,model_stock_bond,base.group_user,1,1,1,1
+access_stock_bond_portal,stock.bond portal,model_stock_bond,base.group_portal,1,0,0,0
+access_stock_bond_order_admin,stock.bond.order admin,model_stock_bond_order,base.group_user,1,1,1,1
+access_stock_bond_order_portal,stock.bond.order portal,model_stock_bond_order,base.group_portal,1,1,1,0
+access_stock_bond_trade_admin,stock.bond.trade admin,model_stock_bond_trade,base.group_user,1,1,1,1
+access_stock_bond_trade_portal,stock.bond.trade portal,model_stock_bond_trade,base.group_portal,1,0,0,0
+access_stock_bond_position_admin,stock.bond.position admin,model_stock_bond_position,base.group_user,1,1,1,1
+access_stock_bond_position_portal,stock.bond.position portal,model_stock_bond_position,base.group_portal,1,1,0,0

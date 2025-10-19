@@ -12,18 +12,48 @@ class StockSecurity(models.Model):
     
     # Basic Information
     symbol = fields.Char(
-        string='Symbol',
+        string='Symbol/Reuters Code',
         required=True,
         index=True,
         tracking=True,
-        help='Trading symbol (e.g., AAPL, GOOGL)'
+        help='Trading symbol or Reuters code (e.g., AAPL, GOOGL)'
     )
     
     name = fields.Char(
-        string='Security Name',
+        string='Company Name',
         required=True,
         tracking=True,
-        help='Full name of the security'
+        help='Full company name'
+    )
+    
+    sector = fields.Selection([
+        ('energy', 'Energy'),
+        ('financials', 'Financials'), 
+        ('health_care', 'Health Care'),
+        ('industrials', 'Industrials'),
+        ('information_technology', 'Information Technology'),
+        ('materials', 'Materials'),
+        ('telecommunication_services', 'Telecommunication Services'),
+        ('utilities', 'Utilities'),
+        ('tourism', 'Tourism'),
+        ('chemical', 'Chemical'),
+        ('food_beverage', 'Food and Beverage'),
+        ('medical_industry', 'Medical Industry'),
+        ('real_estate', 'Real Estate'),
+        ('media', 'Media'),
+        ('construction', 'Construction'),
+        ('fin_services', 'Financial Services'),
+        ('banking', 'Banking'),
+        ('transportation', 'Transportation')
+    ], string='Sector', required=True, tracking=True, help='Business sector classification')
+    
+    logo = fields.Binary(
+        string='Company Logo',
+        help='Company logo image'
+    )
+    
+    logo_filename = fields.Char(
+        string='Logo Filename'
     )
     
     security_type = fields.Selection([
@@ -32,12 +62,31 @@ class StockSecurity(models.Model):
         ('mf', 'Mutual Fund')
     ], string='Type', default='stock', required=True, tracking=True)
     
+    # Stock Status (from User Stories)
+    status = fields.Selection([
+        ('ipo', 'IPO - Initial Public Offering'),
+        ('po', 'PO - Public Offering'), 
+        ('trade', 'Trade - Normal Trading'),
+        ('hidden', 'Hidden - Not Visible'),
+        ('hold_10min', 'Hold 10 Minutes'),
+        ('hold_1session', 'Hold 1 Session')
+    ], string='Status', default='trade', required=True, tracking=True,
+       help='Stock trading status following User Stories specification')
+    
     active = fields.Boolean(
         string='Active',
         default=True,
         tracking=True,
         help='Inactive securities cannot be traded'
     )
+    
+    # Legacy IPO Status (for backward compatibility)
+    ipo_status = fields.Selection([
+        ('ipo', 'IPO - Initial Public Offering'),
+        ('po', 'PO - Public Offering'),
+        ('trading', 'Trading - Normal Market')
+    ], string='IPO Status (Legacy)', compute='_compute_legacy_ipo_status', store=True,
+       help='Computed from status field for backward compatibility')
     
     # Pricing Information
     current_price = fields.Float(
@@ -72,11 +121,36 @@ class StockSecurity(models.Model):
         help='Initial public offering price'
     )
     
+    hidden_price = fields.Float(
+        string='Hidden Price',
+        digits=(16, 4),
+        help='Hidden price used when status is hidden'
+    )
+    
     # Shares Outstanding
     total_shares = fields.Integer(
         string='Total Shares',
         default=0,
         help='Total shares outstanding or issued. Used for IPO and position limits.'
+    )
+    
+    # IPO/PO tracking
+    current_offering_quantity = fields.Integer(
+        string='Current Offering Quantity',
+        default=0,
+        help='Quantity available for current IPO/PO round'
+    )
+    
+    offering_round = fields.Integer(
+        string='Offering Round',
+        default=1,
+        help='Current offering round number (1=IPO, 2+=PO)'
+    )
+    
+    # History of offering prices for tracking
+    offering_history = fields.Text(
+        string='Offering History',
+        help='JSON history of offering rounds, prices, and quantities'
     )
     
     # Trading Rules
@@ -189,7 +263,8 @@ class StockSecurity(models.Model):
         for security in self:
             if security.session_start_price:
                 security.change_amount = security.current_price - security.session_start_price
-                security.change_percentage = (security.change_amount / security.session_start_price) * 100
+                # Don't multiply by 100 since percentage widget handles this automatically
+                security.change_percentage = security.change_amount / security.session_start_price
             else:
                 security.change_amount = 0.0
                 security.change_percentage = 0.0
@@ -239,6 +314,17 @@ class StockSecurity(models.Model):
                 security.best_ask = min(ask_orders.mapped('price'))
             else:
                 security.best_ask = 0.0
+    
+    @api.depends('status')
+    def _compute_legacy_ipo_status(self):
+        """Compute legacy ipo_status from new status field for backward compatibility"""
+        for security in self:
+            if security.status in ['ipo']:
+                security.ipo_status = 'ipo'
+            elif security.status in ['po']:
+                security.ipo_status = 'po'
+            else:
+                security.ipo_status = 'trading'
     
     @api.constrains('symbol')
     def _check_symbol_unique(self):
@@ -334,4 +420,80 @@ class StockSecurity(models.Model):
             'view_mode': 'list,form',
             'domain': [('security_id', '=', self.id)],
             'context': {'default_security_id': self.id}
-        } 
+        }
+    
+    @api.constrains('ipo_status', 'active')
+    def _check_ipo_status(self):
+        """Validate IPO status and active state consistency"""
+        for security in self:
+            # IPO/PO securities should typically be inactive until they go to trading
+            if security.ipo_status in ['ipo', 'po'] and not hasattr(self.env.context, 'skip_ipo_validation'):
+                # This is just a warning, not enforced constraint
+                pass
+    
+    def action_change_to_trading(self):
+        """Change IPO/PO security to trading status and activate normal trading"""
+        for security in self:
+            if security.ipo_status not in ['ipo', 'po']:
+                continue
+            
+            # Process any pending IPO orders first
+            if security.ipo_status in ['ipo', 'po']:
+                # This will be called by the session end wizard
+                security.write({
+                    'ipo_status': 'trading',
+                    'active': True,
+                    'current_price': security.ipo_price or security.current_price,
+                    'session_start_price': security.ipo_price or security.current_price
+                })
+    
+    def can_accept_ipo_orders(self):
+        """Check if security can accept IPO orders"""
+        self.ensure_one()
+        return self.ipo_status in ['ipo', 'po']
+    
+    def can_accept_regular_orders(self):
+        """Check if security can accept regular market orders"""
+        self.ensure_one()
+        return self.ipo_status == 'trading' and self.active
+    
+    def start_po_round(self, quantity, price):
+        """Start a new PO (Public Offering) round for additional shares"""
+        self.ensure_one()
+        import json
+        
+        # Record current round in history
+        history = []
+        if self.offering_history:
+            try:
+                history = json.loads(self.offering_history)
+            except:
+                history = []
+        
+        # Add current round to history
+        history.append({
+            'round': self.offering_round,
+            'status': self.ipo_status,
+            'quantity': self.current_offering_quantity,
+            'price': self.ipo_price,
+            'date': fields.Datetime.now().isoformat()
+        })
+        
+        # Update for new PO round
+        self.write({
+            'ipo_status': 'po',  # Change to PO status
+            'offering_round': self.offering_round + 1,
+            'current_offering_quantity': quantity,
+            'ipo_price': price,  # New PO price
+            'offering_history': json.dumps(history)
+        })
+        
+        return True
+    
+    def get_offering_history(self):
+        """Get the offering history as a list"""
+        import json
+        try:
+            return json.loads(self.offering_history) if self.offering_history else []
+        except:
+            return [] 

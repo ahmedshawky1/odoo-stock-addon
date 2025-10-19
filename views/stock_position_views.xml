@@ -32,17 +32,17 @@
                         </group>
                         <group string="Valuation">
                             <field name="average_cost"/>
-                            <field name="cost_basis" widget="monetary"/>
-                            <field name="market_value" widget="monetary"/>
+                            <field name="cost_basis"/>
+                            <field name="market_value"/>
                             <field name="portfolio_weight" widget="percentage" options="{'factor': 1.0}"/>
                         </group>
                     </group>
                     <group>
                         <group string="Performance">
-                            <field name="unrealized_pnl" widget="monetary" 
+                            <field name="unrealized_pnl" 
                                    decoration-success="unrealized_pnl > 0" 
                                    decoration-danger="unrealized_pnl &lt; 0"/>
-                <field name="unrealized_pnl_percent" widget="percentage" options="{'factor': 1.0}"
+                            <field name="unrealized_pnl_percent" widget="percentage" options="{'factor': 1.0}"
                                    decoration-success="unrealized_pnl_percent > 0" 
                                    decoration-danger="unrealized_pnl_percent &lt; 0"/>
                         </group>
@@ -67,15 +67,15 @@
                 <field name="quantity"/>
                 <field name="available_quantity"/>
                 <field name="average_cost"/>
-                <field name="cost_basis" widget="monetary"/>
-                <field name="market_value" widget="monetary"/>
-                <field name="unrealized_pnl" widget="monetary"
+                <field name="cost_basis"/>
+                <field name="market_value"/>
+                <field name="unrealized_pnl" 
                        decoration-success="unrealized_pnl > 0" 
                        decoration-danger="unrealized_pnl &lt; 0"/>
-          <field name="unrealized_pnl_percent" widget="percentage" options="{'factor': 1.0}"
+                <field name="unrealized_pnl_percent" widget="percentage" options="{'factor': 1.0}"
                        decoration-success="unrealized_pnl_percent > 0" 
                        decoration-danger="unrealized_pnl_percent &lt; 0"/>
-          <field name="portfolio_weight" widget="percentage" options="{'factor': 1.0}"/>
+                <field name="portfolio_weight" widget="percentage" options="{'factor': 1.0}"/>
             </list>
         </field>
     </record>

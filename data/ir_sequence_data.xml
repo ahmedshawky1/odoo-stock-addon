@@ -38,5 +38,41 @@
             <field name="company_id" eval="False"/>
         </record>
         
+        <!-- Stock User Block Sequence -->
+        <record id="seq_stock_user_block" model="ir.sequence">
+            <field name="name">Stock User Block</field>
+            <field name="code">stock.user.block</field>
+            <field name="prefix">BLOCK/%(year)s/</field>
+            <field name="padding">4</field>
+            <field name="company_id" eval="False"/>
+        </record>
+        
+        <!-- Stock News Sequence -->
+        <record id="seq_stock_news" model="ir.sequence">
+            <field name="name">Stock News</field>
+            <field name="code">stock.news</field>
+            <field name="prefix">NEWS/%(year)s/</field>
+            <field name="padding">5</field>
+            <field name="company_id" eval="False"/>
+        </record>
+        
+        <!-- Stock Bond Order Sequence -->
+        <record id="seq_stock_bond_order" model="ir.sequence">
+            <field name="name">Stock Bond Order</field>
+            <field name="code">stock.bond.order</field>
+            <field name="prefix">BOND-ORD/%(year)s/</field>
+            <field name="padding">6</field>
+            <field name="company_id" eval="False"/>
+        </record>
+        
+        <!-- Stock Bond Trade Sequence -->
+        <record id="seq_stock_bond_trade" model="ir.sequence">
+            <field name="name">Stock Bond Trade</field>
+            <field name="code">stock.bond.trade</field>
+            <field name="prefix">BOND-TRD/%(year)s/</field>
+            <field name="padding">6</field>
+            <field name="company_id" eval="False"/>
+        </record>
+        
     </data>
 </odoo> 

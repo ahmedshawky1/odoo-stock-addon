@@ -16,9 +16,9 @@
                         <strong>Session:</strong> <span t-esc="session.name if session else 'All Sessions'"/>
                     </div>
                     <div class="col-6 text-right">
-                        <strong>Initial Capital:</strong> <span t-field="doc.initial_capital" t-options='{"widget": "monetary"}'/><br/>
-                        <strong>Cash Balance:</strong> <span t-field="doc.cash_balance" t-options='{"widget": "monetary"}'/><br/>
-                        <strong>Portfolio Value:</strong> <span t-field="doc.portfolio_value" t-options='{"widget": "monetary"}'/>
+                        <strong>Initial Capital:</strong> <span t-field="doc.initial_capital"/><br/>
+                        <strong>Cash Balance:</strong> <span t-field="doc.cash_balance"/><br/>
+                        <strong>Portfolio Value:</strong> <span t-field="doc.portfolio_value"/>
                     </div>
                 </div>
                 
@@ -28,28 +28,28 @@
                     <tbody>
                         <tr>
                             <td>Cash Balance</td>
-                            <td class="text-right"><span t-field="doc.cash_balance" t-options='{"widget": "monetary"}'/></td>
+                            <td class="text-right"><span t-field="doc.cash_balance"/></td>
                         </tr>
                         <tr>
                             <td>Portfolio Value (Securities)</td>
-                            <td class="text-right"><span t-field="doc.portfolio_value" t-options='{"widget": "monetary"}'/></td>
+                            <td class="text-right"><span t-field="doc.portfolio_value"/></td>
                         </tr>
                         <tr>
                             <td>Total Deposits</td>
-                            <td class="text-right"><span t-field="doc.total_deposits" t-options='{"widget": "monetary"}'/></td>
+                            <td class="text-right"><span t-field="doc.total_deposits"/></td>
                         </tr>
                         <tr>
                             <td>Total Loans</td>
-                            <td class="text-right">(<span t-field="doc.total_loans" t-options='{"widget": "monetary"}'/>)</td>
+                            <td class="text-right">(<span t-field="doc.total_loans"/>)</td>
                         </tr>
                         <tr class="font-weight-bold">
                             <td>Total Assets</td>
-                            <td class="text-right"><span t-field="doc.total_assets" t-options='{"widget": "monetary"}'/></td>
+                            <td class="text-right"><span t-field="doc.total_assets"/></td>
                         </tr>
                         <tr t-attf-class="font-weight-bold #{doc.profit_loss >= 0 and 'text-success' or 'text-danger'}">
                             <td>Profit/Loss</td>
                             <td class="text-right">
-                                <span t-field="doc.profit_loss" t-options='{"widget": "monetary"}'/>
+                                <span t-field="doc.profit_loss"/>
                                 (<span t-field="doc.profit_loss_percentage"/>%)
                             </td>
                         </tr>
@@ -78,9 +78,9 @@
                                     <td class="text-right"><span t-field="position.quantity"/></td>
                                     <td class="text-right"><span t-field="position.average_cost" t-options='{"widget": "float", "precision": 2}'/></td>
                                     <td class="text-right"><span t-field="position.security_id.current_price" t-options='{"widget": "float", "precision": 2}'/></td>
-                                    <td class="text-right"><span t-field="position.market_value" t-options='{"widget": "monetary"}'/></td>
+                                    <td class="text-right"><span t-field="position.market_value"/></td>
                                     <td class="text-right" t-attf-class="#{position.unrealized_pnl >= 0 and 'text-success' or 'text-danger'}">
-                                        <span t-field="position.unrealized_pnl" t-options='{"widget": "monetary"}'/>
+                                        <span t-field="position.unrealized_pnl"/>
                                     </td>
                                     <td class="text-right" t-attf-class="#{position.unrealized_pnl_percent >= 0 and 'text-success' or 'text-danger'}">
                                         <span t-field="position.unrealized_pnl_percent" t-options='{"widget": "float", "precision": 2}'/>%
@@ -89,9 +89,9 @@
                             </t>
                             <tr class="font-weight-bold">
                                 <td colspan="4">Total</td>
-                                <td class="text-right"><span t-esc="sum(doc.position_ids.mapped('market_value'))" t-options='{"widget": "monetary"}'/></td>
+                                <td class="text-right"><span t-esc="sum(doc.position_ids.mapped('market_value'))"/></td>
                                 <td class="text-right" t-attf-class="#{sum(doc.position_ids.mapped('unrealized_pnl')) >= 0 and 'text-success' or 'text-danger'}">
-                                    <span t-esc="sum(doc.position_ids.mapped('unrealized_pnl'))" t-options='{"widget": "monetary"}'/>
+                                    <span t-esc="sum(doc.position_ids.mapped('unrealized_pnl'))"/>
                                 </td>
                                 <td></td>
                             </tr>
@@ -126,10 +126,10 @@
                                     <td><t t-if="trade.buyer_id == doc">Buy</t><t t-else="">Sell</t></td>
                                     <td class="text-right"><span t-field="trade.quantity"/></td>
                                     <td class="text-right"><span t-field="trade.price" t-options='{"widget": "float", "precision": 2}'/></td>
-                                    <td class="text-right"><span t-field="trade.value" t-options='{"widget": "monetary"}'/></td>
+                                    <td class="text-right"><span t-field="trade.value"/></td>
                                     <td class="text-right">
-                                        <t t-if="trade.buyer_id == doc"><span t-field="trade.buy_commission" t-options='{"widget": "monetary"}'/></t>
-                                        <t t-else=""><span t-field="trade.sell_commission" t-options='{"widget": "monetary"}'/></t>
+                                        <t t-if="trade.buyer_id == doc"><span t-field="trade.buy_commission"/></t>
+                                        <t t-else=""><span t-field="trade.sell_commission"/></t>
                                     </td>
                                 </tr>
                             </t>

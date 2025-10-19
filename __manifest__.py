@@ -51,9 +51,9 @@ Technical Features:
         # Data
         'data/ir_sequence_data.xml',
         'data/stock_data.xml',
-    'data/cron.xml',
+        'data/cron.xml',
         
-        # Views - Backend
+        # Views - Backend  
         'views/res_users_views.xml',
         'views/stock_trade_views.xml',
         'views/stock_order_views.xml',
@@ -63,11 +63,15 @@ Technical Features:
         'views/stock_deposit_views.xml',
         'views/stock_loan_views.xml',
         'views/stock_price_history_views.xml',
+        'views/stock_new_models_views.xml',
         'views/menu_views.xml',
         'views/stock_config_views.xml',
         
         # Views - Portal
         'views/portal_templates.xml',
+        
+        # Wizards
+        'wizard/session_end_ipo_wizard_views.xml',
         
         # Reports
         'report/investor_report_templates.xml',
@@ -77,6 +81,7 @@ Technical Features:
     ],
     'demo': [
         'demo/demo.xml',
+        'demo/new_models_demo.xml',
     ],
     # QWeb templates are provided via 'data' (views). Do not include full view XML in asset bundles,
     # it can cause the web client ModuleLoader to attempt to fetch large XML files and fail.
@@ -94,4 +99,5 @@ Technical Features:
     'application': True,
     'installable': True,
     'license': 'LGPL-3',
+    'post_init_hook': 'post_init_hook',
 }

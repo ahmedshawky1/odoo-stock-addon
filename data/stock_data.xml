@@ -2,6 +2,23 @@
 <odoo>
     <data noupdate="1">
         
+        <!-- System Configuration Parameters -->
+        <record id="config_auto_create_next_session" model="ir.config_parameter">
+            <field name="key">stock_market.auto_create_next_session</field>
+            <field name="value">True</field>
+        </record>
+        
+        <!-- Initial Trading Session (Session 01) -->
+        <record id="initial_session" model="stock.session">
+            <field name="name">Session 01</field>
+            <field name="state">draft</field>
+            <field name="price_change_threshold">10.0</field>
+            <field name="broker_commission_rate">0.25</field>
+            <field name="tick_size">0.01</field>
+            <field name="circuit_breaker_upper">15.0</field>
+            <field name="circuit_breaker_lower">15.0</field>
+        </record>
+        
         <!-- Cron job for auto open/close sessions -->
         <record id="ir_cron_check_session_times" model="ir.cron">
             <field name="name">Stock Market: Check Session Times</field>

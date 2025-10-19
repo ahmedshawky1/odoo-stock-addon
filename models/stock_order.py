@@ -30,14 +30,9 @@ class StockOrder(models.Model):
         tracking=True
     )
     
-    broker_id = fields.Many2one(
-        'res.users', string='Broker',
-        related='user_id.broker_id',
-        store=True, index=True,
-        readonly=True
-    )
+    # Removed: broker_id related field (default broker functionality removed)
     
-    # Who entered/created the order (broker/admin). This differs from broker_id (investor's default broker).
+    # Who entered/created the order (broker/admin)
     entered_by_id = fields.Many2one(
         'res.users', string='Entered By',
         index=True, readonly=True, tracking=True,
@@ -89,6 +84,27 @@ class StockOrder(models.Model):
         ('sell', 'Sell')
     ], string='Side', required=True, tracking=True,
        readonly="status != 'draft'")
+    
+    # BID/ASK display fields (computed from side for User Stories compatibility)
+    order_side_display = fields.Selection([
+        ('bid', 'BID'),
+        ('ask', 'ASK')
+    ], string='Order Type (BID/ASK)', compute='_compute_bid_ask_display', store=True,
+       help='BID for buy orders, ASK for sell orders - matching User Stories terminology')
+    
+    is_bid_order = fields.Boolean(
+        string='Is BID Order',
+        compute='_compute_bid_ask_display',
+        store=True,
+        help='True for buy orders (BID in User Stories)'
+    )
+    
+    is_ask_order = fields.Boolean(
+        string='Is ASK Order', 
+        compute='_compute_bid_ask_display',
+        store=True,
+        help='True for sell orders (ASK in User Stories)'
+    )
     
     price = fields.Float(
         string='Price',
@@ -211,6 +227,23 @@ class StockOrder(models.Model):
         for order in self:
             order.broker_commission = order.filled_value * order.broker_commission_rate / 100
     
+    @api.depends('side')
+    def _compute_bid_ask_display(self):
+        """Compute BID/ASK display fields from buy/sell side"""
+        for order in self:
+            if order.side == 'buy':
+                order.order_side_display = 'bid'
+                order.is_bid_order = True
+                order.is_ask_order = False
+            elif order.side == 'sell':
+                order.order_side_display = 'ask'
+                order.is_bid_order = False
+                order.is_ask_order = True
+            else:
+                order.order_side_display = False
+                order.is_bid_order = False
+                order.is_ask_order = False
+    
     def _compute_trades(self):
         for order in self:
             if order.side == 'buy':
@@ -238,7 +271,14 @@ class StockOrder(models.Model):
                 vals['price'] = security.current_price * 0.9
         elif vals.get('order_type') == 'ipo':
             # IPO orders don't require a price at placement; set to 0 as placeholder
+            # Price will be set during IPO processing
             vals.setdefault('price', 0.0)
+            
+            # Validate that security is in IPO/PO status
+            security = self.env['stock.security'].browse(vals.get('security_id'))
+            if security and security.ipo_status not in ['ipo', 'po']:
+                raise ValidationError(f"IPO orders can only be placed for securities in IPO or PO status. "
+                                    f"{security.symbol} is in '{security.ipo_status}' status.")
         
         # Ensure the entered_by_id is set to the current env user if not provided
         if not vals.get('entered_by_id'):
@@ -310,6 +350,16 @@ class StockOrder(models.Model):
         # Check session is open
         if self.session_id.state != 'open':
             raise UserError("Cannot submit order to a closed session.")
+        
+        # Check IPO status restrictions
+        if self.security_id.ipo_status in ['ipo', 'po']:
+            # For IPO/PO securities, only IPO orders are allowed
+            if self.order_type != 'ipo':
+                raise UserError(f"Security {self.security_id.symbol} is in {self.security_id.ipo_status.upper()} status. Only IPO orders are allowed.")
+        else:
+            # For trading securities, IPO orders are not allowed
+            if self.order_type == 'ipo':
+                raise UserError(f"Security {self.security_id.symbol} is in trading status. IPO orders are not allowed.")
         
         # Check security is active (except for IPO orders which can be placed before activation)
         if self.order_type != 'ipo' and not self.security_id.active:

@@ -30,8 +30,7 @@ class StockMarketPortal(CustomerPortal):
         
         if 'trade_count' in counters:
             trade_domain = ['|', ('buyer_id', '=', user.id), ('seller_id', '=', user.id)]
-            if user.user_type == 'broker':
-                trade_domain = ['|', ('buy_broker_id', '=', user.id), ('sell_broker_id', '=', user.id)]
+            # Removed broker-specific trade filtering since default broker functionality removed
             values['trade_count'] = request.env['stock.trade'].search_count(trade_domain)
         
         if 'deposit_count' in counters:
@@ -228,15 +227,18 @@ class StockMarketPortal(CustomerPortal):
             'securities': securities,
             'clients': clients,
             'client_positions': client_positions,
-            'active_session': active_session,
-            'display_currency': request.env.company.currency_id,
-        })
+            'active_session': active_session,        })
         
         return request.render("stock_market_simulation.portal_order_new", values)
 
     @http.route(['/my/order/create'], type='json', auth="user", website=True)
     def portal_order_create(self, **kw):
         user = request.env.user
+        
+        # Check if current user is blocked
+        block_check = request.env['stock.user.block'].check_user_blocked(user.id)
+        if block_check['is_blocked']:
+            return {'error': f"Access denied: {block_check['reason']}. Blocked until: {block_check['blocked_until']}", 'type': 'blocked'}
         
         # Allow brokers and admins to place orders on behalf of clients
         try:
@@ -251,6 +253,11 @@ class StockMarketPortal(CustomerPortal):
             client = request.env['res.users'].browse(int(client_id))
             if not client or client.user_type != 'investor':
                 return {'error': 'Invalid client selected'}
+            
+            # Check if client is blocked
+            client_block_check = request.env['stock.user.block'].check_user_blocked(client.id)
+            if client_block_check['is_blocked']:
+                return {'error': f"Client is blocked: {client_block_check['reason']}. Blocked until: {client_block_check['blocked_until']}", 'type': 'blocked'}
             
             # Use client for order creation
             order_user = client
@@ -282,16 +289,47 @@ class StockMarketPortal(CustomerPortal):
             quantity = int(kw.get('quantity'))
             price = float(kw.get('price', 0))
             side = kw.get('side')
+            order_type = kw.get('order_type')
             
-            # Check minimum order value
-            if price * quantity < 100:  # Assuming min order value of $100
-                return {'error': f'Order value (${price * quantity:.2f}) is below minimum required ($100.00)', 'type': 'validation'}
-            
-            # Check client cash balance for buy orders
-            if side == 'buy':
-                required_cash = price * quantity
-                if order_user.cash_balance < required_cash:
-                    return {'error': f'Client insufficient funds. Required: ${required_cash:,.2f}, Available: ${order_user.cash_balance:,.2f}', 'type': 'validation'}
+            # IPO order specific validations
+            if order_type == 'ipo':
+                # Validate security is in IPO/PO status
+                if security.ipo_status not in ['ipo', 'po']:
+                    return {'error': f'{security.symbol} is not available for IPO orders (status: {security.ipo_status})', 'type': 'validation'}
+                
+                # IPO orders are always buy orders
+                if side != 'buy':
+                    return {'error': 'IPO orders can only be buy orders', 'type': 'validation'}
+                
+                # For IPO orders, price is not used (set during allocation)
+                order_vals['price'] = 0.0
+                
+                # Basic cash check (will be validated again during allocation with actual IPO price)
+                if security.ipo_price > 0:
+                    estimated_cost = security.ipo_price * quantity
+                    if order_user.cash_balance < estimated_cost:
+                        return {'error': f'Client insufficient funds for estimated IPO cost. Estimated: ${estimated_cost:,.2f}, Available: ${order_user.cash_balance:,.2f}', 'type': 'validation'}
+            else:
+                # Regular order validations
+                # Check price limits (±20% of current market price as per User Stories)
+                current_price = security.current_price
+                if current_price > 0:
+                    price_limit_low = current_price * 0.8
+                    price_limit_high = current_price * 1.2
+                    
+                    if price < price_limit_low or price > price_limit_high:
+                        return {'error': f'Price ${price:.2f} is outside allowed range (${price_limit_low:.2f} - ${price_limit_high:.2f}). Current market price: ${current_price:.2f}', 'type': 'validation'}
+                
+                # Check minimum order value
+                if price * quantity < 100:  # Assuming min order value of $100
+                    return {'error': f'Order value (${price * quantity:.2f}) is below minimum required ($100.00)', 'type': 'validation'}
+                
+                # Check client cash balance for buy orders (include broker fees)
+                if side == 'buy':
+                    broker_fee_rate = active_session.broker_commission_rate or 0.0
+                    total_cost = price * quantity * (1 + broker_fee_rate / 100)
+                    if order_user.cash_balance < total_cost:
+                        return {'error': f'Client insufficient funds (including {broker_fee_rate}% broker fee). Required: ${total_cost:,.2f}, Available: ${order_user.cash_balance:,.2f}', 'type': 'validation'}
             
             # Check client position for sell orders
             if side == 'sell':
@@ -300,9 +338,19 @@ class StockMarketPortal(CustomerPortal):
                     ('security_id', '=', int(kw.get('security_id')))
                 ], limit=1)
                 
-                if not position or position.available_quantity < quantity:
-                    available = position.available_quantity if position else 0
-                    return {'error': f'Client insufficient shares. Required: {quantity:,}, Available: {available:,}', 'type': 'validation'}
+                # Calculate available quantity (total - pending sell orders)
+                total_quantity = position.quantity if position else 0
+                pending_sell_orders = request.env['stock.order'].search([
+                    ('user_id', '=', order_user.id),
+                    ('security_id', '=', int(kw.get('security_id'))),
+                    ('side', '=', 'sell'),
+                    ('status', 'in', ['draft', 'submitted', 'open', 'partial'])
+                ])
+                pending_sell_quantity = sum(pending_sell_orders.mapped('remaining_quantity'))
+                available_quantity = total_quantity - pending_sell_quantity
+                
+                if available_quantity < quantity:
+                    return {'error': f'Client insufficient shares. Required: {quantity:,}, Available: {available_quantity:,} (Total: {total_quantity:,}, Pending Sells: {pending_sell_quantity:,})', 'type': 'validation'}
             
             # Create the order
             # Use sudo for creation but explicitly set entered_by_id to current user
@@ -344,19 +392,20 @@ class StockMarketPortal(CustomerPortal):
                         headers=[('Content-Type', 'application/json')]
                     )
             
-            # Allow brokers and admins to place orders on behalf of clients
+            # Allow brokers and admins to place orders on behalf of clients/investors
             if user.user_type in ['broker', 'admin'] or is_system_admin:
-                client_id = kw.get('client_id')
+                # Support both client_id (old) and investor_id (new) parameters
+                client_id = kw.get('client_id') or kw.get('investor_id')
                 if not client_id:
                     return request.make_response(
-                        json.dumps({'success': False, 'error': 'Client must be selected'}),
+                        json.dumps({'success': False, 'error': 'Investor must be selected'}),
                         headers=[('Content-Type', 'application/json')]
                     )
                 
                 client = request.env['res.users'].browse(int(client_id))
                 if not client or client.user_type != 'investor':
                     return request.make_response(
-                        json.dumps({'success': False, 'error': 'Invalid client selected'}),
+                        json.dumps({'success': False, 'error': 'Invalid investor selected'}),
                         headers=[('Content-Type', 'application/json')]
                     )
                 
@@ -487,9 +536,7 @@ class StockMarketPortal(CustomerPortal):
             'portfolio_value': user.portfolio_value or 0.0,
             'total_assets': user.total_assets or 0.0,
             'profit_loss': user.profit_loss or 0.0,
-            'profit_loss_percentage': user.profit_loss_percentage or 0.0,
-            'display_currency': request.env.company.currency_id,
-            'active_session': active_session,
+            'profit_loss_percentage': user.profit_loss_percentage or 0.0,            'active_session': active_session,
             'securities': securities,
             'top_gainers': gainers,
             'top_losers': losers,
@@ -521,13 +568,71 @@ class StockMarketPortal(CustomerPortal):
             'positions': positions,
             'cash_balance': user.cash_balance or 0.0,
             'portfolio_value': user.portfolio_value or 0.0,
-            'total_assets': user.total_assets or 0.0,
-            'display_currency': request.env.company.currency_id,
-            'page_name': 'portfolio',
+            'total_assets': user.total_assets or 0.0,            'page_name': 'portfolio',
         }
         
         return request.render("stock_market_simulation.market_portfolio_view", values)
     
+    @http.route(['/my/investor/<int:investor_id>/positions'], type='http', auth="user", methods=['GET'], website=True)
+    def get_investor_positions(self, investor_id, **kw):
+        """Get positions for a specific investor (for brokers/admins)"""
+        try:
+            user = request.env.user
+            
+            # Check permissions - only brokers and admins can access this
+            try:
+                is_system_admin = request.env.user.has_group('base.group_system')
+            except Exception:
+                is_system_admin = False
+            
+            if user.user_type not in ['broker', 'admin'] and not is_system_admin:
+                return request.make_response(
+                    json.dumps({'success': False, 'error': 'Unauthorized access'}),
+                    headers=[('Content-Type', 'application/json')]
+                )
+            
+            # Get the investor
+            investor = request.env['res.users'].browse(investor_id)
+            if not investor.exists() or investor.user_type != 'investor':
+                return request.make_response(
+                    json.dumps({'success': False, 'error': 'Invalid investor'}),
+                    headers=[('Content-Type', 'application/json')]
+                )
+            
+            # Get investor positions
+            positions = request.env['stock.position'].search([
+                ('user_id', '=', investor_id),
+                ('available_quantity', '>', 0)
+            ])
+            
+            position_data = []
+            for pos in positions:
+                position_data.append({
+                    'security_id': pos.security_id.id,
+                    'symbol': pos.security_id.symbol,
+                    'name': pos.security_id.name,
+                    'quantity': pos.quantity,
+                    'available_quantity': pos.available_quantity,
+                    'current_price': pos.security_id.current_price or 0.0,
+                    'market_value': pos.market_value or 0.0
+                })
+            
+            return request.make_response(
+                json.dumps({
+                    'success': True,
+                    'positions': position_data,
+                    'investor_name': investor.name
+                }),
+                headers=[('Content-Type', 'application/json')]
+            )
+            
+        except Exception as e:
+            _logger.error(f"Error getting investor positions: {str(e)}")
+            return request.make_response(
+                json.dumps({'success': False, 'error': f'Error loading positions: {str(e)}'}),
+                headers=[('Content-Type', 'application/json')]
+            )
+
     @http.route(['/market/trading'], type='http', auth="user", website=True)
     def market_trading(self, **kw):
         """Trading view in market portal - for brokers and admins to place orders on behalf of clients"""
@@ -552,8 +657,20 @@ class StockMarketPortal(CustomerPortal):
         if not active_session:
             return request.redirect('/market')
         
-        # Get all active securities
-        securities = request.env['stock.security'].sudo().search([('active', '=', True)])
+        # Get securities by IPO status
+        # Regular trading securities
+        trading_securities = request.env['stock.security'].sudo().search([
+            ('active', '=', True),
+            ('ipo_status', '=', 'trading')
+        ])
+        
+        # IPO/PO securities
+        ipo_securities = request.env['stock.security'].sudo().search([
+            ('ipo_status', 'in', ['ipo', 'po'])
+        ])
+        
+        # All securities for compatibility
+        securities = trading_securities + ipo_securities
         
         # Get all investors (any broker can place orders for any investor)
         clients = request.env['res.users'].search([
@@ -570,11 +687,11 @@ class StockMarketPortal(CustomerPortal):
         values = {
             'user': user,
             'securities': securities,
+            'trading_securities': trading_securities,
+            'ipo_securities': ipo_securities,
             'clients': clients,
             'client_positions': client_positions,
-            'active_session': active_session,
-            'display_currency': request.env.company.currency_id,
-            'page_name': 'trading',
+            'active_session': active_session,            'page_name': 'trading',
         }
         
         return request.render("stock_market_simulation.market_trading_view", values)
@@ -635,9 +752,7 @@ class StockMarketPortal(CustomerPortal):
             'user': user,
             'orders': orders,
             'active_session': active_session,
-            'scope': scope,
-            'display_currency': request.env.company.currency_id,
-            'page_name': 'orders',
+            'scope': scope,            'page_name': 'orders',
         }
         
         return request.render("stock_market_simulation.market_orders_view", values)
@@ -678,23 +793,11 @@ class StockMarketPortal(CustomerPortal):
             return request.redirect('/my')
         
         # Get commission data based on user type
-        if user.user_type == 'broker':
-            # Brokers see only their own commissions
-            trades = request.env['stock.trade'].search([
-                '|', ('buy_broker_id', '=', user.id), ('sell_broker_id', '=', user.id)
-            ])
-        else:  # admin or system admin
-            # Admins see all commissions
-            trades = request.env['stock.trade'].search([])
+        # Since default broker functionality removed, all users see all trades
+        trades = request.env['stock.trade'].search([])
         
-        if user.user_type == 'broker':
-            total_commission = sum(
-                (t.buy_commission if t.buy_broker_id == user else 0) +
-                (t.sell_commission if t.sell_broker_id == user else 0)
-                for t in trades
-            )
-        else:  # admin
-            total_commission = sum(t.buy_commission + t.sell_commission for t in trades)
+        # Total commission calculation simplified (no broker-specific logic)
+        total_commission = sum(t.buy_commission + t.sell_commission for t in trades)
         
         # Group by session
         session_commissions = {}
@@ -703,10 +806,8 @@ class StockMarketPortal(CustomerPortal):
             if session not in session_commissions:
                 session_commissions[session] = 0
             
-            if trade.buy_broker_id == user:
-                session_commissions[session] += trade.buy_commission
-            if trade.sell_broker_id == user:
-                session_commissions[session] += trade.sell_commission
+            # Add both buy and sell commissions for all trades (no broker filtering)
+            session_commissions[session] += trade.buy_commission + trade.sell_commission
         
         values.update({
             'user': user,
@@ -744,8 +845,7 @@ class StockMarketPortal(CustomerPortal):
         user = request.env.user
         values = {
             'user': user,
-            'page_title': 'Reports',
-        }
+            'page_title': 'Reports',        }
         return request.render("stock_market_simulation.market_portal_layout", values)
 
     # IPO: Render page (admin/banker only)
@@ -1164,4 +1264,43 @@ class StockMarketPortal(CustomerPortal):
             return request.make_response(
                 json.dumps({'success': False, 'error': 'Failed to update market data'}),
                 headers=[('Content-Type', 'application/json')]
-            ) 
+            )
+
+    @http.route(['/test/user/fields'], type='http', auth="user", website=True)
+    def test_user_fields(self, **kw):
+        """Test route to check user computed fields"""
+        user = request.env.user
+        
+        try:
+            result = {
+                'user_id': user.id,
+                'user_type': user.user_type,
+                'cash_balance': user.cash_balance,
+                'portfolio_value': user.portfolio_value,
+                'total_assets': user.total_assets,
+                'profit_loss': user.profit_loss,
+                'profit_loss_percentage': user.profit_loss_percentage,
+            }
+            return json.dumps(result, indent=2)
+        except Exception as e:
+            import traceback
+            return f"Error: {str(e)}\n\nTraceback:\n{traceback.format_exc()}"
+
+    @http.route(['/test/public/health'], type='http', auth="public", website=True)
+    def test_public_health(self, **kw):
+        """Public test route to check system health"""
+        try:
+            # Test basic database connectivity
+            user_count = request.env['res.users'].sudo().search_count([])
+            session_count = request.env['stock.session'].sudo().search_count([])
+            
+            result = {
+                'status': 'ok',
+                'user_count': user_count,
+                'session_count': session_count,
+                'routes_working': True
+            }
+            return json.dumps(result, indent=2)
+        except Exception as e:
+            import traceback
+            return f"Error: {str(e)}\n\nTraceback:\n{traceback.format_exc()}"

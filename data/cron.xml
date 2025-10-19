@@ -12,5 +12,29 @@
             <field name="active">True</field>
             <field name="user_id" ref="base.user_admin"/>
         </record>
+        
+        <record id="ir_cron_expire_user_blocks" model="ir.cron">
+            <field name="name">Expire User Blocks (Every 5 Minutes)</field>
+            <field name="model_id" ref="stock_market_simulation.model_stock_user_block"/>
+            <field name="state">code</field>
+            <field name="code">env['stock.user.block'].cron_expire_blocks()</field>
+            <field name="interval_number">5</field>
+            <field name="interval_type">minutes</field>
+            <field name="nextcall" eval="(datetime.now()).strftime('%Y-%m-%d %H:%M:%S')"/>
+            <field name="active">True</field>
+            <field name="user_id" ref="base.user_admin"/>
+        </record>
+        
+        <record id="ir_cron_update_news_status" model="ir.cron">
+            <field name="name">Update News Status (Every 10 Minutes)</field>
+            <field name="model_id" ref="stock_market_simulation.model_stock_news"/>
+            <field name="state">code</field>
+            <field name="code">env['stock.news'].cron_update_news_status()</field>
+            <field name="interval_number">10</field>
+            <field name="interval_type">minutes</field>
+            <field name="nextcall" eval="(datetime.now()).strftime('%Y-%m-%d %H:%M:%S')"/>
+            <field name="active">True</field>
+            <field name="user_id" ref="base.user_admin"/>
+        </record>
     </data>
 </odoo>

@@ -1,0 +1,98 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <data noupdate="1">
+        
+        <!-- Demo Bonds -->
+        <record id="demo_bond_govt_1" model="stock.bond">
+            <field name="symbol">GOVT001</field>
+            <field name="name">Government Treasury Bond</field>
+            <field name="sector">Government</field>
+            <field name="bond_type">government</field>
+            <field name="rate_type">fixed_coupon</field>
+            <field name="status">trade</field>
+            <field name="ipo_price">1000</field>
+            <field name="current_price">1020</field>
+            <field name="quantity">10000</field>
+            <field name="compensation_rate">3.5</field>
+            <field name="start_session">1</field>
+            <field name="end_session">100</field>
+            <field name="first_pay_session">10</field>
+            <field name="percentage_rate_session">1</field>
+        </record>
+        
+        <record id="demo_bond_corp_1" model="stock.bond">
+            <field name="symbol">CORP001</field>
+            <field name="name">Corporate Bond ABC Inc</field>
+            <field name="sector">Technology</field>
+            <field name="bond_type">corporate</field>
+            <field name="rate_type">step_up_coupon</field>
+            <field name="status">trade</field>
+            <field name="ipo_price">950</field>
+            <field name="current_price">975</field>
+            <field name="quantity">5000</field>
+            <field name="compensation_rate">4.2</field>
+            <field name="step_percentage">0.5</field>
+            <field name="start_session">1</field>
+            <field name="end_session">80</field>
+            <field name="first_pay_session">5</field>
+            <field name="percentage_rate_session">2</field>
+        </record>
+        
+        <!-- Demo News -->
+        <record id="demo_news_market_open" model="stock.news">
+            <field name="headline">Market Opens Strong with Technology Gains</field>
+            <field name="summary">Technology sector leads market opening with significant gains across major indices.</field>
+            <field name="content">The market opened with strong performance today, particularly in the technology sector. Major technology stocks showed gains of 2-3% in early trading, driven by positive earnings reports and optimistic growth forecasts. Investors are showing renewed confidence in tech companies' ability to navigate current market conditions.</field>
+            <field name="news_type">market_update</field>
+            <field name="priority">medium</field>
+            <field name="expected_impact">positive</field>
+            <field name="impact_magnitude">medium</field>
+            <field name="sector_target">Technology</field>
+            <field name="geographic_relevance">US</field>
+            <field name="start_session">1</field>
+            <field name="start_minute">0</field>
+            <field name="end_session">5</field>
+            <field name="end_minute">59</field>
+            <field name="status">active</field>
+        </record>
+        
+        <record id="demo_news_fed_announcement" model="stock.news">
+            <field name="headline">Federal Reserve Announces Interest Rate Decision</field>
+            <field name="summary">Fed maintains current interest rates, signals potential changes in upcoming meetings.</field>
+            <field name="content">The Federal Reserve announced today that interest rates will remain unchanged at the current level. The decision was unanimous among voting members. Fed Chairman indicated that future rate decisions will depend on economic data and inflation trends. Markets reacted positively to the stability signal.</field>
+            <field name="news_type">economic_indicator</field>
+            <field name="priority">high</field>
+            <field name="expected_impact">neutral</field>
+            <field name="impact_magnitude">high</field>
+            <field name="sector_target">Financial</field>
+            <field name="geographic_relevance">US</field>
+            <field name="start_session">3</field>
+            <field name="start_minute">30</field>
+            <field name="end_session">8</field>
+            <field name="end_minute">30</field>
+            <field name="status">scheduled</field>
+        </record>
+        
+        <record id="demo_news_company_earnings" model="stock.news">
+            <field name="headline">ABC Corp Reports Record Quarterly Earnings</field>
+            <field name="summary">ABC Corporation exceeds analyst expectations with strong quarterly performance.</field>
+            <field name="content">ABC Corporation reported record quarterly earnings today, beating analyst expectations by 15%. Revenue grew 18% year-over-year, driven by strong demand for the company's new product line. Management raised full-year guidance and announced plans for expansion into new markets.</field>
+            <field name="news_type">earnings</field>
+            <field name="stock_id" ref="stock_market_simulation.demo_stock_abc"/>
+            <field name="priority">medium</field>
+            <field name="expected_impact">positive</field>
+            <field name="impact_magnitude">high</field>
+            <field name="sector_target">Technology</field>
+            <field name="geographic_relevance">US</field>
+            <field name="start_session">2</field>
+            <field name="start_minute">15</field>
+            <field name="end_session">4</field>
+            <field name="end_minute">45</field>
+            <field name="status">draft</field>
+        </record>
+        
+        <!-- Note: User blocks are typically created dynamically and should not have demo data -->
+        <!-- as they represent active disciplinary actions -->
+        
+    </data>
+</odoo>

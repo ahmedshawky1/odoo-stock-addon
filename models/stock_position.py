@@ -140,7 +140,8 @@ class StockPosition(models.Model):
                 
                 # P&L percentage
                 if position.cost_basis > 0:
-                    position.unrealized_pnl_percent = (position.unrealized_pnl / position.cost_basis) * 100
+                    # Don't multiply by 100 since percentage widget handles this automatically
+                    position.unrealized_pnl_percent = position.unrealized_pnl / position.cost_basis
                 else:
                     position.unrealized_pnl_percent = 0.0
             else:
@@ -152,7 +153,8 @@ class StockPosition(models.Model):
     def _compute_portfolio_weight(self):
         for position in self:
             if position.user_id and position.user_id.portfolio_value > 0:
-                position.portfolio_weight = (position.market_value / position.user_id.portfolio_value) * 100
+                # Don't multiply by 100 since percentage widget handles this automatically
+                position.portfolio_weight = position.market_value / position.user_id.portfolio_value
             else:
                 position.portfolio_weight = 0.0
     

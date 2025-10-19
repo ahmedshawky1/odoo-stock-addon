@@ -1,3 +1,3 @@
 # -*- coding: utf-8 -*-
 
-# from . import wizard_name
+from . import session_end_ipo_wizard

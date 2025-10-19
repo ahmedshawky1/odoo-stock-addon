@@ -41,15 +41,19 @@
                     <group>
                         <group string="General Information">
                             <field name="security_type"/>
+                            <field name="sector"/>
                             <field name="active"/>
+                            <field name="status"/>
                             <field name="ipo_price"/>
+                            <field name="current_offering_quantity" invisible="status == 'trade'"/>
+                            <field name="offering_round" invisible="status == 'trade'"/>
                         </group>
                         <group string="Current Pricing">
-                            <field name="current_price" widget="monetary"/>
-                            <field name="change_amount" widget="monetary" 
+                            <field name="current_price"/>
+                            <field name="change_amount" 
                                    decoration-success="change_amount > 0" 
                                    decoration-danger="change_amount &lt; 0"/>
-                <field name="change_percentage" widget="percentage" options="{'factor': 1.0}"
+                            <field name="change_percentage" widget="percentage" options="{'factor': 1.0}"
                                    decoration-success="change_percentage > 0" 
                                    decoration-danger="change_percentage &lt; 0"/>
                         </group>
@@ -62,16 +66,21 @@
                                     <field name="price_to_compare_with"/>
                                     <field name="previous_close"/>
                                     <field name="vwap"/>
-                                    <field name="value_today" widget="monetary"/>
+                                    <field name="value_today"/>
                                 </group>
                                 <group string="Order Book">
-                                    <field name="best_bid" widget="monetary"/>
-                                    <field name="best_ask" widget="monetary"/>
+                                    <field name="best_bid"/>
+                                    <field name="best_ask"/>
                                     <label for="best_bid" string="Spread"/>
                                     <div>
                                         <span class="text-muted">Calculated at runtime</span>
                                     </div>
                                 </group>
+                            </group>
+                        </page>
+                        <page string="IPO/PO History" name="offering_history" invisible="offering_round == 1">>
+                            <group>
+                                <field name="offering_history" widget="text" readonly="1"/>
                             </group>
                         </page>
                         <page string="Trading Rules" name="rules">
@@ -102,8 +111,8 @@
                                     <field name="user_id"/>
                                     <field name="quantity"/>
                                     <field name="average_cost"/>
-                                    <field name="market_value" widget="monetary"/>
-                                    <field name="unrealized_pnl" widget="monetary"
+                                    <field name="market_value"/>
+                                    <field name="unrealized_pnl" 
                                            decoration-success="unrealized_pnl > 0" 
                                            decoration-danger="unrealized_pnl &lt; 0"/>
                                 </list>
@@ -125,15 +134,17 @@
                 <field name="symbol"/>
                 <field name="name"/>
                 <field name="security_type"/>
-                <field name="current_price" widget="monetary"/>
-                <field name="change_amount" widget="monetary"
+                <field name="sector"/>
+                <field name="status"/>
+                <field name="current_price"/>
+                <field name="change_amount" 
                        decoration-success="change_amount > 0" 
                        decoration-danger="change_amount &lt; 0"/>
-          <field name="change_percentage" widget="percentage" options="{'factor': 1.0}"
+                <field name="change_percentage" widget="percentage" options="{'factor': 1.0}"
                        decoration-success="change_percentage > 0" 
                        decoration-danger="change_percentage &lt; 0"/>
                 <field name="volume_today"/>
-                <field name="vwap" widget="monetary"/>
+                <field name="vwap"/>
                 <field name="active" invisible="1"/>
             </list>
         </field>
@@ -163,7 +174,7 @@
                                 </div>
                                 <div class="mt-2">
                                     <strong>Price: </strong>
-                                    <field name="current_price" widget="monetary"/>
+                                    <field name="current_price"/>
                                     <span t-attf-class="ml-2 #{record.change_percentage.raw_value > 0 ? 'text-success' : 'text-danger'}">
                                         <field name="change_percentage" widget="percentage" options="{'factor': 1.0}"/>
                                     </span>
@@ -188,14 +199,27 @@
             <search string="Securities">
                 <field name="symbol"/>
                 <field name="name"/>
+                <field name="sector"/>
+                <field name="status"/>
                 <filter string="Active" name="filter_active" domain="[('active', '=', True)]"/>
                 <filter string="Inactive" name="filter_inactive" domain="[('active', '=', False)]"/>
                 <separator/>
                 <filter string="Stocks" name="filter_stock" domain="[('security_type', '=', 'stock')]"/>
                 <filter string="Bonds" name="filter_bond" domain="[('security_type', '=', 'bond')]"/>
                 <filter string="Mutual Funds" name="filter_mf" domain="[('security_type', '=', 'mf')]"/>
+                <separator/>
+                <filter string="IPO Securities" name="filter_ipo" domain="[('status', '=', 'ipo')]"/>
+                <filter string="PO Securities" name="filter_po" domain="[('status', '=', 'po')]"/>
+                <filter string="Trading Securities" name="filter_trading" domain="[('status', '=', 'trade')]"/>
+                <separator/>
+                <filter string="Information Technology" name="filter_tech" domain="[('sector', '=', 'information_technology')]"/>
+                <filter string="Financials" name="filter_financials" domain="[('sector', '=', 'financials')]"/>
+                <filter string="Health Care" name="filter_healthcare" domain="[('sector', '=', 'health_care')]"/>
+                <filter string="Industrials" name="filter_industrials" domain="[('sector', '=', 'industrials')]"/>
                 <group expand="0" string="Group By">
                     <filter string="Type" name="group_by_type" context="{'group_by': 'security_type'}"/>
+                    <filter string="Status" name="group_by_status" context="{'group_by': 'status'}"/>
+                    <filter string="Sector" name="group_by_sector" context="{'group_by': 'sector'}"/>
                     <filter string="Active" name="group_by_active" context="{'group_by': 'active'}"/>
                 </group>
             </search>

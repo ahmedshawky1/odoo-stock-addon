@@ -31,7 +31,6 @@
                     <group>
                         <group string="Order Details">
                             <field name="user_id" options="{'no_create': True}" domain="[('share', '=', False), ('user_type', '=', 'investor')]"/>
-                            <field name="broker_id" readonly="1" options="{'no_create': True}"/>
                             <field name="session_id" options="{'no_create': True}" domain="[('state', '=', 'open')]"/>
                             <field name="security_id" options="{'no_create': True}"/>
                         </group>
@@ -48,12 +47,12 @@
                         <group string="Execution Status">
                             <field name="filled_quantity"/>
                             <field name="remaining_quantity"/>
-                            <field name="order_value" widget="monetary"/>
-                            <field name="filled_value" widget="monetary"/>
+                            <field name="order_value"/>
+                            <field name="filled_value"/>
                         </group>
                         <group string="Fees &amp; Commissions">
                             <field name="broker_commission_rate" widget="percentage" options="{'factor': 1.0}"/>
-                            <field name="broker_commission" widget="monetary"/>
+                            <field name="broker_commission"/>
                         </group>
                     </group>
                     <notebook>
@@ -64,7 +63,7 @@
                                     <field name="trade_date"/>
                                     <field name="quantity"/>
                                     <field name="price"/>
-                                    <field name="value" widget="monetary"/>
+                                    <field name="value"/>
                                 </list>
                             </field>
                         </page>
@@ -90,7 +89,6 @@
                 <field name="name"/>
                 <field name="order_date"/>
                 <field name="user_id"/>
-                <field name="broker_id"/>
                 <field name="security_id"/>
                 <field name="side"/>
                 <field name="order_type"/>
@@ -153,7 +151,7 @@
                                     </span>
                                 </div>
                                 <div class="text-muted">
-                                    Value: <field name="order_value" widget="monetary"/>
+                                    Value: <field name="order_value"/>
                                 </div>
                             </div>
                         </div>
@@ -171,7 +169,6 @@
             <search string="Orders">
                 <field name="name"/>
                 <field name="user_id"/>
-                <field name="broker_id"/>
                 <field name="security_id"/>
                 <filter string="My Orders" name="filter_my_orders" domain="[('user_id', '=', uid)]"/>
                 <separator/>
@@ -189,7 +186,6 @@
                 <group expand="0" string="Group By">
                     <filter string="Session" name="group_by_session" context="{'group_by': 'session_id'}"/>
                     <filter string="User" name="group_by_user" context="{'group_by': 'user_id'}"/>
-                    <filter string="Broker" name="group_by_broker" context="{'group_by': 'broker_id'}"/>
                     <filter string="Security" name="group_by_security" context="{'group_by': 'security_id'}"/>
                     <filter string="Side" name="group_by_side" context="{'group_by': 'side'}"/>
                     <filter string="Status" name="group_by_status" context="{'group_by': 'status'}"/>
@@ -204,7 +200,7 @@
         <field name="name">Orders</field>
         <field name="res_model">stock.order</field>
         <field name="view_mode">list,kanban,form</field>
-    <field name="context">{'search_default_group_by_session': 1}</field>
+        <field name="context">{'search_default_group_by_session': 1}</field>
         <field name="help" type="html">
             <p class="o_view_nocontent_smiling_face">
                 Place a new order

@@ -16,6 +16,12 @@ class StockConfig(models.Model):
     )
     
     # Trading Configuration
+    currency_symbol = fields.Char(
+        string='Currency Symbol',
+        default='$',
+        help="Currency symbol to display in the interface"
+    )
+    
     settlement_days = fields.Integer(
         string='Settlement Days (T+)',
         default=2,

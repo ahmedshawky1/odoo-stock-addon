@@ -31,7 +31,7 @@
                             <field name="user_id" options="{'no_create': True}"/>
                             <field name="banker_id" options="{'no_create': True}"/>
                             <field name="deposit_type"/>
-                            <field name="amount" widget="monetary"/>
+                            <field name="amount"/>
                             <field name="interest_rate" widget="percentage" options="{'factor': 1.0}"/>
                             <field name="term_months"/>
                         </group>
@@ -43,14 +43,14 @@
                     </group>
                     <group>
                         <group string="Current Value">
-                            <field name="accrued_interest" widget="monetary"/>
-                            <field name="current_value" widget="monetary"/>
-                            <field name="maturity_amount" widget="monetary"/>
+                            <field name="accrued_interest"/>
+                            <field name="current_value"/>
+                            <field name="maturity_amount"/>
                         </group>
                         <group string="Withdrawal">
                             <field name="early_withdrawal_penalty" widget="percentage" options="{'factor': 1.0}" invisible="status in ['withdrawn', 'cancelled']"/>
                             <field name="withdrawal_date" invisible="status != 'withdrawn'"/>
-                            <field name="withdrawal_amount" widget="monetary" invisible="status != 'withdrawn'"/>
+                            <field name="withdrawal_amount"/>
                         </group>
                     </group>
                 </sheet>
@@ -69,9 +69,9 @@
                 <field name="user_id"/>
                 <field name="banker_id"/>
                 <field name="deposit_type"/>
-                <field name="amount" widget="monetary"/>
+                <field name="amount"/>
                 <field name="interest_rate" widget="percentage" options="{'factor': 1.0}"/>
-                <field name="current_value" widget="monetary"/>
+                <field name="current_value"/>
                 <field name="deposit_date"/>
                 <field name="maturity_date"/>
                 <field name="status"/>
@@ -110,11 +110,11 @@
                                 </div>
                                 <div class="mt-2">
                                     <strong>Principal: </strong>
-                                    <field name="amount" widget="monetary"/>
+                                    <field name="amount"/>
                                 </div>
                                 <div>
                                     <strong>Current Value: </strong>
-                                    <field name="current_value" widget="monetary"/>
+                                    <field name="current_value"/>
                                 </div>
                             </div>
                         </div>

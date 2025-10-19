@@ -77,6 +77,7 @@
         <record id="demo_security_aapl" model="stock.security">
             <field name="symbol">AAPL</field>
             <field name="name">Apple Inc.</field>
+            <field name="sector">information_technology</field>
             <field name="security_type">stock</field>
             <field name="current_price">175.00</field>
             <field name="session_start_price">175.00</field>
@@ -88,6 +89,7 @@
         <record id="demo_security_googl" model="stock.security">
             <field name="symbol">GOOGL</field>
             <field name="name">Alphabet Inc.</field>
+            <field name="sector">information_technology</field>
             <field name="security_type">stock</field>
             <field name="current_price">145.00</field>
             <field name="session_start_price">145.00</field>
@@ -99,6 +101,7 @@
         <record id="demo_security_msft" model="stock.security">
             <field name="symbol">MSFT</field>
             <field name="name">Microsoft Corporation</field>
+            <field name="sector">information_technology</field>
             <field name="security_type">stock</field>
             <field name="current_price">416.00</field>
             <field name="session_start_price">416.00</field>
@@ -110,6 +113,7 @@
         <record id="demo_security_tsla" model="stock.security">
             <field name="symbol">TSLA</field>
             <field name="name">Tesla Inc.</field>
+            <field name="sector">industrials</field>
             <field name="security_type">stock</field>
             <field name="current_price">250.00</field>
             <field name="session_start_price">250.00</field>
@@ -121,6 +125,7 @@
         <record id="demo_security_bond_1" model="stock.security">
             <field name="symbol">BOND001</field>
             <field name="name">US Treasury Bond 10Y</field>
+            <field name="sector">financials</field>
             <field name="security_type">bond</field>
             <field name="current_price">98.00</field>
             <field name="session_start_price">98.00</field>
@@ -132,6 +137,7 @@
         <record id="demo_security_amzn" model="stock.security">
             <field name="symbol">AMZN</field>
             <field name="name">Amazon.com Inc.</field>
+            <field name="sector">information_technology</field>
             <field name="security_type">stock</field>
             <field name="current_price">178.00</field>
             <field name="session_start_price">178.00</field>
@@ -143,6 +149,7 @@
         <record id="demo_security_nvda" model="stock.security">
             <field name="symbol">NVDA</field>
             <field name="name">NVIDIA Corporation</field>
+            <field name="sector">information_technology</field>
             <field name="security_type">stock</field>
             <field name="current_price">875.00</field>
             <field name="session_start_price">875.00</field>

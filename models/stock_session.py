@@ -174,15 +174,24 @@ class StockSession(models.Model):
     
     @api.model
     def create(self, vals):
-        """Auto-generate session name with serial number"""
+        """Auto-generate session name with serial number in format 'Session 01', 'Session 02', etc."""
         if not vals.get('name'):
-            # Get the last session number
-            last_session = self.search([], order='id desc', limit=1)
-            if last_session and last_session.name.startswith('Session '):
+            # Get the last session number by searching for sessions with Session pattern
+            last_session = self.search([
+                ('name', 'like', 'Session %')
+            ], order='id desc', limit=1)
+            
+            if last_session:
                 try:
-                    last_num = int(last_session.name.split(' ')[1])
-                    new_num = last_num + 1
-                except:
+                    # Extract number from "Session 01", "Session 02", etc.
+                    session_parts = last_session.name.split(' ')
+                    if len(session_parts) >= 2:
+                        last_num = int(session_parts[1])
+                        new_num = last_num + 1
+                    else:
+                        new_num = 1
+                except (ValueError, IndexError):
+                    # If parsing fails, default to 1
                     new_num = 1
             else:
                 new_num = 1
@@ -190,6 +199,23 @@ class StockSession(models.Model):
             vals['name'] = f'Session {new_num:02d}'
         
         return super(StockSession, self).create(vals)
+    
+    @api.model
+    def _ensure_initial_session_exists(self):
+        """Ensure at least one session exists in the system"""
+        existing_sessions = self.search_count([])
+        if existing_sessions == 0:
+            # Create the first session
+            self.create({
+                'name': 'Session 01',
+                'state': 'draft',
+                'price_change_threshold': 10.0,
+                'broker_commission_rate': 0.25,
+                'tick_size': 0.01,
+                'circuit_breaker_upper': 15.0,
+                'circuit_breaker_lower': 15.0,
+            })
+            _logger.info("Created initial session: Session 01")
     
     def unlink(self):
         """Prevent deletion of all sessions - sessions cannot be deleted"""
@@ -279,13 +305,45 @@ class StockSession(models.Model):
         if self.state != 'open':
             raise UserError("Only open sessions can be closed.")
         
+        # Check if there are IPO/PO securities that need attention
+        ipo_securities = self.env['stock.security'].search([
+            ('ipo_status', 'in', ['ipo', 'po'])
+        ])
+        
+        if ipo_securities:
+            # Launch IPO management wizard before closing session
+            return {
+                'type': 'ir.actions.act_window',
+                'name': 'Manage IPO Securities',
+                'res_model': 'session.end.ipo.wizard',
+                'view_mode': 'form',
+                'target': 'new',
+                'context': {'active_id': self.id}
+            }
+        
+        # No IPO securities, proceed with normal session close
+        return self._perform_session_close()
+    
+    def _perform_session_close(self):
+        """Perform the actual session close operations"""
+        self.ensure_one()
+        
         # Set actual end date to current time
         now = fields.Datetime.now()
         
-        # Cancel all pending orders
-        pending_orders = self.order_ids.filtered(lambda o: o.status in ['draft', 'pending', 'partial'])
+        # Cancel all pending orders EXCEPT IPO orders (they carry over)
+        pending_orders = self.order_ids.filtered(
+            lambda o: o.status in ['draft', 'pending', 'partial'] and o.order_type != 'ipo'
+        )
         for order in pending_orders:
             order.action_cancel()
+            
+        # Log IPO orders that are carrying over
+        ipo_orders = self.order_ids.filtered(
+            lambda o: o.status in ['submitted', 'open'] and o.order_type == 'ipo'
+        )
+        if ipo_orders:
+            _logger.info(f"Session {self.name}: {len(ipo_orders)} IPO orders carrying over to next session")
         
         # Record price history snapshots for all active securities
         # Matches C#: Insert into stockpricehistory/bondpricehistory
@@ -340,11 +398,16 @@ class StockSession(models.Model):
             subtype_xmlid='mail.mt_note'
         )
         
-        # Optionally auto-create next session (matches C# behavior)
-        if self.env['ir.config_parameter'].sudo().get_param('stock_market.auto_create_next_session', 'True') == 'True':
-            self._create_next_session()
+        # Auto-create next session (always enabled)
+        next_session = self._create_next_session()
         
-        _logger.info(f"Session {self.name} closed at {now} (duration: {duration_str}) - Recorded {history_count} price snapshots")
+        _logger.info(f"Session {self.name} closed at {now} (duration: {duration_str}) - Recorded {history_count} price snapshots - Created next session: {next_session.name}")
+        
+        return True  # Return success for wizard completion
+    
+    def action_force_close_after_ipo(self):
+        """Force close session after IPO wizard completion"""
+        return self._perform_session_close()
     
     def _process_session_interest(self):
         """Process interest calculations for deposits and loans at session end"""
@@ -378,18 +441,16 @@ class StockSession(models.Model):
         """Auto-create the next session (draft state, no dates set)"""
         self.ensure_one()
         
-        # Next session will be created without dates - they'll be set when user clicks "Start"
-        # Just auto-increment the session number
-        
-        # Create next session (name will be auto-generated by create method)
+        # Create next session with same configuration as current session
+        # Name will be auto-generated by create method (Session 02, Session 03, etc.)
         next_session = self.create({
             'state': 'draft',
-            'planned_duration': self.planned_duration or self.actual_duration,
-            'price_change_threshold': self.price_change_threshold,
-            'broker_commission_rate': self.broker_commission_rate,
-            'tick_size': self.tick_size,
-            'circuit_breaker_upper': self.circuit_breaker_upper,
-            'circuit_breaker_lower': self.circuit_breaker_lower,
+            'planned_duration': self.planned_duration or 8.0,  # Default 8 hours
+            'price_change_threshold': self.price_change_threshold or 10.0,
+            'broker_commission_rate': self.broker_commission_rate or 0.25,
+            'tick_size': self.tick_size or 0.01,
+            'circuit_breaker_upper': self.circuit_breaker_upper or 15.0,
+            'circuit_breaker_lower': self.circuit_breaker_lower or 15.0,
         })
         
         _logger.info(f"Auto-created next session: {next_session.name}")

@@ -54,6 +54,27 @@
               parent="menu_stock_market_data"
               action="action_stock_price_history"
               sequence="20"/>
+              
+    <menuitem id="menu_stock_bonds"
+              name="Bonds"
+              parent="menu_stock_market_data"
+              action="action_stock_bond"
+              sequence="30"/>
+    
+    <!-- Bond Trading -->
+    <menuitem id="menu_bond_orders"
+              name="Bond Orders"
+              parent="menu_stock_trading"
+              action="action_stock_bond_order"
+              sequence="50"/>
+    
+    <!-- News -->
+    <menuitem id="menu_stock_news"
+              name="Market News"
+              parent="menu_stock_market_data"
+              action="action_stock_news"
+              sequence="40"
+              groups="group_stock_admin,base.group_system"/>
     
     <!-- Banking Menu -->
     <menuitem id="menu_stock_banking"
@@ -79,7 +100,7 @@
               name="Administration"
               parent="menu_stock_market_root"
               sequence="40"
-              groups="group_stock_admin"/>
+              groups="group_stock_admin,base.group_system"/>
     
     <menuitem id="menu_stock_sessions"
               name="Trading Sessions"
@@ -92,6 +113,12 @@
               parent="menu_stock_admin"
               action="action_stock_market_users"
               sequence="20"/>
+              
+    <menuitem id="menu_stock_user_blocks"
+              name="User Blocks"
+              parent="menu_stock_admin"
+              action="action_stock_user_block"
+              sequence="30"/>
     
     <!-- Reports Menu - Commented out until report actions are implemented
     <menuitem id="menu_stock_reports"
