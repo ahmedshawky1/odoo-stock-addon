@@ -168,9 +168,8 @@ class StockPosition(models.Model):
         for position in self:
             if position.quantity < 0:
                 raise ValidationError("Position quantity cannot be negative.")
-            if position.quantity == 0:
-                # Remove zero positions
-                position.unlink()
+            # Keep zero positions (don't unlink) to avoid concurrent access issues during matching
+            # UI or a cleanup cron may safely delete zero-qty positions later if needed
     
     @api.constrains('blocked_quantity')
     def _check_blocked_quantity(self):
@@ -220,9 +219,7 @@ class StockPosition(models.Model):
                 'last_transaction_date': fields.Datetime.now()
             })
             
-            # If position is closed, remove it
-            if new_quantity == 0:
-                self.unlink()
+            # Keep zero positions (don't unlink) to avoid concurrent access issues during matching
     
     def block_shares(self, quantity):
         """Block shares for a pending sell order"""

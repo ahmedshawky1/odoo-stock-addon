@@ -57,13 +57,13 @@
                         <page string="Configuration" name="configuration">
                             <group>
                                 <group string="Trading Parameters">
-                                    <field name="price_change_threshold" widget="percentage" options="{'factor': 1.0}"/>
-                                    <field name="broker_commission_rate" widget="percentage" options="{'factor': 1.0}"/>
+                                    <field name="price_change_threshold"/>
+                                    <field name="broker_commission_rate"/>
                                     <field name="tick_size"/>
                                 </group>
                                 <group string="Circuit Breakers">
-                                    <field name="circuit_breaker_upper" widget="percentage" options="{'factor': 1.0}"/>
-                                    <field name="circuit_breaker_lower" widget="percentage" options="{'factor': 1.0}"/>
+                                    <field name="circuit_breaker_upper"/>
+                                    <field name="circuit_breaker_lower"/>
                                 </group>
                             </group>
                         </page>

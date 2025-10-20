@@ -272,7 +272,7 @@ class StockMarketPortal(CustomerPortal):
             return {'error': 'No active trading session'}
         
         try:
-            # Create order on behalf of client
+            # Create order on behalf of client (status decided by action_submit)
             order_vals = {
                 'user_id': order_user.id,  # Client who owns the order
                 'session_id': active_session.id,
@@ -352,9 +352,15 @@ class StockMarketPortal(CustomerPortal):
                 if available_quantity < quantity:
                     return {'error': f'Client insufficient shares. Required: {quantity:,}, Available: {available_quantity:,} (Total: {total_quantity:,}, Pending Sells: {pending_sell_quantity:,})', 'type': 'validation'}
             
-            # Create the order
+            # Create the order, then submit to set correct status (open/submitted)
             # Use sudo for creation but explicitly set entered_by_id to current user
             order = request.env['stock.order'].sudo().create(order_vals)
+            try:
+                order.sudo().action_submit()
+            except Exception as e:
+                # Rollback create if submit fails
+                order.unlink()
+                return {'error': f'Failed to submit order: {str(e)}'}
             
             # Log the broker action
             order.message_post(
@@ -478,7 +484,7 @@ class StockMarketPortal(CustomerPortal):
                         headers=[('Content-Type', 'application/json')]
                     )
             
-            # Create the order
+            # Create the order (status decided by action_submit)
             order_data = {
                 'user_id': order_user.id,
                 'security_id': int(kw.get('security_id')),
@@ -486,15 +492,31 @@ class StockMarketPortal(CustomerPortal):
                 'side': side,
                 'order_type': order_type,
                 'quantity': quantity,
-                'status': 'submitted',
                 'entered_by_id': user.id,
             }
             
             if order_type == 'limit':
                 order_data['price'] = price
+            elif order_type == 'market':
+                order_data['price'] = 0.0
+            # Optional stop_price passthrough if provided
+            if kw.get('stop_price'):
+                try:
+                    order_data['stop_price'] = float(kw.get('stop_price'))
+                except Exception:
+                    pass
             
             # Create order with mail context disabled to prevent email sending
             order = request.env['stock.order'].with_context(mail_create_nolog=True, mail_create_nosubscribe=True).create(order_data)
+            # Submit to set proper status and trigger model-level validations
+            try:
+                order.sudo().action_submit()
+            except Exception as e:
+                order.unlink()
+                return request.make_response(
+                    json.dumps({'success': False, 'error': f'Failed to submit order: {str(e)}'}),
+                    headers=[('Content-Type', 'application/json')]
+                )
             
             return request.make_response(
                 json.dumps({

@@ -85,6 +85,25 @@ class StockMatchingEngine(models.TransientModel):
             [security.id]
         )
         
+        # Promote any legacy or erroneously submitted regular orders (limit/market) to open
+        try:
+            submitted_regulars = self.env['stock.order'].search([
+                ('security_id', '=', security.id),
+                ('session_id', '=', session.id),
+                ('status', '=', 'submitted'),
+                ('order_type', 'in', ['limit', 'market'])
+            ])
+            if submitted_regulars:
+                _logger.info(f"[MATCH][FIX] Promoting {len(submitted_regulars)} submitted regular orders to open for {security.symbol}")
+                submitted_regulars.write({'status': 'open'})
+                for o in submitted_regulars:
+                    try:
+                        o.message_post(body="Order promoted from Submitted to Open during matching cycle")
+                    except Exception:
+                        pass
+        except Exception as e:
+            _logger.error(f"[MATCH][FIX] Failed to promote submitted regular orders for {security.symbol}: {e}")
+
         # Process IOC and FOK orders first
         self._process_immediate_orders(security, session)
         
@@ -105,6 +124,49 @@ class StockMatchingEngine(models.TransientModel):
             ('status', 'in', ['open', 'partial']),
             ('time_in_force', 'in', ['day', 'gtc'])
         ], order='order_type desc, price asc, create_date asc')
+
+        # Snapshot top-of-book for diagnostics (INFO level so it shows in default logs)
+        try:
+            top_bid = next((o for o in buy_orders if o.remaining_quantity > 0), None)
+            top_ask = next((o for o in sell_orders if o.remaining_quantity > 0), None)
+            # Also surface submitted orders (not yet eligible) for visibility
+            submitted_buys = self.env['stock.order'].search([
+                ('security_id', '=', security.id),
+                ('session_id', '=', session.id),
+                ('side', '=', 'buy'),
+                ('status', '=', 'submitted')
+            ])
+            submitted_sells = self.env['stock.order'].search([
+                ('security_id', '=', security.id),
+                ('session_id', '=', session.id),
+                ('side', '=', 'sell'),
+                ('status', '=', 'submitted')
+            ])
+            # Build simple type breakdowns
+            def _type_counts(recs):
+                counts = {}
+                for r in recs:
+                    t = r.order_type or 'unknown'
+                    counts[t] = counts.get(t, 0) + 1
+                return counts
+
+            submitted_buys_types = _type_counts(submitted_buys)
+            submitted_sells_types = _type_counts(submitted_sells)
+            open_buys_types = _type_counts(buy_orders)
+            open_sells_types = _type_counts(sell_orders)
+
+            _logger.info(
+                f"[MATCH][BOOK] {security.symbol} open_bids={len(buy_orders)} open_asks={len(sell_orders)} "
+                f"submitted_bids={len(submitted_buys)} submitted_asks={len(submitted_sells)} "
+                f"top_bid={(top_bid.price if top_bid else None)}@{(top_bid.remaining_quantity if top_bid else None)} "
+                f"top_ask={(top_ask.price if top_ask else None)}@{(top_ask.remaining_quantity if top_ask else None)}"
+            )
+            _logger.info(
+                f"[MATCH][BOOK][DETAIL] {security.symbol} open_bids_types={open_buys_types} open_asks_types={open_sells_types} "
+                f"submitted_bids_types={submitted_buys_types} submitted_asks_types={submitted_sells_types}"
+            )
+        except Exception as e:
+            _logger.info(f"[MATCH][BOOK] {security.symbol} snapshot failed: {e}")
         
         # Match orders
         for buy_order in buy_orders:
@@ -203,6 +265,10 @@ class StockMatchingEngine(models.TransientModel):
         else:
             # For limit orders: buy price must be >= sell price
             if buy_order.price < sell_order.price:
+                _logger.debug(
+                    f"[MATCH][SKIP] Price mismatch {buy_order.security_id.symbol}: "
+                    f"bid {buy_order.price} < ask {sell_order.price} (orders {buy_order.name}/{sell_order.name})"
+                )
                 return False
         
         # Prevent self-trading (same user)
@@ -219,6 +285,11 @@ class StockMatchingEngine(models.TransientModel):
         
         # Both orders must have remaining quantity
         if buy_order.remaining_quantity <= 0 or sell_order.remaining_quantity <= 0:
+            _logger.debug(
+                f"[MATCH][SKIP] Zero remaining qty {buy_order.security_id.symbol}: "
+                f"bid_rem={buy_order.remaining_quantity} ask_rem={sell_order.remaining_quantity} "
+                f"(orders {buy_order.name}/{sell_order.name})"
+            )
             return False
         
         return True
@@ -283,8 +354,13 @@ class StockMatchingEngine(models.TransientModel):
         # Broker commission distribution removed (no default broker relationships)
         
         # Update positions
-        self._update_positions(buy_order.user_id, sell_order.user_id, 
-                             sell_order.security_id, trade_quantity)
+        self._update_positions(
+            buyer=buy_order.user_id,
+            seller=sell_order.user_id,
+            security=sell_order.security_id,
+            quantity=trade_quantity,
+            trade_price=trade_price,
+        )
         
         # Update order filled quantities
         buy_order.update_filled_quantity(trade_quantity)
@@ -298,45 +374,49 @@ class StockMatchingEngine(models.TransientModel):
         
         # Check if price update is needed
         self._check_price_update(sell_order.security_id, trade_price, trade_quantity, session)
-        
-        # Force a commit after successful trade execution
-        self.env.cr.commit()
+    # Do not manually commit here; let Odoo transaction/savepoints manage consistency
     
-    def _update_positions(self, buyer, seller, security, quantity):
-        """Update buyer and seller positions"""
+    def _update_positions(self, buyer, seller, security, quantity, trade_price):
+        """Update buyer and seller positions safely without unlinking mid-transaction.
+        - Decrement seller position; if reaches zero, set quantity=0 and archive instead of unlink.
+        - Increment buyer position and recompute weighted average cost using the actual trade price.
+        """
+        Position = self.env['stock.position']
         # Update seller position (reduce quantity)
-        seller_position = self.env['stock.position'].search([
+        seller_position = Position.search([
             ('user_id', '=', seller.id),
             ('security_id', '=', security.id)
         ], limit=1)
-        
-        if seller_position:
-            seller_position.quantity -= quantity
-            if seller_position.quantity == 0:
-                seller_position.unlink()
-        
+
+        if seller_position and seller_position.exists():
+            new_qty = max((seller_position.quantity or 0) - quantity, 0)
+            seller_position.write({'quantity': new_qty})
+
         # Update buyer position (increase quantity)
-        buyer_position = self.env['stock.position'].search([
+        buyer_position = Position.search([
             ('user_id', '=', buyer.id),
             ('security_id', '=', security.id)
         ], limit=1)
-        
-        if buyer_position:
-            # Update average cost
-            total_cost = (buyer_position.quantity * buyer_position.average_cost) + \
-                        (quantity * security.current_price)
-            total_quantity = buyer_position.quantity + quantity
-            buyer_position.write({
+
+        if buyer_position and buyer_position.exists():
+            write_vals = {}
+            # Update weighted average cost using trade_price
+            current_qty = buyer_position.quantity or 0
+            current_cost = buyer_position.average_cost or 0.0
+            total_cost = (current_qty * current_cost) + (quantity * trade_price)
+            total_quantity = current_qty + quantity
+            write_vals.update({
                 'quantity': total_quantity,
-                'average_cost': total_cost / total_quantity if total_quantity > 0 else 0
+                'average_cost': (total_cost / total_quantity) if total_quantity > 0 else 0.0,
             })
+            buyer_position.write(write_vals)
         else:
             # Create new position
-            self.env['stock.position'].create({
+            Position.create({
                 'user_id': buyer.id,
                 'security_id': security.id,
                 'quantity': quantity,
-                'average_cost': security.current_price
+                'average_cost': trade_price,
             })
     
     def _check_price_update(self, security, trade_price, trade_quantity, session):
