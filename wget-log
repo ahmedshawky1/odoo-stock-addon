@@ -1,0 +1,6 @@
+--2025-10-19 12:18:09--  https://takeout-download.usercontent.google.com/download/All%20mail%20Including%20Spam%20and%20Trash-002.mbox?j=33d3ec54-3b6d-40b6-bd45-1c630c4fd075
+Resolving takeout-download.usercontent.google.com (takeout-download.usercontent.google.com)... 2a00:1450:4001:81d::2001, 142.250.186.129
+Connecting to takeout-download.usercontent.google.com (takeout-download.usercontent.google.com)|2a00:1450:4001:81d::2001|:443... connected.
+HTTP request sent, awaiting response... 400 Bad Request
+2025-10-19 12:18:21 ERROR 400: Bad Request.
+

@@ -66,6 +66,46 @@
                     </div>
                 </div>
                 
+                <!-- Admin Section -->
+                <t t-if="request.env.user.user_type in ['admin', 'superadmin'] or request.env.user.has_group('base.group_system')">
+                    <div class="row mt-5">
+                        <div class="col-12">
+                            <h3 class="mb-3">
+                                <i class="fa fa-lock"/> Administration
+                            </h3>
+                            <div class="alert alert-info">
+                                <i class="fa fa-shield"/> You have administrator privileges
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Admin Actions -->
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <div class="card border-primary">
+                                <div class="card-body">
+                                    <h5 class="card-title"><i class="fa fa-users"/> User Management</h5>
+                                    <p class="card-text">View all users, manage accounts, and access 360-degree user views</p>
+                                    <a href="/market/admin/users" class="btn btn-primary btn-block">
+                                        <i class="fa fa-users"/> Manage Users
+                                    </a>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <div class="card border-info">
+                                <div class="card-body">
+                                    <h5 class="card-title"><i class="fa fa-chart-bar"/> Analytics</h5>
+                                    <p class="card-text">View system analytics and reports</p>
+                                    <a href="/my/market" class="btn btn-info btn-block">
+                                        <i class="fa fa-chart-bar"/> View Market
+                                    </a>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </t>
+                
                 <!-- Market Movers -->
                 <div class="row mt-4">
                     <div class="col-md-6">
@@ -1243,6 +1283,23 @@
                             </t>
                         </div>
                         
+                        <!-- Administration Section -->
+                        <t t-if="request.env.user.user_type in ['admin', 'superadmin'] or request.env.user.has_group('base.group_system')">
+                            <div class="sidebar-section">
+                                <div class="sidebar-section-title">
+                                    <i class="fa fa-lock"></i> Administration
+                                </div>
+                                <a href="/market/admin/users" class="nav-link" data-page="admin-users" data-tooltip="Manage Users">
+                                    <i class="fa fa-users"></i>
+                                    <span class="nav-text">Users Management</span>
+                                </a>
+                                <a href="/market/admin/users" class="nav-link" data-page="admin-analytics" data-tooltip="User Analytics">
+                                    <i class="fa fa-bar-chart"></i>
+                                    <span class="nav-text">User Analytics</span>
+                                </a>
+                            </div>
+                        </t>
+                        
                         <!-- Account Section -->
                         <div class="sidebar-section">
                             <div class="sidebar-section-title">Account</div>
@@ -1300,6 +1357,12 @@
                                     </a>
                                     <ul class="dropdown-menu dropdown-menu-end">
                                         <li><a class="dropdown-item" href="/my/home"><i class="fa fa-user me-2"></i>My Account</a></li>
+                                        <t t-if="request.env.user.user_type in ['admin', 'superadmin'] or request.env.user.has_group('base.group_system')">
+                                            <li><hr class="dropdown-divider"/></li>
+                                            <li><a class="dropdown-item" href="/market/admin/users"><i class="fa fa-users me-2"></i>Admin: Users</a></li>
+                                            <li><a class="dropdown-item" href="/market/admin/users"><i class="fa fa-bar-chart me-2"></i>Admin: Analytics</a></li>
+                                            <li><hr class="dropdown-divider"/></li>
+                                        </t>
                                         <li><a class="dropdown-item" href="/odoo"><i class="fa fa-th me-2"></i>Backend</a></li>
                                         <li><hr class="dropdown-divider"/></li>
                                         <li><a class="dropdown-item" href="/web/session/logout?redirect=/"><i class="fa fa-sign-out me-2"></i>Logout</a></li>
@@ -2076,6 +2139,474 @@
                     background-color: var(--stock-muted);
                 }
             </style>
+        </t>
+    </template>
+    
+    <!-- ========== ADMIN USERS LIST TEMPLATE ========== -->
+    <template id="admin_users_list" name="Admin Users List">
+        <t t-call="stock_market_simulation.market_portal_layout">
+            <div class="container-fluid">
+                <!-- Header -->
+                <div class="page-header mb-4">
+                    <div class="row align-items-center">
+                        <div class="col">
+                            <h1 class="h2">Users Management</h1>
+                            <p class="text-muted">View and manage all system users</p>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Filters and Search -->
+                <div class="card mb-4">
+                    <div class="card-body">
+                        <form method="get" class="form-inline">
+                            <!-- Search -->
+                            <div class="form-group mr-2 mb-2">
+                                <input type="text" name="search" class="form-control" placeholder="Search by name or login..." t-attf-value="#{search or ''}"/>
+                            </div>
+                            
+                            <!-- Filter by User Type -->
+                            <div class="form-group mr-2 mb-2">
+                                <select name="filterby" class="form-control">
+                                    <t t-foreach="searchbar_filters.items()" t-as="filter_option">
+                                        <option t-att-value="filter_option[0]" t-att-selected="filter_option[0] == filterby and 'selected'">
+                                            <t t-esc="filter_option[1]['label']"/>
+                                        </option>
+                                    </t>
+                                </select>
+                            </div>
+                            
+                            <!-- Sort -->
+                            <div class="form-group mr-2 mb-2">
+                                <select name="sortby" class="form-control">
+                                    <t t-foreach="searchbar_sortings.items()" t-as="sort_option">
+                                        <option t-att-value="sort_option[0]" t-att-selected="sort_option[0] == sortby and 'selected'">
+                                            <t t-esc="sort_option[1]['label']"/>
+                                        </option>
+                                    </t>
+                                </select>
+                            </div>
+                            
+                            <button type="submit" class="btn btn-primary mb-2">Search</button>
+                        </form>
+                    </div>
+                </div>
+                
+                <!-- Users Table -->
+                <div class="card">
+                    <div class="card-header">
+                        <h5><i class="fa fa-users"/> Total Users: <span class="badge badge-info"><t t-esc="user_count"/></span></h5>
+                    </div>
+                    <div class="card-body p-0">
+                        <t t-if="not users">
+                            <div class="alert alert-info m-3">
+                                <i class="fa fa-info-circle"/> No users found.
+                            </div>
+                        </t>
+                        <t t-if="users">
+                            <div class="table-responsive">
+                                <table class="table table-hover mb-0">
+                                    <thead class="table-light">
+                                        <tr>
+                                            <th>Name</th>
+                                            <th>Login</th>
+                                            <th>User Type</th>
+                                            <th class="text-right">Cash Balance</th>
+                                            <th class="text-right">Initial Capital</th>
+                                            <th>Action</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        <t t-foreach="users" t-as="u">
+                                            <tr>
+                                                <td>
+                                                    <strong><t t-esc="u.name"/></strong>
+                                                </td>
+                                                <td><t t-esc="u.login"/></td>
+                                                <td>
+                                                    <span t-attf-class="badge #{u.user_type == 'superadmin' and 'badge-danger' or u.user_type == 'admin' and 'badge-warning' or u.user_type == 'banker' and 'badge-info' or u.user_type == 'broker' and 'badge-success' or 'badge-secondary'}">
+                                                        <t t-esc="u.user_type.upper()"/>
+                                                    </span>
+                                                </td>
+                                                <td class="text-right">
+                                                    <span t-attf-class="#{u.cash_balance >= 0 and 'text-success' or 'text-danger'}">
+                                                        $<t t-esc="'{:,.2f}'.format(u.cash_balance or 0.0)"/>
+                                                    </span>
+                                                </td>
+                                                <td class="text-right">$<t t-esc="'{:,.2f}'.format(u.initial_capital or 0.0)"/></td>
+                                                <td>
+                                                    <a t-attf-href="/market/admin/user/#{u.id}/360" class="btn btn-sm btn-primary">
+                                                        <i class="fa fa-eye"/> View 360
+                                                    </a>
+                                                </td>
+                                            </tr>
+                                        </t>
+                                    </tbody>
+                                </table>
+                            </div>
+                        </t>
+                    </div>
+                </div>
+                
+                <!-- Pagination -->
+                <t t-if="pager and pager.get('page_count', 0) > 1" t-call="portal.pager"/>
+            </div>
+        </t>
+    </template>
+    
+    <!-- ========== ADMIN USER 360 VIEW TEMPLATE ========== -->
+    <template id="admin_user_360_view" name="Admin User 360 View">
+        <t t-call="stock_market_simulation.market_portal_layout">
+            <div class="container-fluid">
+                <!-- Header -->
+                <div class="page-header mb-4">
+                    <div class="row align-items-center">
+                        <div class="col">
+                            <h1 class="h2">360° User View: <t t-esc="view_user.name"/></h1>
+                            <p class="text-muted">
+                                <span class="badge badge-primary"><t t-esc="view_user.user_type.upper()"/></span>
+                                Login: <strong><t t-esc="view_user.login"/></strong>
+                            </p>
+                        </div>
+                        <div class="col-auto">
+                            <a href="/market/admin/users" class="btn btn-secondary">
+                                <i class="fa fa-arrow-left"/> Back to Users
+                            </a>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Financial Summary Cards -->
+                <div class="row mb-4">
+                    <div class="col-md-3 mb-3">
+                        <div class="card text-center">
+                            <div class="card-body">
+                                <h6 class="card-title text-muted">Cash Balance</h6>
+                                <h3 class="card-text" t-attf-style="color: #{view_user.cash_balance >= 0 and 'green' or 'red'}">
+                                    $<t t-esc="'{:,.2f}'.format(view_user.cash_balance or 0.0)"/>
+                                </h3>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-3 mb-3">
+                        <div class="card text-center">
+                            <div class="card-body">
+                                <h6 class="card-title text-muted">Initial Capital</h6>
+                                <h3 class="card-text">$<t t-esc="'{:,.2f}'.format(view_user.initial_capital or 0.0)"/></h3>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-3 mb-3">
+                        <div class="card text-center">
+                            <div class="card-body">
+                                <h6 class="card-title text-muted">Positions Value</h6>
+                                <h3 class="card-text">$<t t-esc="'{:,.2f}'.format(total_positions_value or 0.0)"/></h3>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-3 mb-3">
+                        <div class="card text-center">
+                            <div class="card-body">
+                                <h6 class="card-title text-muted">Total Assets</h6>
+                                <h3 class="card-text" t-attf-style="color: #{total_assets >= (view_user.initial_capital or 0) and 'green' or 'red'}">
+                                    $<t t-esc="'{:,.2f}'.format(total_assets or 0.0)"/>
+                                </h3>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Unrealized P&L -->
+                <div class="row mb-4">
+                    <div class="col-md-4">
+                        <div class="card">
+                            <div class="card-body text-center">
+                                <h6 class="card-title text-muted">Unrealized P&amp;L</h6>
+                                <h3 class="card-text" t-attf-style="color: #{total_unrealized_pnl >= 0 and 'green' or 'red'}">
+                                    $<t t-esc="'{:,.2f}'.format(total_unrealized_pnl or 0.0)"/>
+                                </h3>
+                                <small class="text-muted">
+                                    <t t-if="total_positions_cost > 0">
+                                        <t t-set="pnl_pct" t-value="(total_unrealized_pnl / total_positions_cost * 100) if total_positions_cost else 0"/>
+                                        (<t t-esc="'{:,.2f}'.format(pnl_pct)"/>%)
+                                    </t>
+                                </small>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="card">
+                            <div class="card-body text-center">
+                                <h6 class="card-title text-muted">Deposits</h6>
+                                <h3 class="card-text">$<t t-esc="'{:,.2f}'.format(total_deposits or 0.0)"/></h3>
+                                <small class="text-muted"><t t-esc="len(deposits)"/> active</small>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="card">
+                            <div class="card-body text-center">
+                                <h6 class="card-title text-muted">Loans</h6>
+                                <h3 class="card-text">$<t t-esc="'{:,.2f}'.format(total_loans or 0.0)"/></h3>
+                                <small class="text-muted"><t t-esc="len(loans)"/> active</small>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Positions Section -->
+                <div class="row">
+                    <div class="col-12 mb-4">
+                        <div class="card">
+                            <div class="card-header">
+                                <h5><i class="fa fa-briefcase"/> Stock Positions (<t t-esc="len(positions)"/>)</h5>
+                            </div>
+                            <div class="card-body p-0">
+                                <t t-if="not positions">
+                                    <div class="alert alert-info m-3 mb-0">
+                                        <i class="fa fa-info-circle"/> No positions held.
+                                    </div>
+                                </t>
+                                <t t-if="positions">
+                                    <div class="table-responsive">
+                                        <table class="table table-sm mb-0">
+                                            <thead class="table-light">
+                                                <tr>
+                                                    <th>Security</th>
+                                                    <th class="text-right">Qty</th>
+                                                    <th class="text-right">Avg Cost</th>
+                                                    <th class="text-right">Cost Basis</th>
+                                                    <th class="text-right">Market Value</th>
+                                                    <th class="text-right">Unrealized P&amp;L</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody>
+                                                <t t-foreach="positions" t-as="pos">
+                                                    <tr>
+                                                        <td><strong><t t-esc="pos.security_id.symbol"/></strong></td>
+                                                        <td class="text-right"><t t-esc="pos.quantity"/></td>
+                                                        <td class="text-right">$<t t-esc="'{:,.2f}'.format(pos.average_cost or 0.0)"/></td>
+                                                        <td class="text-right">$<t t-esc="'{:,.2f}'.format(pos.cost_basis or 0.0)"/></td>
+                                                        <td class="text-right">$<t t-esc="'{:,.2f}'.format(pos.market_value or 0.0)"/></td>
+                                                        <td class="text-right" t-attf-style="color: #{(pos.unrealized_pnl or 0.0) >= 0 and 'green' or 'red'}">
+                                                            $<t t-esc="'{:,.2f}'.format(pos.unrealized_pnl or 0.0)"/>
+                                                        </td>
+                                                    </tr>
+                                                </t>
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                </t>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Deposits & Loans -->
+                <div class="row">
+                    <div class="col-md-6 mb-4">
+                        <div class="card">
+                            <div class="card-header">
+                                <h5><i class="fa fa-bank"/> Deposits (<t t-esc="len(deposits)"/>)</h5>
+                            </div>
+                            <div class="card-body p-0">
+                                <t t-if="not deposits">
+                                    <div class="alert alert-info m-3 mb-0">
+                                        <i class="fa fa-info-circle"/> No deposits.
+                                    </div>
+                                </t>
+                                <t t-if="deposits">
+                                    <div class="table-responsive">
+                                        <table class="table table-sm mb-0">
+                                            <thead class="table-light">
+                                                <tr>
+                                                    <th>Date</th>
+                                                    <th class="text-right">Amount</th>
+                                                    <th class="text-right">Current Value</th>
+                                                    <th>Status</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody>
+                                                <t t-foreach="deposits" t-as="dep">
+                                                    <tr>
+                                                        <td><t t-esc="dep.deposit_date.strftime('%Y-%m-%d')"/></td>
+                                                        <td class="text-right">$<t t-esc="'{:,.2f}'.format(dep.amount or 0.0)"/></td>
+                                                        <td class="text-right">$<t t-esc="'{:,.2f}'.format(dep.current_value or 0.0)"/></td>
+                                                        <td>
+                                                            <span t-attf-class="badge #{dep.status == 'active' and 'badge-success' or dep.status == 'pending' and 'badge-warning' or 'badge-danger'}">
+                                                                <t t-esc="dep.status.upper()"/>
+                                                            </span>
+                                                        </td>
+                                                    </tr>
+                                                </t>
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                </t>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="col-md-6 mb-4">
+                        <div class="card">
+                            <div class="card-header">
+                                <h5><i class="fa fa-credit-card"/> Loans (<t t-esc="len(loans)"/>)</h5>
+                            </div>
+                            <div class="card-body p-0">
+                                <t t-if="not loans">
+                                    <div class="alert alert-info m-3 mb-0">
+                                        <i class="fa fa-info-circle"/> No loans.
+                                    </div>
+                                </t>
+                                <t t-if="loans">
+                                    <div class="table-responsive">
+                                        <table class="table table-sm mb-0">
+                                            <thead class="table-light">
+                                                <tr>
+                                                    <th>Date</th>
+                                                    <th class="text-right">Principal</th>
+                                                    <th class="text-right">Outstanding</th>
+                                                    <th>Status</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody>
+                                                <t t-foreach="loans" t-as="loan">
+                                                    <tr>
+                                                        <td><t t-esc="loan.loan_date.strftime('%Y-%m-%d')"/></td>
+                                                        <td class="text-right">$<t t-esc="'{:,.2f}'.format(loan.principal_amount or 0.0)"/></td>
+                                                        <td class="text-right">$<t t-esc="'{:,.2f}'.format(loan.principal_outstanding or 0.0)"/></td>
+                                                        <td>
+                                                            <span t-attf-class="badge #{loan.status == 'active' and 'badge-success' or loan.status == 'pending' and 'badge-warning' or 'badge-danger'}">
+                                                                <t t-esc="loan.status.upper()"/>
+                                                            </span>
+                                                        </td>
+                                                    </tr>
+                                                </t>
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                </t>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Recent Orders -->
+                <div class="row">
+                    <div class="col-12 mb-4">
+                        <div class="card">
+                            <div class="card-header">
+                                <h5><i class="fa fa-list"/> Recent Orders</h5>
+                            </div>
+                            <div class="card-body p-0">
+                                <t t-if="not orders">
+                                    <div class="alert alert-info m-3 mb-0">
+                                        <i class="fa fa-info-circle"/> No orders.
+                                    </div>
+                                </t>
+                                <t t-if="orders">
+                                    <div class="table-responsive">
+                                        <table class="table table-sm mb-0">
+                                            <thead class="table-light">
+                                                <tr>
+                                                    <th>Date</th>
+                                                    <th>Order</th>
+                                                    <th>Security</th>
+                                                    <th class="text-center">Side</th>
+                                                    <th class="text-right">Qty</th>
+                                                    <th class="text-right">Price</th>
+                                                    <th>Status</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody>
+                                                <t t-foreach="orders" t-as="order">
+                                                    <tr>
+                                                        <td><t t-esc="order.order_date.strftime('%Y-%m-%d %H:%M')"/></td>
+                                                        <td><strong><t t-esc="order.name"/></strong></td>
+                                                        <td><t t-esc="order.security_id.symbol"/></td>
+                                                        <td class="text-center">
+                                                            <span t-attf-class="badge #{order.side == 'buy' and 'badge-success' or 'badge-danger'}">
+                                                                <t t-esc="order.side.upper()"/>
+                                                            </span>
+                                                        </td>
+                                                        <td class="text-right"><t t-esc="order.quantity"/></td>
+                                                        <td class="text-right">$<t t-esc="'{:,.2f}'.format(order.price or 0.0)"/></td>
+                                                        <td>
+                                                            <span t-attf-class="badge #{order.status == 'filled' and 'badge-success' or order.status == 'submitted' and 'badge-warning' or order.status == 'cancelled' and 'badge-danger' or 'badge-secondary'}">
+                                                                <t t-esc="order.status.upper()"/>
+                                                            </span>
+                                                        </td>
+                                                    </tr>
+                                                </t>
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                </t>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Recent Trades -->
+                <div class="row">
+                    <div class="col-12">
+                        <div class="card">
+                            <div class="card-header">
+                                <h5><i class="fa fa-exchange"/> Recent Trades</h5>
+                            </div>
+                            <div class="card-body p-0">
+                                <t t-if="not trades">
+                                    <div class="alert alert-info m-3 mb-0">
+                                        <i class="fa fa-info-circle"/> No trades.
+                                    </div>
+                                </t>
+                                <t t-if="trades">
+                                    <div class="table-responsive">
+                                        <table class="table table-sm mb-0">
+                                            <thead class="table-light">
+                                                <tr>
+                                                    <th>Date</th>
+                                                    <th>Security</th>
+                                                    <th class="text-right">Quantity</th>
+                                                    <th class="text-right">Price</th>
+                                                    <th>Role</th>
+                                                    <th>Counterparty</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody>
+                                                <t t-foreach="trades" t-as="trade">
+                                                    <tr>
+                                                        <td><t t-esc="trade.trade_date.strftime('%Y-%m-%d %H:%M')"/></td>
+                                                        <td><strong><t t-esc="trade.security_id.symbol"/></strong></td>
+                                                        <td class="text-right"><t t-esc="trade.quantity"/></td>
+                                                        <td class="text-right">$<t t-esc="'{:,.2f}'.format(trade.price or 0.0)"/></td>
+                                                        <td>
+                                                            <t t-if="trade.buyer_id.id == view_user.id">
+                                                                <span class="badge badge-success">BUYER</span>
+                                                            </t>
+                                                            <t t-else="">
+                                                                <span class="badge badge-danger">SELLER</span>
+                                                            </t>
+                                                        </td>
+                                                        <td>
+                                                            <t t-if="trade.buyer_id.id == view_user.id">
+                                                                <t t-esc="trade.seller_id.name"/>
+                                                            </t>
+                                                            <t t-else="">
+                                                                <t t-esc="trade.buyer_id.name"/>
+                                                            </t>
+                                                        </td>
+                                                    </tr>
+                                                </t>
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                </t>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
         </t>
     </template>
     

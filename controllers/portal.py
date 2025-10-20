@@ -13,6 +13,8 @@ import json
 _logger = logging.getLogger(__name__)
 
 class StockMarketPortal(CustomerPortal):
+    
+    _items_per_page = 20
 
     def _prepare_home_portal_values(self, counters):
         values = super()._prepare_home_portal_values(counters)
@@ -1212,6 +1214,203 @@ class StockMarketPortal(CustomerPortal):
         })
         
         return request.render("stock_market_simulation.portal_banking_dashboard", values)
+    
+    # ========== ADMIN / SUPERADMIN ROUTES ==========
+    
+    # Admin Users List
+    @http.route(['/market/admin/users', '/market/admin/users/page/<int:page>'], type='http', auth="user", website=True)
+    def admin_users_list(self, page=1, sortby=None, filterby=None, search=None, **kw):
+        """List all users for admin/superadmin with 360 view access"""
+        values = self._prepare_portal_layout_values()
+        user = request.env.user
+        
+        # Check authorization
+        try:
+            is_system_admin = request.env.user.has_group('base.group_system')
+        except Exception:
+            is_system_admin = False
+        
+        if user.user_type not in ['admin', 'superadmin'] and not is_system_admin:
+            return request.redirect('/my')
+        
+        ResUsers = request.env['res.users']
+        domain = [('id', '!=', 1)]  # Exclude super user (id=1)
+        
+        # Filter by user type
+        searchbar_filters = {
+            'all': {'label': _('All Users'), 'domain': []},
+            'investor': {'label': _('Investors'), 'domain': [('user_type', '=', 'investor')]},
+            'banker': {'label': _('Bankers'), 'domain': [('user_type', '=', 'banker')]},
+            'broker': {'label': _('Brokers'), 'domain': [('user_type', '=', 'broker')]},
+            'admin': {'label': _('Admins'), 'domain': [('user_type', 'in', ['admin', 'superadmin'])]},
+        }
+        
+        searchbar_sortings = {
+            'name': {'label': _('Name'), 'order': 'name'},
+            'login': {'label': _('Login'), 'order': 'login'},
+            'cash': {'label': _('Cash Balance'), 'order': 'cash_balance desc'},
+            'capital': {'label': _('Initial Capital'), 'order': 'initial_capital desc'},
+        }
+        
+        # Apply filters and search
+        if not filterby:
+            filterby = 'all'
+        if filterby in searchbar_filters:
+            domain += searchbar_filters[filterby]['domain']
+        
+        if search:
+            domain += ['|', ('name', 'ilike', search), ('login', 'ilike', search)]
+        
+        # Apply sorting
+        if not sortby:
+            sortby = 'name'
+        order = searchbar_sortings.get(sortby, searchbar_sortings['name'])['order']
+        
+        # Count total users
+        user_count = ResUsers.search_count(domain)
+        
+        # Pager
+        pager = portal_pager(
+            url="/market/admin/users",
+            url_args={'sortby': sortby, 'filterby': filterby, 'search': search},
+            total=user_count,
+            page=page,
+            step=self._items_per_page
+        )
+        
+        # Get users
+        users = ResUsers.search(domain, order=order, limit=self._items_per_page, offset=pager['offset'])
+        
+        values.update({
+            'page_name': 'admin_users',
+            'users': users,
+            'user_count': user_count,
+            'pager': pager,
+            'sortby': sortby,
+            'searchbar_sortings': searchbar_sortings,
+            'filterby': filterby,
+            'searchbar_filters': OrderedDict(sorted(searchbar_filters.items())),
+            'search': search,
+        })
+        
+        return request.render("stock_market_simulation.admin_users_list", values)
+    
+    # Admin User 360 View
+    @http.route(['/market/admin/user/<int:user_id>/360'], type='http', auth="user", website=True)
+    def admin_user_360_view(self, user_id, **kw):
+        """360-degree view of a user showing all financial data"""
+        values = self._prepare_portal_layout_values()
+        current_user = request.env.user
+        
+        # Check authorization
+        try:
+            is_system_admin = request.env.user.has_group('base.group_system')
+        except Exception:
+            is_system_admin = False
+        
+        if current_user.user_type not in ['admin', 'superadmin'] and not is_system_admin:
+            return request.not_found()
+        
+        # Get the user to view
+        view_user = request.env['res.users'].browse(user_id)
+        if not view_user.exists():
+            return request.not_found()
+        
+        # Get user's financial data
+        positions = request.env['stock.position'].search([('user_id', '=', user_id)])
+        orders = request.env['stock.order'].search([('user_id', '=', user_id)], order='order_date desc', limit=20)
+        
+        # Get deposits and loans
+        if view_user.user_type in ['investor', 'banker']:
+            deposits = request.env['stock.deposit'].search([('user_id', '=', user_id)])
+            loans = request.env['stock.loan'].search([('user_id', '=', user_id)])
+        else:
+            deposits = request.env['stock.deposit'].browse()
+            loans = request.env['stock.loan'].browse()
+        
+        # Get trades where user is involved
+        trades = request.env['stock.trade'].search([
+            '|', ('buyer_id', '=', user_id), ('seller_id', '=', user_id)
+        ], order='trade_date desc', limit=20)
+        
+        # Calculate summary statistics
+        total_positions_value = sum(p.market_value for p in positions)
+        total_positions_cost = sum(p.cost_basis for p in positions)
+        total_unrealized_pnl = sum(p.unrealized_pnl for p in positions)
+        
+        total_deposits = sum(d.current_value for d in deposits.filtered(lambda d: d.status == 'active'))
+        total_loans = sum(l.principal_outstanding for l in loans.filtered(lambda l: l.status == 'active'))
+        
+        total_assets = view_user.cash_balance + total_positions_value
+        
+        values.update({
+            'page_name': 'user_360',
+            'view_user': view_user,
+            'positions': positions,
+            'orders': orders,
+            'deposits': deposits,
+            'loans': loans,
+            'trades': trades,
+            'total_positions_value': total_positions_value,
+            'total_positions_cost': total_positions_cost,
+            'total_unrealized_pnl': total_unrealized_pnl,
+            'total_deposits': total_deposits,
+            'total_loans': total_loans,
+            'total_assets': total_assets,
+        })
+        
+        return request.render("stock_market_simulation.admin_user_360_view", values)
+    
+    @http.route(['/market/admin/user/<int:user_id>/data'], type='json', auth="user", website=True)
+    def admin_user_data_json(self, user_id, **kw):
+        """Get user 360 view data as JSON for dynamic updates"""
+        current_user = request.env.user
+        
+        # Check authorization
+        try:
+            is_system_admin = request.env.user.has_group('base.group_system')
+        except Exception:
+            is_system_admin = False
+        
+        if current_user.user_type not in ['admin', 'superadmin'] and not is_system_admin:
+            return {'success': False, 'error': 'Unauthorized'}
+        
+        try:
+            view_user = request.env['res.users'].browse(user_id)
+            if not view_user.exists():
+                return {'success': False, 'error': 'User not found'}
+            
+            # Get financial data
+            positions = request.env['stock.position'].search([('user_id', '=', user_id)])
+            deposits = request.env['stock.deposit'].search([('user_id', '=', user_id), ('status', '=', 'active')])
+            loans = request.env['stock.loan'].search([('user_id', '=', user_id), ('status', '=', 'active')])
+            
+            # Calculate totals
+            total_positions = sum(p.market_value for p in positions)
+            total_deposits = sum(d.current_value for d in deposits)
+            total_loans = sum(l.principal_outstanding for l in loans)
+            
+            return {
+                'success': True,
+                'data': {
+                    'user_id': view_user.id,
+                    'name': view_user.name,
+                    'login': view_user.login,
+                    'user_type': view_user.user_type,
+                    'cash_balance': view_user.cash_balance,
+                    'initial_capital': view_user.initial_capital,
+                    'positions_count': len(positions),
+                    'total_positions_value': round(total_positions, 2),
+                    'deposits_count': len(deposits),
+                    'total_deposits': round(total_deposits, 2),
+                    'loans_count': len(loans),
+                    'total_loans': round(total_loans, 2),
+                    'total_assets': round(view_user.cash_balance + total_positions, 2),
+                }
+            }
+        except Exception as e:
+            _logger.error(f"Error getting user data for {user_id}: {str(e)}")
+            return {'success': False, 'error': str(e)}
     
     @http.route(['/market/data/update'], type='http', auth="user", methods=['GET', 'POST'])
     def market_data_update(self, **kw):

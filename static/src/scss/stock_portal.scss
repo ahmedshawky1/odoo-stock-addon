@@ -1344,3 +1344,70 @@ html.stock-sidebar-init-collapsed .stock-main-content {
         transform: translateY(0);
     }
 }
+
+/* ================================================
+   Admin Section Styling
+   ================================================ */
+
+.sidebar-section {
+    &:has(.sidebar-section-title:contains("Administration")) {
+        margin-top: var(--stock-space-8);
+        padding-top: var(--stock-space-4);
+        border-top: 2px solid var(--stock-warning);
+        
+        .sidebar-section-title {
+            color: var(--stock-warning) !important;
+            font-weight: 700;
+            display: flex;
+            align-items: center;
+            gap: var(--stock-space-2);
+            
+            i {
+                font-size: 1rem;
+            }
+        }
+        
+        .nav-link {
+            &:hover {
+                background: var(--stock-warning-light);
+                color: var(--stock-warning);
+            }
+            
+            &.active {
+                background: rgba(245, 158, 11, 0.15);
+                color: var(--stock-warning);
+                
+                &::before {
+                    background: var(--stock-warning);
+                }
+            }
+        }
+    }
+}
+
+/* Alternative: using nth-child selector for admin section */
+.stock-sidebar-nav > .sidebar-section:last-child {
+    &:has(.sidebar-section-title i.fa-lock) {
+        margin-top: var(--stock-space-8);
+        padding-top: var(--stock-space-4);
+        border-top: 2px solid var(--stock-warning);
+        
+        .sidebar-section-title {
+            color: var(--stock-warning) !important;
+            font-weight: 700;
+        }
+        
+        .nav-link {
+            &:hover {
+                background: var(--stock-warning-light);
+                color: var(--stock-warning);
+            }
+            
+            &.active {
+                background: rgba(245, 158, 11, 0.15);
+                color: var(--stock-warning);
+                border-left: 3px solid var(--stock-warning);
+            }
+        }
+    }
+}
