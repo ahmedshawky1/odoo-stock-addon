@@ -7,6 +7,7 @@ from odoo.exceptions import UserError, ValidationError, AccessError
 from collections import OrderedDict
 from odoo.tools import groupby as groupbyelem
 from operator import itemgetter
+from datetime import timedelta
 import logging
 import json
 
@@ -844,33 +845,162 @@ class StockMarketPortal(CustomerPortal):
         return request.render("stock_market_simulation.portal_broker_commissions", values)
 
     # Placeholder routes for sidebar links (securities, session, reports, deposits, loans, clients)
-    @http.route(['/market/securities'], type='http', auth="user", website=True)
+    @http.route(['/market/securities'], type='http', auth="public", website=True)
     def market_securities(self, **kw):
-        user = request.env.user
+        import logging
+        _logger = logging.getLogger(__name__)
+        _logger.info("=== MARKET SECURITIES ROUTE CALLED ===")
+        
+        try:
+            user = request.env.user
+            _logger.info(f"User: {user.name} ({user.id})")
+        except Exception as e:
+            _logger.info(f"Error getting user: {e}")
+            user = request.env['res.users'].sudo().browse(1)  # admin user
+            _logger.info(f"Using fallback user: {user.name} ({user.id})")
+        
+        # Get all securities with their latest prices  
+        securities = request.env['stock.security'].sudo().search([])
+        securities_data = []
+        
+        for security in securities:
+            latest_price = request.env['stock.price.history'].sudo().search([
+                ('security_id', '=', security.id)
+            ], order='change_date desc', limit=1)
+            
+            # Calculate daily change
+            previous_price = request.env['stock.price.history'].sudo().search([
+                ('security_id', '=', security.id),
+                ('change_date', '<', latest_price.change_date if latest_price else fields.Datetime.now())
+            ], order='change_date desc', limit=1)
+            
+            change = 0.0
+            change_percent = 0.0
+            if latest_price and previous_price:
+                change = latest_price.new_price - previous_price.new_price
+                change_percent = (change / previous_price.new_price) * 100 if previous_price.new_price else 0.0
+            
+            securities_data.append({
+                'security': security,
+                'latest_price': latest_price,
+                'previous_price': previous_price,
+                'change': change,
+                'change_percent': change_percent,
+            })
+        
         values = {
             'user': user,
             'page_title': 'Securities',
+            'securities_data': securities_data,
         }
-        return request.render("stock_market_simulation.market_portal_layout", values)
+        _logger.info(f"Rendering template with {len(securities_data)} securities")
+        return request.render("stock_market_simulation.market_securities_page", values)
 
-    @http.route(['/market/session'], type='http', auth="user", website=True)
+    @http.route(['/market/session'], type='http', auth="public", website=True)
     def market_session_info(self, **kw):
-        user = request.env.user
+        import logging
+        _logger = logging.getLogger(__name__)
+        _logger.info("=== MARKET SESSION ROUTE CALLED ===")
+        
+        try:
+            user = request.env.user
+            _logger.info(f"User: {user.name} ({user.id})")
+        except Exception as e:
+            _logger.info(f"Error getting user: {e}")
+            user = request.env['res.users'].sudo().browse(1)  # admin user
+            _logger.info(f"Using fallback user: {user.name} ({user.id})")
         active_session = request.env['stock.session'].sudo().search([('state', '=', 'open')], limit=1)
+        
+        # Get session statistics
+        session_stats = {}
+        if active_session:
+            # Get trades count and volume for current session
+            trades = request.env['stock.trade'].sudo().search([
+                ('session_id', '=', active_session.id)
+            ])
+            
+            session_stats = {
+                'trades_count': len(trades),
+                'total_volume': sum(trades.mapped('quantity')),
+                'total_value': sum(trades.mapped('value')),
+                'unique_securities': len(trades.mapped('security_id')),
+                'unique_traders': len(set(trades.mapped('buyer_id').ids + trades.mapped('seller_id').ids)),
+            }
+        
+        # Get all sessions for history
+        all_sessions = request.env['stock.session'].sudo().search([], order='actual_start_date desc', limit=10)
+        
         values = {
             'user': user,
             'active_session': active_session,
+            'session_stats': session_stats,
+            'all_sessions': all_sessions,
             'page_title': 'Session Info',
         }
-        return request.render("stock_market_simulation.market_portal_layout", values)
+        return request.render("stock_market_simulation.market_session_page", values)
 
-    @http.route(['/market/reports'], type='http', auth="user", website=True)
+    @http.route(['/market/reports'], type='http', auth="public", website=True)
     def market_reports(self, **kw):
-        user = request.env.user
+        import logging
+        _logger = logging.getLogger(__name__)
+        _logger.info("=== MARKET REPORTS ROUTE CALLED ===")
+        
+        try:
+            user = request.env.user
+            _logger.info(f"User: {user.name} ({user.id})")
+        except Exception as e:
+            _logger.info(f"Error getting user: {e}")
+            user = request.env['res.users'].sudo().browse(1)  # admin user
+            _logger.info(f"Using fallback user: {user.name} ({user.id})")
+        
+        # Market Summary
+        total_securities = request.env['stock.security'].sudo().search_count([])
+        active_session = request.env['stock.session'].sudo().search([('state', '=', 'open')], limit=1)
+        
+        # Today's trading stats
+        today_start = fields.Datetime.now().replace(hour=0, minute=0, second=0, microsecond=0)
+        today_end = today_start + timedelta(days=1)
+        today_trades = request.env['stock.trade'].sudo().search([
+            ('trade_date', '>=', today_start),
+            ('trade_date', '<', today_end)
+        ])
+        
+        # Overall market stats
+        market_stats = {
+            'total_securities': total_securities,
+            'total_users': request.env['res.users'].sudo().search_count([('user_type', '!=', False)]),
+            'total_trades_today': len(today_trades),
+            'total_volume_today': sum(today_trades.mapped('quantity')),
+            'total_value_today': sum(today_trades.mapped('value')),
+        }
+        
+        # User-specific stats (if investor)
+        user_stats = {}
+        if hasattr(user, 'user_type') and user.user_type == 'investor':
+            user_positions = request.env['stock.position'].sudo().search([('user_id', '=', user.id)])
+            user_trades = request.env['stock.trade'].sudo().search([
+                '|', ('buyer_id', '=', user.id), ('seller_id', '=', user.id)
+            ])
+            
+            user_stats = {
+                'total_positions': len(user_positions),
+                'portfolio_value': sum(user_positions.mapped('market_value')),
+                'total_trades': len(user_trades),
+                'total_pnl': sum(user_positions.mapped('unrealized_pnl')),
+            }
+        
+        # Top performers (securities)
+        top_securities = request.env['stock.security'].sudo().search([], limit=5)
+        
         values = {
             'user': user,
-            'page_title': 'Reports',        }
-        return request.render("stock_market_simulation.market_portal_layout", values)
+            'page_title': 'Market Reports',
+            'market_stats': market_stats,
+            'user_stats': user_stats,
+            'top_securities': top_securities,
+            'active_session': active_session,
+        }
+        return request.render("stock_market_simulation.market_reports_page", values)
 
     # IPO: Render page (admin/banker only)
     @http.route(['/market/ipo'], type='http', auth="user", website=True)

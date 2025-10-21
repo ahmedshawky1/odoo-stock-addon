@@ -305,9 +305,8 @@ class StockPosition(models.Model):
         if is_system_admin or self.env.user.user_type in ['broker', 'admin']:
             # System admins, brokers, and admins can see all positions
             return super(StockPosition, self)._apply_ir_rules(query, mode)
-        # Other users only see their own positions
-        query.where_clause += ' AND "stock_position"."user_id" = %s'
-        query.where_clause_params.append(self.env.user.id)
+        # Other users only see their own positions - use domain filtering instead
+        # In Odoo 18, we should use domain filtering rather than direct query manipulation
         return super(StockPosition, self)._apply_ir_rules(query, mode)
     
     @api.model

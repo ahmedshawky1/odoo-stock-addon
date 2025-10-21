@@ -2610,4 +2610,414 @@
         </t>
     </template>
     
+    <!-- Securities Page Template -->
+    <template id="market_securities_page" name="Market Securities Page">
+        <t t-call="stock_market_simulation.market_portal_layout">
+            <div class="container-fluid">
+                <div class="row">
+                    <div class="col-12">
+                        <div class="d-flex justify-content-between align-items-center mb-4">
+                            <h2><i class="fa fa-bar-chart text-primary me-2"></i>Securities</h2>
+                            <small class="text-muted">Real-time market data</small>
+                        </div>
+
+                        <div class="card">
+                            <div class="card-header">
+                                <h5 class="card-title mb-0">Listed Securities</h5>
+                            </div>
+                            <div class="card-body p-0">
+                                <div class="table-responsive">
+                                    <table class="table table-hover mb-0">
+                                        <thead class="table-light">
+                                            <tr>
+                                                <th>Symbol</th>
+                                                <th>Company</th>
+                                                <th>Type</th>
+                                                <th class="text-end">Current Price</th>
+                                                <th class="text-end">Change</th>
+                                                <th class="text-end">Change %</th>
+                                                <th class="text-end">Volume</th>
+                                                <th class="text-end">Market Cap</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            <t t-if="securities_data">
+                                                <t t-foreach="securities_data" t-as="item">
+                                                    <tr>
+                                                        <td>
+                                                            <strong t-esc="item['security'].symbol"/>
+                                                        </td>
+                                                        <td>
+                                                            <div>
+                                                                <strong t-esc="item['security'].name"/>
+                                                                <br/>
+                                                                <small class="text-muted" t-esc="item['security'].sector.title() if item['security'].sector else 'N/A'"/>
+                                                            </div>
+                                                        </td>
+                                                        <td>
+                                                            <span class="badge badge-secondary" t-esc="item['security'].security_type.title()"/>
+                                                        </td>
+                                                        <td class="text-end">
+                                                            <strong>
+                                                                $<t t-if="item['latest_price']" t-esc="'{:,.2f}'.format(item['latest_price'].new_price)"/>
+                                                                <t t-else="">-</t>
+                                                            </strong>
+                                                        </td>
+                                                        <td class="text-end">
+                                                            <span t-attf-class="#{item['change'] >= 0 and 'text-success' or 'text-danger'}">
+                                                                <t t-if="item['change'] >= 0">+</t>$<t t-esc="'{:,.2f}'.format(abs(item['change']))"/>
+                                                            </span>
+                                                        </td>
+                                                        <td class="text-end">
+                                                            <span t-attf-class="#{item['change_percent'] >= 0 and 'text-success' or 'text-danger'}">
+                                                                <t t-if="item['change_percent'] >= 0">+</t><t t-esc="'{:,.2f}'.format(item['change_percent'])"/>%
+                                                            </span>
+                                                        </td>
+                                                        <td class="text-end">
+                                                            <t t-if="item['security'].volume_today" t-esc="'{:,}'.format(int(item['security'].volume_today))"/>
+                                                            <t t-else="">-</t>
+                                                        </td>
+                                                        <td class="text-end">
+                                                            <t t-if="item['latest_price']">
+                                                                $<t t-esc="'{:,.0f}'.format(item['latest_price'].new_price * item['security'].total_shares)"/>M
+                                                            </t>
+                                                            <t t-else="">-</t>
+                                                        </td>
+                                                    </tr>
+                                                </t>
+                                            </t>
+                                            <t t-else="">
+                                                <tr>
+                                                    <td colspan="8" class="text-center py-4 text-muted">
+                                                        <i class="fa fa-info-circle me-2"></i>No securities available
+                                                    </td>
+                                                </tr>
+                                            </t>
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </t>
+    </template>
+    
+    <!-- Session Info Page Template -->
+    <template id="market_session_page" name="Market Session Page">
+        <t t-call="stock_market_simulation.market_portal_layout">
+            <div class="container-fluid">
+                <div class="row">
+                    <div class="col-12">
+                        <div class="d-flex justify-content-between align-items-center mb-4">
+                            <h2><i class="fa fa-clock-o text-primary me-2"></i>Session Information</h2>
+                            <small class="text-muted">Trading session status and statistics</small>
+                        </div>
+
+                        <!-- Current Session Status -->
+                        <div class="row mb-4">
+                            <div class="col-12">
+                                <div class="card">
+                                    <div class="card-header">
+                                        <h5 class="card-title mb-0">Current Session</h5>
+                                    </div>
+                                    <div class="card-body">
+                                        <t t-if="active_session">
+                                            <div class="row">
+                                                <div class="col-md-6">
+                                                    <h6><i class="fa fa-play-circle text-success me-2"></i>Active Session</h6>
+                                                    <p class="mb-2"><strong>Name:</strong> <t t-esc="active_session.name"/></p>
+                                                    <p class="mb-2"><strong>Started:</strong> <t t-esc="active_session.actual_start_date" t-options='{"widget": "datetime"}'/></p>
+                                                    <p class="mb-2"><strong>Planned End:</strong> <t t-esc="active_session.planned_end_date" t-options='{"widget": "datetime"}'/></p>
+                                                    <p class="mb-0"><strong>State:</strong> 
+                                                        <span class="badge badge-success">
+                                                            <t t-esc="active_session.state.title()"/>
+                                                        </span>
+                                                    </p>
+                                                </div>
+                                                <div class="col-md-6">
+                                                    <h6><i class="fa fa-bar-chart text-info me-2"></i>Session Statistics</h6>
+                                                    <div class="row">
+                                                        <div class="col-6">
+                                                            <div class="text-center">
+                                                                <h4 class="text-primary mb-1" t-esc="session_stats.get('trades_count', 0)"/>
+                                                                <small class="text-muted">Trades</small>
+                                                            </div>
+                                                        </div>
+                                                        <div class="col-6">
+                                                            <div class="text-center">
+                                                                <h4 class="text-success mb-1" t-esc="'{:,}'.format(session_stats.get('total_volume', 0))"/>
+                                                                <small class="text-muted">Volume</small>
+                                                            </div>
+                                                        </div>
+                                                        <div class="col-6">
+                                                            <div class="text-center">
+                                                                <h4 class="text-info mb-1">$<t t-esc="'{:,.0f}'.format(session_stats.get('total_value', 0))"/></h4>
+                                                                <small class="text-muted">Value</small>
+                                                            </div>
+                                                        </div>
+                                                        <div class="col-6">
+                                                            <div class="text-center">
+                                                                <h4 class="text-warning mb-1" t-esc="session_stats.get('unique_securities', 0)"/>
+                                                                <small class="text-muted">Securities</small>
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </t>
+                                        <t t-else="">
+                                            <div class="alert alert-warning">
+                                                <i class="fa fa-exclamation-triangle me-2"></i>
+                                                <strong>No Active Session</strong> - Trading is currently closed.
+                                            </div>
+                                        </t>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Session History -->
+                        <div class="row">
+                            <div class="col-12">
+                                <div class="card">
+                                    <div class="card-header">
+                                        <h5 class="card-title mb-0">Recent Sessions</h5>
+                                    </div>
+                                    <div class="card-body p-0">
+                                        <div class="table-responsive">
+                                            <table class="table table-hover mb-0">
+                                                <thead class="table-light">
+                                                    <tr>
+                                                        <th>Session Name</th>
+                                                        <th>Start Date</th>
+                                                        <th>End Date</th>
+                                                        <th>Duration</th>
+                                                        <th>State</th>
+                                                        <th class="text-end">Actions</th>
+                                                    </tr>
+                                                </thead>
+                                                <tbody>
+                                                    <t t-if="all_sessions">
+                                                        <t t-foreach="all_sessions" t-as="session">
+                                                            <tr>
+                                                                <td>
+                                                                    <strong t-esc="session.name"/>
+                                                                </td>
+                                                                <td>
+                                                                    <t t-esc="session.actual_start_date" t-options='{"widget": "datetime"}'/>
+                                                                </td>
+                                                                <td>
+                                                                    <t t-if="session.actual_end_date" t-esc="session.actual_end_date" t-options='{"widget": "datetime"}'/>
+                                                                    <t t-else="">
+                                                                        <span class="text-muted">Ongoing</span>
+                                                                    </t>
+                                                                </td>
+                                                                <td>
+                                                                    <t t-if="session.actual_end_date">
+                                                                        <t t-set="duration" t-value="(session.actual_end_date - session.actual_start_date).total_seconds() / 3600"/>
+                                                                        <t t-esc="'{:.1f}'.format(duration)"/> hours
+                                                                    </t>
+                                                                    <t t-else="">
+                                                                        <span class="text-muted">-</span>
+                                                                    </t>
+                                                                </td>
+                                                                <td>
+                                                                    <span t-attf-class="badge #{session.state == 'open' and 'badge-success' or session.state == 'closed' and 'badge-secondary' or 'badge-warning'}">
+                                                                        <t t-esc="session.state.title()"/>
+                                                                    </span>
+                                                                </td>
+                                                                <td class="text-end">
+                                                                    <button class="btn btn-sm btn-outline-primary" onclick="alert('Session details will be implemented')">
+                                                                        <i class="fa fa-eye"></i> View
+                                                                    </button>
+                                                                </td>
+                                                            </tr>
+                                                        </t>
+                                                    </t>
+                                                    <t t-else="">
+                                                        <tr>
+                                                            <td colspan="6" class="text-center py-4 text-muted">
+                                                                <i class="fa fa-info-circle me-2"></i>No sessions found
+                                                            </td>
+                                                        </tr>
+                                                    </t>
+                                                </tbody>
+                                            </table>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </t>
+    </template>
+    
+    <!-- Reports Page Template -->
+    <template id="market_reports_page" name="Market Reports Page">
+        <t t-call="stock_market_simulation.market_portal_layout">
+            <div class="container-fluid">
+                <div class="row">
+                    <div class="col-12">
+                        <div class="d-flex justify-content-between align-items-center mb-4">
+                            <h2><i class="fa fa-file-text text-primary me-2"></i>Market Reports</h2>
+                            <small class="text-muted">Market statistics and analytics</small>
+                        </div>
+
+                        <!-- Market Overview -->
+                        <div class="row mb-4">
+                            <div class="col-12">
+                                <div class="card">
+                                    <div class="card-header">
+                                        <h5 class="card-title mb-0">Market Overview</h5>
+                                    </div>
+                                    <div class="card-body">
+                                        <div class="row">
+                                            <div class="col-md-2">
+                                                <div class="text-center">
+                                                    <h4 class="text-primary mb-1" t-esc="market_stats.get('total_securities', 0)"/>
+                                                    <small class="text-muted">Securities Listed</small>
+                                                </div>
+                                            </div>
+                                            <div class="col-md-2">
+                                                <div class="text-center">
+                                                    <h4 class="text-info mb-1" t-esc="market_stats.get('total_users', 0)"/>
+                                                    <small class="text-muted">Active Users</small>
+                                                </div>
+                                            </div>
+                                            <div class="col-md-3">
+                                                <div class="text-center">
+                                                    <h4 class="text-success mb-1" t-esc="market_stats.get('total_trades_today', 0)"/>
+                                                    <small class="text-muted">Trades Today</small>
+                                                </div>
+                                            </div>
+                                            <div class="col-md-3">
+                                                <div class="text-center">
+                                                    <h4 class="text-warning mb-1" t-esc="'{:,}'.format(market_stats.get('total_volume_today', 0))"/>
+                                                    <small class="text-muted">Volume Today</small>
+                                                </div>
+                                            </div>
+                                            <div class="col-md-2">
+                                                <div class="text-center">
+                                                    <h4 class="text-danger mb-1">$<t t-esc="'{:,.0f}'.format(market_stats.get('total_value_today', 0))"/></h4>
+                                                    <small class="text-muted">Value Today</small>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- User Portfolio (if investor) -->
+                        <t t-if="user.user_type == 'investor'">
+                            <div class="row mb-4">
+                                <div class="col-12">
+                                    <div class="card">
+                                        <div class="card-header">
+                                            <h5 class="card-title mb-0">Your Portfolio Summary</h5>
+                                        </div>
+                                        <div class="card-body">
+                                            <div class="row">
+                                                <div class="col-md-3">
+                                                    <div class="text-center">
+                                                        <h4 class="text-primary mb-1" t-esc="user_stats.get('total_positions', 0)"/>
+                                                        <small class="text-muted">Positions</small>
+                                                    </div>
+                                                </div>
+                                                <div class="col-md-3">
+                                                    <div class="text-center">
+                                                        <h4 class="text-success mb-1">$<t t-esc="'{:,.2f}'.format(user_stats.get('portfolio_value', 0))"/></h4>
+                                                        <small class="text-muted">Portfolio Value</small>
+                                                    </div>
+                                                </div>
+                                                <div class="col-md-3">
+                                                    <div class="text-center">
+                                                        <h4 class="text-info mb-1" t-esc="user_stats.get('total_trades', 0)"/>
+                                                        <small class="text-muted">Total Trades</small>
+                                                    </div>
+                                                </div>
+                                                <div class="col-md-3">
+                                                    <div class="text-center">
+                                                        <h4 t-attf-class="mb-1 #{user_stats.get('total_pnl', 0) >= 0 and 'text-success' or 'text-danger'}">
+                                                            $<t t-esc="'{:,.2f}'.format(user_stats.get('total_pnl', 0))"/>
+                                                        </h4>
+                                                        <small class="text-muted">Unrealized P&amp;L</small>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </t>
+
+                        <!-- Top Performing Securities -->
+                        <div class="row">
+                            <div class="col-12">
+                                <div class="card">
+                                    <div class="card-header">
+                                        <h5 class="card-title mb-0">Listed Securities</h5>
+                                    </div>
+                                    <div class="card-body p-0">
+                                        <div class="table-responsive">
+                                            <table class="table table-hover mb-0">
+                                                <thead class="table-light">
+                                                    <tr>
+                                                        <th>Symbol</th>
+                                                        <th>Company</th>
+                                                        <th>Type</th>
+                                                        <th class="text-end">Total Shares</th>
+                                                        <th class="text-end">Par Value</th>
+                                                    </tr>
+                                                </thead>
+                                                <tbody>
+                                                    <t t-if="top_securities">
+                                                        <t t-foreach="top_securities" t-as="security">
+                                                            <tr>
+                                                                <td>
+                                                                    <strong t-esc="security.symbol"/>
+                                                                </td>
+                                                                <td>
+                                                                    <div>
+                                                                        <strong t-esc="security.name"/>
+                                                                        <br/>
+                                                                        <small class="text-muted" t-esc="security.sector.title() if security.sector else 'N/A'"/>
+                                                                    </div>
+                                                                </td>
+                                                                <td>
+                                                                    <span class="badge badge-secondary" t-esc="security.security_type.title()"/>
+                                                                </td>
+                                                                <td class="text-end">
+                                                                    <t t-esc="'{:,}'.format(int(security.total_shares))"/>
+                                                                </td>
+                                                                <td class="text-end">
+                                                                    $<t t-esc="'{:,.2f}'.format(security.current_price)"/>
+                                                                </td>
+                                                            </tr>
+                                                        </t>
+                                                    </t>
+                                                    <t t-else="">
+                                                        <tr>
+                                                            <td colspan="5" class="text-center py-4 text-muted">
+                                                                <i class="fa fa-info-circle me-2"></i>No securities available
+                                                            </td>
+                                                        </tr>
+                                                    </t>
+                                                </tbody>
+                                            </table>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </t>
+    </template>
+    
 </odoo> 
