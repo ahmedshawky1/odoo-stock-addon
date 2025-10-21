@@ -939,6 +939,122 @@ class StockMarketPortal(CustomerPortal):
         }
         return request.render("stock_market_simulation.market_session_page", values)
 
+    @http.route(['/market/session/details/<int:session_id>'], type='json', auth="public", website=True)
+    def market_session_details(self, session_id, **kw):
+        """Get detailed information about a specific session"""
+        import logging
+        _logger = logging.getLogger(__name__)
+        _logger.info(f"=== SESSION DETAILS ROUTE CALLED for session_id: {session_id} ===")
+        
+        try:
+            # Get the session
+            session = request.env['stock.session'].sudo().browse(session_id)
+            if not session.exists():
+                return {'success': False, 'error': 'Session not found'}
+            
+            # Get session orders
+            orders = request.env['stock.order'].sudo().search([
+                ('session_id', '=', session_id)
+            ], order='create_date desc')
+            
+            # Get session trades
+            trades = request.env['stock.trade'].sudo().search([
+                ('session_id', '=', session_id)
+            ], order='trade_date desc')
+            
+            # Calculate session statistics
+            total_orders = len(orders)
+            total_trades = len(trades)
+            total_volume = sum(trades.mapped('quantity'))
+            total_value = sum(trade.quantity * trade.price for trade in trades)
+            
+            # Top trading securities in this session
+            security_trades = {}
+            for trade in trades:
+                sec_id = trade.security_id.id
+                if sec_id not in security_trades:
+                    security_trades[sec_id] = {
+                        'security': trade.security_id,
+                        'volume': 0,
+                        'value': 0,
+                        'trades': 0
+                    }
+                security_trades[sec_id]['volume'] += trade.quantity
+                security_trades[sec_id]['value'] += trade.quantity * trade.price
+                security_trades[sec_id]['trades'] += 1
+            
+            # Sort by volume
+            top_securities = sorted(security_trades.values(), key=lambda x: x['volume'], reverse=True)[:5]
+            
+            # Order statistics by type
+            order_stats = {}
+            for order in orders:
+                order_type = order.order_type
+                if order_type not in order_stats:
+                    order_stats[order_type] = {'count': 0, 'total_quantity': 0}
+                order_stats[order_type]['count'] += 1
+                order_stats[order_type]['total_quantity'] += order.quantity
+            
+            # Price movements during session
+            price_changes = request.env['stock.price.history'].sudo().search([
+                ('session_id', '=', session_id)
+            ], order='change_date')
+            
+            return {
+                'success': True,
+                'session': {
+                    'id': session.id,
+                    'name': session.name,
+                    'state': session.state,
+                    'actual_start_date': session.actual_start_date.strftime('%Y-%m-%d %H:%M:%S') if session.actual_start_date else None,
+                    'actual_end_date': session.actual_end_date.strftime('%Y-%m-%d %H:%M:%S') if session.actual_end_date else None,
+                    'planned_start_date': session.planned_start_date.strftime('%Y-%m-%d %H:%M:%S') if session.planned_start_date else None,
+                    'planned_end_date': session.planned_end_date.strftime('%Y-%m-%d %H:%M:%S') if session.planned_end_date else None,
+                    'actual_duration': session.actual_duration,
+                    'broker_commission_rate': session.broker_commission_rate,
+                    'price_change_threshold': session.price_change_threshold,
+                    'circuit_breaker_upper': session.circuit_breaker_upper,
+                    'circuit_breaker_lower': session.circuit_breaker_lower,
+                },
+                'statistics': {
+                    'total_orders': total_orders,
+                    'total_trades': total_trades,
+                    'total_volume': total_volume,
+                    'total_value': total_value,
+                    'order_stats': order_stats,
+                },
+                'top_securities': [{
+                    'symbol': sec['security'].symbol,
+                    'name': sec['security'].name,
+                    'volume': sec['volume'],
+                    'value': sec['value'],
+                    'trades': sec['trades'],
+                } for sec in top_securities],
+                'recent_trades': [{
+                    'id': trade.id,
+                    'security_symbol': trade.security_id.symbol,
+                    'security_name': trade.security_id.name,
+                    'quantity': trade.quantity,
+                    'price': trade.price,
+                    'value': trade.quantity * trade.price,
+                    'trade_date': trade.trade_date.strftime('%Y-%m-%d %H:%M:%S'),
+                    'buyer': trade.buyer_id.name,
+                    'seller': trade.seller_id.name,
+                } for trade in trades[:10]],  # Last 10 trades
+                'price_changes': [{
+                    'security_symbol': pc.security_id.symbol,
+                    'old_price': pc.old_price,
+                    'new_price': pc.new_price,
+                    'change_percent': ((pc.new_price - pc.old_price) / pc.old_price * 100) if pc.old_price else 0,
+                    'change_date': pc.change_date.strftime('%Y-%m-%d %H:%M:%S'),
+                    'change_reason': pc.change_reason,
+                } for pc in price_changes[:10]]  # Last 10 price changes
+            }
+            
+        except Exception as e:
+            _logger.error(f"Error in session details for session {session_id}: {str(e)}")
+            return {'success': False, 'error': f'Error loading session details: {str(e)}'}
+
     @http.route(['/market/reports'], type='http', auth="public", website=True)
     def market_reports(self, **kw):
         import logging

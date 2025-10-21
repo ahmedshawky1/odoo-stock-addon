@@ -2829,7 +2829,7 @@
                                                                     </span>
                                                                 </td>
                                                                 <td class="text-end">
-                                                                    <button class="btn btn-sm btn-outline-primary" onclick="alert('Session details will be implemented')">
+                                                                    <button class="btn btn-sm btn-outline-primary session-details-btn" t-att-data-session-id="session.id">
                                                                         <i class="fa fa-eye"></i> View
                                                                     </button>
                                                                 </td>
@@ -2853,6 +2853,257 @@
                     </div>
                 </div>
             </div>
+            
+            <!-- Session Details Modal -->
+            <div class="modal fade" id="sessionDetailsModal" tabindex="-1" aria-labelledby="sessionDetailsModalLabel" aria-hidden="true">
+                <div class="modal-dialog modal-xl">
+                    <div class="modal-content">
+                        <div class="modal-header">
+                            <h5 class="modal-title" id="sessionDetailsModalLabel">Session Details</h5>
+                            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                        </div>
+                        <div class="modal-body">
+                            <div id="sessionDetailsContent">
+                                <div class="text-center py-4">
+                                    <div class="spinner-border" role="status">
+                                        <span class="visually-hidden">Loading...</span>
+                                    </div>
+                                    <p class="mt-2">Loading session details...</p>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="modal-footer">
+                            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Session Details JavaScript -->
+            <script>//<![CDATA[
+                document.addEventListener('DOMContentLoaded', function() {
+                    // Session details modal functionality
+                    const sessionDetailsButtons = document.querySelectorAll('.session-details-btn');
+                    const sessionDetailsModal = document.getElementById('sessionDetailsModal');
+                    const sessionDetailsContent = document.getElementById('sessionDetailsContent');
+                    
+                    sessionDetailsButtons.forEach(button => {
+                        button.addEventListener('click', function() {
+                            const sessionId = this.getAttribute('data-session-id');
+                            showSessionDetails(sessionId);
+                        });
+                    });
+                    
+                    function showSessionDetails(sessionId) {
+                        // Show loading state
+                        sessionDetailsContent.innerHTML = `
+                            <div class="text-center py-4">
+                                <div class="spinner-border" role="status">
+                                    <span class="visually-hidden">Loading...</span>
+                                </div>
+                                <p class="mt-2">Loading session details...</p>
+                            </div>
+                        `;
+                        
+                        // Show modal
+                        try {
+                            if (window.bootstrap && bootstrap.Modal) {
+                                new bootstrap.Modal(sessionDetailsModal).show();
+                            } else if (window.$ && $.fn.modal) {
+                                $(sessionDetailsModal).modal('show');
+                            } else {
+                                sessionDetailsModal.style.display = 'block';
+                                sessionDetailsModal.classList.add('show');
+                            }
+                        } catch (e) {
+                            console.error('Error showing modal:', e);
+                        }
+                        
+                        // Fetch session details
+                        fetch('/market/session/details/' + sessionId, {
+                            method: 'POST',
+                            headers: {
+                                'Content-Type': 'application/json',
+                            },
+                            body: JSON.stringify({
+                                jsonrpc: '2.0',
+                                method: 'call',
+                                params: {}
+                            })
+                        })
+                        .then(response => response.json())
+                        .then(data => {
+                            const result = data.result || data;
+                            if (result.success) {
+                                displaySessionDetails(result);
+                            } else {
+                                sessionDetailsContent.innerHTML = `
+                                    <div class="alert alert-danger">
+                                        <i class="fa fa-exclamation-triangle"></i>
+                                        Error loading session details: ${result.error || 'Unknown error'}
+                                    </div>
+                                `;
+                            }
+                        })
+                        .catch(error => {
+                            console.error('Error:', error);
+                            sessionDetailsContent.innerHTML = `
+                                <div class="alert alert-danger">
+                                    <i class="fa fa-exclamation-triangle"></i>
+                                    Error loading session details: ${error.message}
+                                </div>
+                            `;
+                        });
+                    }
+                    
+                    function displaySessionDetails(data) {
+                        const session = data.session;
+                        const stats = data.statistics;
+                        const topSecurities = data.top_securities;
+                        const recentTrades = data.recent_trades;
+                        const priceChanges = data.price_changes;
+                        
+                        let html = `
+                            <div class="row">
+                                <!-- Session Information -->
+                                <div class="col-md-6">
+                                    <div class="card mb-3">
+                                        <div class="card-header">
+                                            <h6 class="mb-0"><i class="fa fa-info-circle"></i> Session Information</h6>
+                                        </div>
+                                        <div class="card-body">
+                                            <table class="table table-sm">
+                                                <tr><td><strong>Name:</strong></td><td>${session.name}</td></tr>
+                                                <tr><td><strong>Status:</strong></td><td><span class="badge ${session.state === 'open' ? 'bg-success' : session.state === 'closed' ? 'bg-secondary' : 'bg-warning'}">${session.state.charAt(0).toUpperCase() + session.state.slice(1)}</span></td></tr>
+                                                ${session.actual_start_date ? `<tr><td><strong>Started:</strong></td><td>${session.actual_start_date}</td></tr>` : ''}
+                                                ${session.actual_end_date ? `<tr><td><strong>Ended:</strong></td><td>${session.actual_end_date}</td></tr>` : ''}
+                                                ${session.actual_duration ? `<tr><td><strong>Duration:</strong></td><td>${session.actual_duration.toFixed(2)} hours</td></tr>` : ''}
+                                                <tr><td><strong>Commission Rate:</strong></td><td>${session.broker_commission_rate}%</td></tr>
+                                                <tr><td><strong>Price Change Threshold:</strong></td><td>${session.price_change_threshold}%</td></tr>
+                                            </table>
+                                        </div>
+                                    </div>
+                                </div>
+                                
+                                <!-- Session Statistics -->
+                                <div class="col-md-6">
+                                    <div class="card mb-3">
+                                        <div class="card-header">
+                                            <h6 class="mb-0"><i class="fa fa-chart-bar"></i> Trading Statistics</h6>
+                                        </div>
+                                        <div class="card-body">
+                                            <div class="row text-center">
+                                                <div class="col-6">
+                                                    <div class="border-end">
+                                                        <h4 class="text-primary mb-0">${stats.total_orders}</h4>
+                                                        <small class="text-muted">Total Orders</small>
+                                                    </div>
+                                                </div>
+                                                <div class="col-6">
+                                                    <h4 class="text-success mb-0">${stats.total_trades}</h4>
+                                                    <small class="text-muted">Total Trades</small>
+                                                </div>
+                                            </div>
+                                            <hr>
+                                            <div class="row text-center">
+                                                <div class="col-6">
+                                                    <div class="border-end">
+                                                        <h5 class="text-info mb-0">${stats.total_volume.toLocaleString()}</h5>
+                                                        <small class="text-muted">Total Volume</small>
+                                                    </div>
+                                                </div>
+                                                <div class="col-6">
+                                                    <h5 class="text-warning mb-0">$${stats.total_value.toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2})}</h5>
+                                                    <small class="text-muted">Total Value</small>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <!-- Top Trading Securities -->
+                            ${topSecurities.length > 0 ? `
+                            <div class="card mb-3">
+                                <div class="card-header">
+                                    <h6 class="mb-0"><i class="fa fa-trophy"></i> Top Trading Securities</h6>
+                                </div>
+                                <div class="card-body">
+                                    <div class="table-responsive">
+                                        <table class="table table-sm">
+                                            <thead>
+                                                <tr>
+                                                    <th>Symbol</th>
+                                                    <th>Name</th>
+                                                    <th>Volume</th>
+                                                    <th>Value</th>
+                                                    <th>Trades</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody>
+                                                ${topSecurities.map(sec => `
+                                                    <tr>
+                                                        <td><strong>${sec.symbol}</strong></td>
+                                                        <td>${sec.name}</td>
+                                                        <td>${sec.volume.toLocaleString()}</td>
+                                                        <td>$${sec.value.toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2})}</td>
+                                                        <td>${sec.trades}</td>
+                                                    </tr>
+                                                `).join('')}
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                </div>
+                            </div>
+                            ` : ''}
+                            
+                            <!-- Recent Trades -->
+                            ${recentTrades.length > 0 ? `
+                            <div class="card mb-3">
+                                <div class="card-header">
+                                    <h6 class="mb-0"><i class="fa fa-exchange-alt"></i> Recent Trades</h6>
+                                </div>
+                                <div class="card-body">
+                                    <div class="table-responsive">
+                                        <table class="table table-sm">
+                                            <thead>
+                                                <tr>
+                                                    <th>Security</th>
+                                                    <th>Quantity</th>
+                                                    <th>Price</th>
+                                                    <th>Value</th>
+                                                    <th>Date</th>
+                                                    <th>Buyer</th>
+                                                    <th>Seller</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody>
+                                                ${recentTrades.map(trade => `
+                                                    <tr>
+                                                        <td><strong>${trade.security_symbol}</strong><br><small class="text-muted">${trade.security_name}</small></td>
+                                                        <td>${trade.quantity.toLocaleString()}</td>
+                                                        <td>$${trade.price.toFixed(2)}</td>
+                                                        <td>$${trade.value.toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2})}</td>
+                                                        <td><small>${trade.trade_date}</small></td>
+                                                        <td><small>${trade.buyer}</small></td>
+                                                        <td><small>${trade.seller}</small></td>
+                                                    </tr>
+                                                `).join('')}
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                </div>
+                            </div>
+                            ` : ''}
+                        `;
+                        
+                        sessionDetailsContent.innerHTML = html;
+                        
+                        // Update modal title with session name
+                        document.getElementById('sessionDetailsModalLabel').textContent = `Session Details - ${session.name}`;
+                    }
+                });
+            //]]></script>
         </t>
     </template>
     
