@@ -23,7 +23,8 @@ class StockBondOrder(models.Model):
         'res.users', string='Trader',
         required=True, index=True,
         default=lambda self: self.env.user,
-        readonly="status != 'draft'",
+        states={'draft': [('readonly', False)]},
+        readonly=True,
         tracking=True
     )
     
@@ -40,14 +41,16 @@ class StockBondOrder(models.Model):
         'stock.session', string='Trading Session',
         required=True, index=True,
         domain=[('state', '=', 'open')],
-        readonly="status != 'draft'",
+        states={'draft': [('readonly', False)]},
+        readonly=True,
         tracking=True
     )
     
     bond_id = fields.Many2one(
         'stock.bond', string='Bond',
         required=True, index=True,
-        readonly="status != 'draft'",
+        states={'draft': [('readonly', False)]},
+        readonly=True,
         tracking=True
     )
     
@@ -56,13 +59,13 @@ class StockBondOrder(models.Model):
         ('market', 'Market'),
         ('limit', 'Limit')
     ], string='Order Type', required=True, default='limit', tracking=True,
-       readonly="status != 'draft'")
+       states={'draft': [('readonly', False)]}, readonly=True)
     
     side = fields.Selection([
         ('buy', 'Buy'),
         ('sell', 'Sell')
     ], string='Side', required=True, tracking=True,
-       readonly="status != 'draft'")
+       states={'draft': [('readonly', False)]}, readonly=True)
     
     # BID/ASK display fields (computed from side for User Stories compatibility)
     order_side_display = fields.Selection([
@@ -76,14 +79,16 @@ class StockBondOrder(models.Model):
         digits=(16, 4),
         required=True,
         tracking=True,
-        readonly="status != 'draft'"
+        states={'draft': [('readonly', False)]},
+        readonly=True
     )
     
     quantity = fields.Integer(
         string='Quantity',
         required=True,
         tracking=True,
-        readonly="status != 'draft'"
+        states={'draft': [('readonly', False)]},
+        readonly=True
     )
     
     filled_quantity = fields.Integer(

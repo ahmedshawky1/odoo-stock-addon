@@ -31,12 +31,12 @@
                             <field name="loan_type"/>
                             <field name="amount"/>
                             <field name="interest_rate" widget="percentage" options="{'factor': 1.0}"/>
-                            <field name="term_months"/>
+                            <field name="term_sessions"/>
                             <field name="emi_amount"/>
                         </group>
-                        <group string="Dates">
-                            <field name="disbursement_date"/>
-                            <field name="maturity_date"/>
+                        <group string="Sessions">
+                            <field name="disbursement_session_id"/>
+                            <field name="maturity_session_id"/>
                             <field name="next_payment_date" invisible="status != 'active'"/>
                         </group>
                     </group>
@@ -83,8 +83,8 @@
                 <field name="loan_type"/>
                 <field name="amount"/>
                 <field name="interest_rate" widget="percentage" options="{'factor': 1.0}"/>
-                <field name="disbursement_date"/>
-                <field name="maturity_date"/>
+                <field name="disbursement_session_id"/>
+                <field name="maturity_session_id"/>
                 <field name="status" decoration-info="status == 'draft'" decoration-success="status == 'paid'" decoration-warning="status == 'active'" decoration-danger="status == 'defaulted'"/>
             </list>
         </field>

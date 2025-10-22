@@ -17,14 +17,12 @@
             <field name="comment">Investors can place orders and view their portfolio</field>
         </record>
         
-        <!-- Temporarily disabled broker group until field references are resolved
         <record id="group_stock_broker" model="res.groups">
             <field name="name">Broker</field>
             <field name="category_id" ref="module_category_stock_market"/>
             <field name="implied_ids" eval="[(4, ref('base.group_portal'))]"/>
             <field name="comment">Brokers can view client orders and earn commissions</field>
         </record>
-        -->
         
         <record id="group_stock_banker" model="res.groups">
             <field name="name">Banker</field>

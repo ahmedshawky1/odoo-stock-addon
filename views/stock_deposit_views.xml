@@ -13,7 +13,7 @@
                     <button name="action_withdraw" type="object" string="Withdraw" 
                             invisible="(status != 'active') and (status != 'matured')" class="btn-warning" confirm="Are you sure you want to withdraw this deposit?"/>
                     <button name="action_mature" type="object" string="Mark as Matured" 
-                            invisible="status != 'active' or days_to_maturity > 0" class="btn-info"/>
+                            invisible="status != 'active' or sessions_to_maturity > 0" class="btn-info"/>
                     <button name="action_cancel" type="object" string="Cancel" 
                             invisible="status != 'draft'"/>
                     <field name="status" widget="statusbar" statusbar_visible="draft,active,matured,withdrawn"/>
@@ -33,12 +33,12 @@
                             <field name="deposit_type"/>
                             <field name="amount"/>
                             <field name="interest_rate" widget="percentage" options="{'factor': 1.0}"/>
-                            <field name="term_months"/>
+                            <field name="term_sessions"/>
                         </group>
-                        <group string="Dates">
-                            <field name="deposit_date"/>
-                            <field name="maturity_date"/>
-                            <field name="days_to_maturity" invisible="status != 'active'"/>
+                        <group string="Sessions">
+                            <field name="deposit_session_id"/>
+                            <field name="maturity_session_id"/>
+                            <field name="sessions_to_maturity" invisible="status != 'active'"/>
                         </group>
                     </group>
                     <group>
@@ -49,7 +49,6 @@
                         </group>
                         <group string="Withdrawal">
                             <field name="early_withdrawal_penalty" widget="percentage" options="{'factor': 1.0}" invisible="status in ['withdrawn', 'cancelled']"/>
-                            <field name="withdrawal_date" invisible="status != 'withdrawn'"/>
                             <field name="withdrawal_amount"/>
                         </group>
                     </group>
@@ -72,8 +71,8 @@
                 <field name="amount"/>
                 <field name="interest_rate" widget="percentage" options="{'factor': 1.0}"/>
                 <field name="current_value"/>
-                <field name="deposit_date"/>
-                <field name="maturity_date"/>
+                <field name="deposit_session_id"/>
+                <field name="maturity_session_id"/>
                 <field name="status"/>
             </list>
         </field>

@@ -26,7 +26,8 @@ class StockLoan(models.Model):
         'res.users',
         string='Borrower',
         required=True,
-        readonly="status != 'draft'",
+        states={'draft': [('readonly', False)]},
+        readonly=True,
         domain=[('user_type', '=', 'investor')],
         tracking=True
     )
@@ -35,7 +36,8 @@ class StockLoan(models.Model):
         'res.users',
         string='Lender (Bank)',
         required=True,
-        readonly="status != 'draft'",
+        states={'draft': [('readonly', False)]},
+        readonly=True,
         domain=[('user_type', '=', 'banker')],
         tracking=True
     )
@@ -51,7 +53,8 @@ class StockLoan(models.Model):
         string='Loan Amount',
         digits='Product Price',
         required=True,
-        readonly="status != 'draft'",
+        states={'draft': [('readonly', False)]},
+        readonly=True,
         tracking=True
     )
     
@@ -59,16 +62,18 @@ class StockLoan(models.Model):
         string='Interest Rate (%)',
         digits=(16, 2),
         required=True,
-        readonly="status != 'draft'",
+        states={'draft': [('readonly', False)]},
+        readonly=True,
         help='Annual interest rate',
         tracking=True
     )
     
-    term_months = fields.Integer(
-        string='Term (Months)',
+    term_sessions = fields.Integer(
+        string='Term (Sessions)',
         required=True,
-        readonly="status != 'draft'",
-        help='Loan term in months',
+        states={'draft': [('readonly', False)]},
+        readonly=True,
+        help='Loan term in trading sessions',
         tracking=True
     )
     
@@ -76,13 +81,15 @@ class StockLoan(models.Model):
     collateral_security_id = fields.Many2one(
         'stock.security',
         string='Collateral Security',
-        readonly="status != 'draft'",
+        states={'draft': [('readonly', False)]},
+        readonly=True,
         help='Security pledged as collateral'
     )
     
     collateral_quantity = fields.Integer(
         string='Collateral Quantity',
-        readonly="status != 'draft'",
+        states={'draft': [('readonly', False)]},
+        readonly=True,
         help='Number of shares pledged'
     )
     
@@ -101,17 +108,21 @@ class StockLoan(models.Model):
     )
     
     # Dates
-    disbursement_date = fields.Date(
-        string='Disbursement Date',
+    disbursement_session_id = fields.Many2one(
+        'stock.session',
+        string='Disbursement Session',
         readonly=True,
-        tracking=True
+        tracking=True,
+        help='Session when loan was disbursed'
     )
     
-    maturity_date = fields.Date(
-        string='Maturity Date',
-        compute='_compute_maturity_date',
+    maturity_session_id = fields.Many2one(
+        'stock.session',
+        string='Maturity Session',
+        compute='_compute_maturity_session',
         store=True,
-        tracking=True
+        tracking=True,
+        help='Session when loan matures'
     )
     
     # Status
@@ -217,26 +228,42 @@ class StockLoan(models.Model):
             else:
                 loan.ltv_ratio = 0.0
     
-    @api.depends('disbursement_date', 'term_months')
-    def _compute_maturity_date(self):
+    @api.depends('disbursement_session_id', 'term_sessions')
+    def _compute_maturity_session(self):
         for loan in self:
-            if loan.disbursement_date and loan.term_months:
-                loan.maturity_date = (
-                    loan.disbursement_date + 
-                    timedelta(days=loan.term_months * 30)
-                )
+            if loan.disbursement_session_id and loan.term_sessions:
+                # Find the session that is term_sessions after the disbursement session
+                all_sessions = self.env['stock.session'].search([
+                    ('session_number', '>=', loan.disbursement_session_id.session_number)
+                ], order='session_number')
+                
+                if len(all_sessions) >= loan.term_sessions:
+                    loan.maturity_session_id = all_sessions[loan.term_sessions - 1]
+                else:
+                    loan.maturity_session_id = False
             else:
-                loan.maturity_date = False
+                loan.maturity_session_id = False
     
-    @api.depends('principal_outstanding', 'interest_rate', 'disbursement_date', 'status', 'penalty_amount')
+    @api.depends('principal_outstanding', 'interest_rate', 'disbursement_session_id', 'status', 'penalty_amount')
     def _compute_interest(self):
         for loan in self:
-            if loan.status == 'active' and loan.disbursement_date:
-                days = (fields.Date.today() - loan.disbursement_date).days
+            if loan.status == 'active' and loan.disbursement_session_id:
+                # Calculate sessions elapsed
+                current_session = self.env['stock.session'].search([('state', '=', 'open')], limit=1)
+                if not current_session:
+                    current_session = self.env['stock.session'].search([], order='session_number desc', limit=1)
+                
+                if current_session:
+                    sessions_elapsed = max(0, current_session.session_number - loan.disbursement_session_id.session_number + 1)
+                else:
+                    sessions_elapsed = 0
+                # Session-based interest calculation
+                sessions_per_year = 12
+                session_interest_rate = loan.interest_rate / sessions_per_year
                 loan.interest_accrued = (
                     loan.principal_outstanding * 
-                    loan.interest_rate * days
-                ) / (365 * 100)
+                    session_interest_rate * sessions_elapsed
+                ) / 100
                 loan.total_outstanding = (
                     loan.principal_outstanding + 
                     loan.interest_accrued +
@@ -246,13 +273,15 @@ class StockLoan(models.Model):
                 loan.interest_accrued = 0.0
                 loan.total_outstanding = loan.principal_outstanding + loan.penalty_amount
     
-    @api.depends('amount', 'interest_rate', 'term_months')
+    @api.depends('amount', 'interest_rate', 'term_sessions')
     def _compute_emi(self):
         for loan in self:
-            if loan.amount > 0 and loan.interest_rate > 0 and loan.term_months > 0:
-                # EMI calculation using reducing balance method
-                r = loan.interest_rate / (12 * 100)  # Monthly interest rate
-                n = loan.term_months
+            if loan.amount > 0 and loan.interest_rate > 0 and loan.term_sessions > 0:
+                # EMI calculation using reducing balance method (session-based)
+                # Convert annual rate to per-session rate (assuming ~12 trading sessions per year)
+                sessions_per_year = 12
+                r = loan.interest_rate / (sessions_per_year * 100)  # Session interest rate
+                n = loan.term_sessions
                 
                 if r > 0:
                     emi = loan.amount * r * ((1 + r) ** n) / (((1 + r) ** n) - 1)
@@ -268,15 +297,24 @@ class StockLoan(models.Model):
         for loan in self:
             loan.total_paid = sum(loan.payment_ids.mapped('amount'))
     
-    @api.depends('payment_ids.payment_date', 'disbursement_date', 'status')
+    @api.depends('payment_ids.payment_session_id', 'disbursement_session_id', 'status')
     def _compute_next_payment(self):
         for loan in self:
-            if loan.status == 'active' and loan.disbursement_date:
-                last_payment = loan.payment_ids.sorted('payment_date', reverse=True)[:1]
-                if last_payment:
-                    loan.next_payment_date = last_payment.payment_date + timedelta(days=30)
+            if loan.status == 'active' and loan.disbursement_session_id:
+                # For session-based loans, next payment is due next session
+                last_payment = loan.payment_ids.sorted('payment_session_id', reverse=True)[:1]
+                if last_payment and last_payment.payment_session_id:
+                    # Find next session after last payment
+                    next_session = self.env['stock.session'].search([
+                        ('session_number', '>', last_payment.payment_session_id.session_number)
+                    ], limit=1, order='session_number asc')
+                    loan.next_payment_date = next_session.date if next_session else False
                 else:
-                    loan.next_payment_date = loan.disbursement_date + timedelta(days=30)
+                    # First payment due next session after disbursement
+                    next_session = self.env['stock.session'].search([
+                        ('session_number', '>', loan.disbursement_session_id.session_number)
+                    ], limit=1, order='session_number asc')
+                    loan.next_payment_date = next_session.date if next_session else False
             else:
                 loan.next_payment_date = False
     
@@ -323,12 +361,17 @@ class StockLoan(models.Model):
             if loan.status != 'approved':
                 raise UserError("Only approved loans can be disbursed.")
             
+            # Use sudo to ensure proper access for fund transfers
+            loan_sudo = loan.sudo()
+            banker_sudo = loan_sudo.banker_id.sudo()
+            user_sudo = loan_sudo.user_id.sudo()
+            
             # Check bank has sufficient funds
-            if loan.banker_id.cash_balance < loan.amount:
+            if banker_sudo.cash_balance < loan_sudo.amount:
                 raise ValidationError(
                     f"Bank has insufficient funds. "
-                    f"Available: {loan.banker_id.cash_balance:.2f}, "
-                    f"Required: {loan.amount:.2f}"
+                    f"Available: {banker_sudo.cash_balance:.2f}, "
+                    f"Required: {loan_sudo.amount:.2f}"
                 )
             
             # Get active session
@@ -337,24 +380,23 @@ class StockLoan(models.Model):
             ], limit=1)
             
             # Block collateral if secured loan
-            if loan.loan_type in ['margin', 'secured']:
+            if loan_sudo.loan_type in ['margin', 'secured']:
                 position = self.env['stock.position'].search([
-                    ('user_id', '=', loan.user_id.id),
-                    ('security_id', '=', loan.collateral_security_id.id)
+                    ('user_id', '=', loan_sudo.user_id.id),
+                    ('security_id', '=', loan_sudo.collateral_security_id.id)
                 ], limit=1)
                 
                 if position:
-                    position.block_shares(loan.collateral_quantity)
+                    position.block_shares(loan_sudo.collateral_quantity)
             
-            # Transfer funds
-            loan.banker_id.cash_balance -= loan.amount
-            loan.user_id.cash_balance += loan.amount
+            # Transfer funds with sudo privileges
+            banker_sudo.write({'cash_balance': banker_sudo.cash_balance - loan_sudo.amount})
+            user_sudo.write({'cash_balance': user_sudo.cash_balance + loan_sudo.amount})
             
-            loan.write({
+            loan_sudo.write({
                 'status': 'active',
-                'disbursement_date': fields.Date.today(),
-                'principal_outstanding': loan.amount,
-                'session_id': active_session.id if active_session else False
+                'disbursement_session_id': active_session.id,
+                'principal_outstanding': loan_sudo.amount
             })
             
             # Set margin call price using configuration
@@ -542,18 +584,23 @@ class StockLoan(models.Model):
             return
         
         try:
-            # Calculate accrued interest
-            days_elapsed = (fields.Date.today() - self.disbursement_date).days
-            if days_elapsed > 0:
-                interest = (self.amount * self.interest_rate * days_elapsed) / (365 * 100)
-                new_outstanding = self.outstanding_balance + interest
-                
-                self.write({
-                    'outstanding_balance': new_outstanding,
-                    'total_interest': self.total_interest + interest,
-                })
-                
-                _logger.info(f"Loan {self.name}: Added interest {interest:.2f}, new outstanding {new_outstanding:.2f}")
+            # Calculate accrued interest (session-based)
+            if self.disbursement_session_id:
+                current_session = self.env['stock.session'].search([('status', '=', 'active')], limit=1)
+                if current_session and current_session.session_number > self.disbursement_session_id.session_number:
+                    sessions_elapsed = current_session.session_number - self.disbursement_session_id.session_number
+                    if sessions_elapsed > 0:
+                        # Interest per session = (annual_rate / 12 sessions per year)
+                        session_interest_rate = self.interest_rate / 12
+                        interest = (self.amount * session_interest_rate * sessions_elapsed) / 100
+                        new_outstanding = self.outstanding_balance + interest
+                        
+                        self.write({
+                            'outstanding_balance': new_outstanding,
+                            'total_interest': self.total_interest + interest,
+                        })
+                        
+                        _logger.info(f"Loan {self.name}: Added {sessions_elapsed} sessions interest {interest:.2f}, new outstanding {new_outstanding:.2f}")
         except Exception as e:
             _logger.error(f"Error calculating interest for loan {self.name}: {str(e)}")
             raise
@@ -562,13 +609,20 @@ class StockLoan(models.Model):
 class StockLoanPayment(models.Model):
     _name = 'stock.loan.payment'
     _description = 'Loan Payment'
-    _order = 'payment_date desc'
+    _order = 'payment_session_id desc, payment_date desc'
     
     loan_id = fields.Many2one(
         'stock.loan',
         string='Loan',
         required=True,
         ondelete='cascade'
+    )
+    
+    payment_session_id = fields.Many2one(
+        'stock.session',
+        string='Payment Session',
+        required=True,
+        help='Session when payment was made'
     )
     
     payment_date = fields.Date(

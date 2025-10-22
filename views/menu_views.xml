@@ -11,62 +11,72 @@
     <menuitem id="menu_stock_trading"
               name="Trading"
               parent="menu_stock_market_root"
-              sequence="10"/>
+              sequence="10"
+              groups="group_stock_investor,group_stock_broker,group_stock_admin,base.group_system"/>
     
     <menuitem id="menu_stock_orders"
               name="Orders"
               parent="menu_stock_trading"
               action="action_stock_order"
-              sequence="10"/>
+              sequence="10"
+              groups="group_stock_investor,group_stock_broker,group_stock_admin,base.group_system"/>
     
     <menuitem id="menu_stock_trades"
               name="Trades"
               parent="menu_stock_trading"
               action="action_stock_trade"
-              sequence="20"/>
+              sequence="20"
+              groups="group_stock_investor,group_stock_broker,group_stock_admin,base.group_system"/>
     
     <menuitem id="menu_stock_positions"
               name="Positions"
               parent="menu_stock_trading"
               action="action_stock_position"
-              sequence="30"/>
+              sequence="30"
+              groups="group_stock_investor,group_stock_broker,group_stock_admin,base.group_system"/>
     
     <menuitem id="menu_stock_order_book"
               name="Order Book"
               parent="menu_stock_trading"
               action="action_stock_order_book"
-              sequence="40"/>
+              sequence="40"
+              groups="group_stock_investor,group_stock_broker,group_stock_admin,base.group_system"/>
     
     <!-- Market Data Menu -->
     <menuitem id="menu_stock_market_data"
               name="Market Data"
               parent="menu_stock_market_root"
-              sequence="20"/>
+              sequence="20"
+              groups="group_stock_investor,group_stock_broker,group_stock_banker,group_stock_admin,base.group_system"/>
     
     <menuitem id="menu_stock_securities"
               name="Securities"
               parent="menu_stock_market_data"
               action="action_stock_security"
-              sequence="10"/>
+              sequence="10"
+              groups="group_stock_investor,group_stock_broker,group_stock_banker,group_stock_admin,base.group_system"/>
     
     <menuitem id="menu_stock_price_history"
               name="Price History"
               parent="menu_stock_market_data"
               action="action_stock_price_history"
-              sequence="20"/>
+              sequence="20"
+              groups="group_stock_investor,group_stock_broker,group_stock_banker,group_stock_admin,base.group_system"/>
               
     <menuitem id="menu_stock_bonds"
               name="Bonds"
               parent="menu_stock_market_data"
               action="action_stock_bond"
-              sequence="30"/>
+              sequence="30"
+              groups="group_stock_investor,group_stock_broker,group_stock_banker,group_stock_admin,base.group_system"/>
     
     <!-- Bond Trading -->
     <menuitem id="menu_bond_orders"
               name="Bond Orders"
               parent="menu_stock_trading"
               action="action_stock_bond_order"
-              sequence="50"/>
+              sequence="50"
+              groups="group_stock_investor,group_stock_broker,group_stock_admin,base.group_system"/>
     
     <!-- News -->
     <menuitem id="menu_stock_news"
@@ -81,19 +91,21 @@
               name="Banking"
               parent="menu_stock_market_root"
               sequence="30"
-              groups="group_stock_investor,group_stock_banker"/>
+              groups="group_stock_banker,group_stock_admin,base.group_system"/>
     
     <menuitem id="menu_stock_deposits"
               name="Deposits"
               parent="menu_stock_banking"
               action="action_stock_deposit"
-              sequence="10"/>
+              sequence="10"
+              groups="group_stock_banker,group_stock_admin,base.group_system"/>
     
     <menuitem id="menu_stock_loans"
               name="Loans"
               parent="menu_stock_banking"
               action="action_stock_loan"
-              sequence="20"/>
+              sequence="20"
+              groups="group_stock_banker,group_stock_admin,base.group_system"/>
     
     <!-- Administration Menu -->
     <menuitem id="menu_stock_admin"
@@ -106,19 +118,22 @@
               name="Trading Sessions"
               parent="menu_stock_admin"
               action="action_stock_session"
-              sequence="10"/>
+              sequence="10"
+              groups="group_stock_admin,base.group_system"/>
     
     <menuitem id="menu_stock_users"
               name="Market Users"
               parent="menu_stock_admin"
               action="action_stock_market_users"
-              sequence="20"/>
+              sequence="20"
+              groups="group_stock_admin,base.group_system"/>
               
     <menuitem id="menu_stock_user_blocks"
               name="User Blocks"
               parent="menu_stock_admin"
               action="action_stock_user_block"
-              sequence="30"/>
+              sequence="30"
+              groups="group_stock_admin,base.group_system"/>
     
     <!-- Reports Menu - Commented out until report actions are implemented
     <menuitem id="menu_stock_reports"

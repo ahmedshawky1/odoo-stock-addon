@@ -17,6 +17,13 @@ class StockMarketPortal(CustomerPortal):
     
     _items_per_page = 20
 
+    def _get_session_context(self):
+        """Get session context data for navbar display"""
+        active_session = request.env['stock.session'].sudo().search([('state', '=', 'open')], limit=1)
+        return {
+            'active_session': active_session,
+        }
+
     def _prepare_home_portal_values(self, counters):
         values = super()._prepare_home_portal_values(counters)
         user = request.env.user
@@ -104,6 +111,7 @@ class StockMarketPortal(CustomerPortal):
             'default_url': '/my/portfolio',
             'sortby': sortby,
             'searchbar_sortings': searchbar_sortings,
+            **self._get_session_context(),
         })
         
         return request.render("stock_market_simulation.portal_my_portfolio", values)
@@ -177,6 +185,7 @@ class StockMarketPortal(CustomerPortal):
             'searchbar_sortings': searchbar_sortings,
             'filterby': filterby,
             'searchbar_filters': OrderedDict(sorted(searchbar_filters.items())),
+            **self._get_session_context(),
         })
         
         return request.render("stock_market_simulation.portal_my_orders", values)
@@ -561,11 +570,13 @@ class StockMarketPortal(CustomerPortal):
             'portfolio_value': user.portfolio_value or 0.0,
             'total_assets': user.total_assets or 0.0,
             'profit_loss': user.profit_loss or 0.0,
-            'profit_loss_percentage': user.profit_loss_percentage or 0.0,            'active_session': active_session,
+            'profit_loss_percentage': user.profit_loss_percentage or 0.0,
+            'active_session': active_session,
             'securities': securities,
             'top_gainers': gainers,
             'top_losers': losers,
             'page_name': 'market_home',
+            **self._get_session_context(),
         }
         
         return request.render("stock_market_simulation.market_portal_layout", values)
@@ -716,7 +727,9 @@ class StockMarketPortal(CustomerPortal):
             'ipo_securities': ipo_securities,
             'clients': clients,
             'client_positions': client_positions,
-            'active_session': active_session,            'page_name': 'trading',
+            'active_session': active_session,
+            'page_name': 'trading',
+            **self._get_session_context(),
         }
         
         return request.render("stock_market_simulation.market_trading_view", values)
@@ -892,6 +905,7 @@ class StockMarketPortal(CustomerPortal):
             'user': user,
             'page_title': 'Securities',
             'securities_data': securities_data,
+            **self._get_session_context(),
         }
         _logger.info(f"Rendering template with {len(securities_data)} securities")
         return request.render("stock_market_simulation.market_securities_page", values)
@@ -1126,7 +1140,7 @@ class StockMarketPortal(CustomerPortal):
             is_system_admin = request.env.user.has_group('base.group_system')
         except Exception:
             is_system_admin = False
-        if user.user_type not in ['admin', 'banker'] and not is_system_admin:
+        if user.user_type not in ['admin', 'superadmin'] and not is_system_admin:
             return request.redirect('/market')
         securities = request.env['stock.security'].search([])
         active_session = request.env['stock.session'].search([('state', '=', 'open')], limit=1)
@@ -1147,7 +1161,7 @@ class StockMarketPortal(CustomerPortal):
                 is_system_admin = request.env.user.has_group('base.group_system')
             except Exception:
                 is_system_admin = False
-            if user.user_type not in ['admin', 'banker'] and not is_system_admin:
+            if user.user_type not in ['admin', 'superadmin'] and not is_system_admin:
                 return {'success': False, 'error': 'Access denied'}
             if not security_id or not ipo_price:
                 return {'success': False, 'error': 'Missing security_id or ipo_price'}
@@ -1202,7 +1216,7 @@ class StockMarketPortal(CustomerPortal):
                 is_system_admin = request.env.user.has_group('base.group_system')
             except Exception:
                 is_system_admin = False
-            if current.user_type not in ['admin', 'banker'] and not is_system_admin:
+            if current.user_type not in ['admin', 'superadmin'] and not is_system_admin:
                 return {'success': False, 'error': 'Access denied'}
             if not user_id or not security_id or not quantity or not price:
                 return {'success': False, 'error': 'Missing required fields'}
@@ -1277,7 +1291,7 @@ class StockMarketPortal(CustomerPortal):
             return {'success': False, 'error': str(e)}
 
     @http.route(['/market/deposits'], type='http', auth="user", website=True)
-    def market_deposits(self, **kw):
+    def market_deposits(self, page=1, sortby=None, filterby=None, **kw):
         user = request.env.user
         # Investors, bankers, and admins can view deposits page
         try:
@@ -1286,14 +1300,84 @@ class StockMarketPortal(CustomerPortal):
             is_system_admin = False
         if user.user_type not in ['investor', 'banker', 'admin'] and not is_system_admin:
             return request.redirect('/market')
+        
+        # Build domain based on user type
+        domain = []
+        if user.user_type == 'investor':
+            # Investors see only their own deposits
+            domain = [('user_id', '=', user.id)]
+        elif user.user_type == 'banker':
+            # Bankers see deposits they manage
+            domain = [('banker_id', '=', user.id)]
+        elif user.user_type == 'admin' or is_system_admin:
+            # Admins see all deposits
+            domain = []
+        
+        # Search filters
+        searchbar_filters = {
+            'all': {'label': 'All', 'domain': []},
+            'draft': {'label': 'Draft', 'domain': [('status', '=', 'draft')]},
+            'active': {'label': 'Active', 'domain': [('status', '=', 'active')]},
+            'matured': {'label': 'Matured', 'domain': [('status', '=', 'matured')]},
+            'withdrawn': {'label': 'Withdrawn', 'domain': [('status', '=', 'withdrawn')]},
+        }
+        
+        searchbar_sortings = {
+            'date': {'label': 'Date', 'order': 'create_date desc'},
+            'amount': {'label': 'Amount', 'order': 'amount desc'},
+            'interest': {'label': 'Interest Rate', 'order': 'interest_rate desc'},
+            'maturity': {'label': 'Maturity', 'order': 'maturity_session_id'},
+        }
+        
+        # Apply filters
+        if not filterby:
+            filterby = 'all'
+        if filterby in searchbar_filters:
+            domain += searchbar_filters[filterby]['domain']
+        
+        # Apply sorting
+        if not sortby:
+            sortby = 'date'
+        order = searchbar_sortings.get(sortby, searchbar_sortings['date'])['order']
+        
+        # Get deposits
+        Deposit = request.env['stock.deposit']
+        deposits = Deposit.search(domain, order=order)
+        
+        # Get summary statistics
+        total_deposits = sum(d.amount for d in deposits)
+        active_deposits = deposits.filtered(lambda d: d.status == 'active')
+        total_active_value = sum(d.current_value for d in active_deposits)
+        total_interest_earned = sum(d.accrued_interest for d in active_deposits)
+        
+        # Get all bankers for new deposit form
+        bankers = request.env['res.users'].search([('user_type', '=', 'banker'), ('active', '=', True)])
+        
+        # Get all investors for banker/admin forms
+        investors = []
+        if user.user_type in ['banker', 'admin'] or is_system_admin:
+            investors = request.env['res.users'].search([('user_type', '=', 'investor'), ('active', '=', True)])
+        
         values = {
             'user': user,
             'page_title': 'Deposits',
+            'deposits': deposits,
+            'bankers': bankers,
+            'investors': investors,
+            'total_deposits': total_deposits,
+            'total_active_value': total_active_value,
+            'total_interest_earned': total_interest_earned,
+            'active_count': len(active_deposits),
+            'sortby': sortby,
+            'filterby': filterby,
+            'searchbar_sortings': searchbar_sortings,
+            'searchbar_filters': searchbar_filters,
+            **self._get_session_context(),
         }
-        return request.render("stock_market_simulation.market_portal_layout", values)
+        return request.render("stock_market_simulation.market_deposits_page", values)
 
     @http.route(['/market/loans'], type='http', auth="user", website=True)
-    def market_loans(self, **kw):
+    def market_loans(self, page=1, sortby=None, filterby=None, **kw):
         user = request.env.user
         try:
             is_system_admin = request.env.user.has_group('base.group_system')
@@ -1301,11 +1385,444 @@ class StockMarketPortal(CustomerPortal):
             is_system_admin = False
         if user.user_type not in ['investor', 'banker', 'admin'] and not is_system_admin:
             return request.redirect('/market')
+        
+        # Build domain based on user type
+        domain = []
+        if user.user_type == 'investor':
+            # Investors see only their own loans
+            domain = [('user_id', '=', user.id)]
+        elif user.user_type == 'banker':
+            # Bankers see loans they manage
+            domain = [('banker_id', '=', user.id)]
+        elif user.user_type == 'admin' or is_system_admin:
+            # Admins see all loans
+            domain = []
+        
+        # Search filters
+        searchbar_filters = {
+            'all': {'label': 'All', 'domain': []},
+            'draft': {'label': 'Draft', 'domain': [('status', '=', 'draft')]},
+            'approved': {'label': 'Approved', 'domain': [('status', '=', 'approved')]},
+            'active': {'label': 'Active', 'domain': [('status', '=', 'active')]},
+            'paid': {'label': 'Paid', 'domain': [('status', '=', 'paid')]},
+            'defaulted': {'label': 'Defaulted', 'domain': [('status', '=', 'defaulted')]},
+        }
+        
+        searchbar_sortings = {
+            'date': {'label': 'Date', 'order': 'create_date desc'},
+            'amount': {'label': 'Amount', 'order': 'amount desc'},
+            'interest': {'label': 'Interest Rate', 'order': 'interest_rate desc'},
+            'outstanding': {'label': 'Outstanding', 'order': 'principal_outstanding desc'},
+        }
+        
+        # Apply filters
+        if not filterby:
+            filterby = 'all'
+        if filterby in searchbar_filters:
+            domain += searchbar_filters[filterby]['domain']
+        
+        # Apply sorting
+        if not sortby:
+            sortby = 'date'
+        order = searchbar_sortings.get(sortby, searchbar_sortings['date'])['order']
+        
+        # Get loans
+        Loan = request.env['stock.loan']
+        loans = Loan.search(domain, order=order)
+        
+        # Get summary statistics
+        total_loans = sum(l.amount for l in loans)
+        active_loans = loans.filtered(lambda l: l.status == 'active')
+        total_outstanding = sum(l.total_outstanding for l in active_loans)
+        total_paid = sum(l.total_paid for l in loans)
+        
+        # Get all bankers for new loan form
+        bankers = request.env['res.users'].search([('user_type', '=', 'banker'), ('active', '=', True)])
+        
+        # Get all investors for banker/admin forms
+        investors = []
+        if user.user_type in ['banker', 'admin'] or is_system_admin:
+            investors = request.env['res.users'].search([('user_type', '=', 'investor'), ('active', '=', True)])
+        
+        # Get securities for collateral
+        securities = request.env['stock.security'].search([('active', '=', True)])
+        
         values = {
             'user': user,
             'page_title': 'Loans',
+            'loans': loans,
+            'bankers': bankers,
+            'investors': investors,
+            'securities': securities,
+            'total_loans': total_loans,
+            'total_outstanding': total_outstanding,
+            'total_paid': total_paid,
+            'active_count': len(active_loans),
+            'sortby': sortby,
+            'filterby': filterby,
+            'searchbar_sortings': searchbar_sortings,
+            'searchbar_filters': searchbar_filters,
         }
-        return request.render("stock_market_simulation.market_portal_layout", values)
+        return request.render("stock_market_simulation.market_loans_page", values)
+
+    # Deposits API endpoints
+    @http.route(['/market/deposits/create'], type='json', auth="user", methods=['POST'])
+    def create_deposit_api(self, **kw):
+        """Create a new deposit"""
+        try:
+            user = request.env.user
+            
+            # Only bankers and admins can create deposits
+            if user.user_type not in ['banker', 'admin']:
+                return {'success': False, 'error': 'Access denied. Only bankers and admins can create deposits.'}
+            
+            # Validate required fields
+            required_fields = ['investor_id', 'deposit_type', 'amount', 'interest_rate']
+            for field in required_fields:
+                if not kw.get(field):
+                    return {'success': False, 'error': f'Missing required field: {field}'}
+            
+            # Get investor
+            investor = request.env['res.users'].sudo().browse(int(kw['investor_id']))
+            if not investor.exists() or investor.user_type != 'investor':
+                return {'success': False, 'error': 'Invalid investor selected'}
+            
+            # Determine banker
+            banker_id = int(kw.get('banker_id')) if kw.get('banker_id') else user.id
+            if user.user_type == 'admin' and kw.get('banker_id'):
+                banker = request.env['res.users'].sudo().browse(banker_id)
+                if not banker.exists() or banker.user_type != 'banker':
+                    return {'success': False, 'error': 'Invalid banker selected'}
+            else:
+                banker_id = user.id if user.user_type == 'banker' else None
+                if not banker_id:
+                    # Auto-assign to first available banker
+                    banker = request.env['res.users'].sudo().search([('user_type', '=', 'banker')], limit=1)
+                    if banker:
+                        banker_id = banker.id
+                    else:
+                        return {'success': False, 'error': 'No banker available'}
+            
+            # Validate amount
+            try:
+                amount = float(kw['amount'])
+                if amount <= 0:
+                    return {'success': False, 'error': 'Amount must be positive'}
+            except ValueError:
+                return {'success': False, 'error': 'Invalid amount'}
+            
+            # Check investor has sufficient funds
+            if investor.cash_balance < amount:
+                return {'success': False, 'error': f'Investor has insufficient funds. Available: ${investor.cash_balance:,.2f}'}
+            
+            # Validate interest rate
+            try:
+                interest_rate = float(kw['interest_rate'])
+                if interest_rate < 0 or interest_rate > 50:
+                    return {'success': False, 'error': 'Interest rate must be between 0% and 50%'}
+            except ValueError:
+                return {'success': False, 'error': 'Invalid interest rate'}
+            
+            # Prepare deposit data
+            deposit_data = {
+                'user_id': investor.id,
+                'banker_id': banker_id,
+                'deposit_type': kw['deposit_type'],
+                'amount': amount,
+                'interest_rate': interest_rate,
+            }
+            
+            # Add optional fields
+            if kw.get('term_sessions'):
+                try:
+                    term_sessions = int(kw['term_sessions'])
+                    if term_sessions > 0:
+                        deposit_data['term_sessions'] = term_sessions
+                except ValueError:
+                    pass
+            
+            # Create deposit with sudo (banker/admin privilege)
+            deposit = request.env['stock.deposit'].sudo().create(deposit_data)
+            
+            # Auto-confirm if requested
+            if kw.get('auto_confirm'):
+                deposit.action_confirm()
+                message = f'Deposit {deposit.name} created and confirmed successfully'
+            else:
+                message = f'Deposit {deposit.name} created successfully'
+            
+            return {
+                'success': True,
+                'message': message,
+                'deposit_id': deposit.id
+            }
+            
+        except Exception as e:
+            _logger.error(f"Error creating deposit: {str(e)}")
+            return {'success': False, 'error': f'Unable to create deposit: {str(e)}'}
+
+    @http.route(['/market/deposits/action'], type='json', auth="user", methods=['POST'])
+    def deposit_action_api(self, **kw):
+        """Perform actions on deposits (confirm, withdraw, cancel)"""
+        try:
+            user = request.env.user
+            
+            # Get deposit
+            deposit_id = kw.get('deposit_id')
+            action = kw.get('action')
+            
+            if not deposit_id or not action:
+                return {'success': False, 'error': 'Missing deposit_id or action'}
+            
+            deposit = request.env['stock.deposit'].sudo().browse(int(deposit_id))
+            if not deposit.exists():
+                return {'success': False, 'error': 'Deposit not found'}
+            
+            # Check permissions based on action and user type
+            if action == 'confirm':
+                # Only bankers and admins can confirm deposits
+                if user.user_type not in ['banker', 'admin']:
+                    return {'success': False, 'error': 'Access denied. Only bankers and admins can confirm deposits.'}
+                
+                # Additional check: banker can only confirm their own deposits
+                if user.user_type == 'banker' and deposit.banker_id.id != user.id:
+                    return {'success': False, 'error': 'You can only confirm your own deposits.'}
+                
+                deposit.action_confirm()
+                message = f'Deposit {deposit.name} confirmed successfully'
+                
+            elif action == 'withdraw':
+                # Investors can withdraw their own deposits, bankers can withdraw deposits they manage
+                if user.user_type == 'investor' and deposit.user_id.id != user.id:
+                    return {'success': False, 'error': 'You can only withdraw your own deposits.'}
+                elif user.user_type == 'banker' and deposit.banker_id.id != user.id:
+                    return {'success': False, 'error': 'You can only withdraw deposits you manage.'}
+                elif user.user_type not in ['investor', 'banker', 'admin']:
+                    return {'success': False, 'error': 'Access denied.'}
+                
+                deposit.action_withdraw()
+                message = f'Deposit {deposit.name} withdrawn successfully'
+                
+            elif action == 'cancel':
+                # Similar permission checks for cancel
+                if user.user_type == 'investor' and deposit.user_id.id != user.id:
+                    return {'success': False, 'error': 'You can only cancel your own deposits.'}
+                elif user.user_type == 'banker' and deposit.banker_id.id != user.id:
+                    return {'success': False, 'error': 'You can only cancel deposits you manage.'}
+                elif user.user_type not in ['investor', 'banker', 'admin']:
+                    return {'success': False, 'error': 'Access denied.'}
+                
+                deposit.action_cancel()
+                message = f'Deposit {deposit.name} cancelled successfully'
+                
+            else:
+                return {'success': False, 'error': f'Invalid action: {action}'}
+            
+            return {
+                'success': True,
+                'message': message
+            }
+            
+        except Exception as e:
+            _logger.error(f"Error performing deposit action {action} for deposit {deposit_id}: {str(e)}")
+            return {'success': False, 'error': f'Unable to {action} deposit: {str(e)}'}
+
+    # Loans API endpoints
+    @http.route(['/market/loans/create'], type='json', auth="user", methods=['POST'])
+    def create_loan_api(self, **kw):
+        """Create a new loan"""
+        try:
+            user = request.env.user
+            
+            # Only bankers and admins can create loans
+            if user.user_type not in ['banker', 'admin']:
+                return {'success': False, 'error': 'Access denied. Only bankers and admins can create loans.'}
+            
+            # Validate required fields
+            required_fields = ['investor_id', 'loan_type', 'amount', 'interest_rate', 'term_sessions']
+            for field in required_fields:
+                if not kw.get(field):
+                    return {'success': False, 'error': f'Missing required field: {field}'}
+            
+            # Get borrower
+            borrower = request.env['res.users'].sudo().browse(int(kw['investor_id']))
+            if not borrower.exists() or borrower.user_type != 'investor':
+                return {'success': False, 'error': 'Invalid borrower selected'}
+            
+            # Determine lender
+            lender_id = int(kw.get('lender_id')) if kw.get('lender_id') else user.id
+            if user.user_type == 'admin' and kw.get('lender_id'):
+                lender = request.env['res.users'].sudo().browse(lender_id)
+                if not lender.exists() or lender.user_type != 'banker':
+                    return {'success': False, 'error': 'Invalid lender selected'}
+            else:
+                lender_id = user.id if user.user_type == 'banker' else None
+                if not lender_id:
+                    # Auto-assign to first available banker
+                    lender = request.env['res.users'].sudo().search([('user_type', '=', 'banker')], limit=1)
+                    if lender:
+                        lender_id = lender.id
+                    else:
+                        return {'success': False, 'error': 'No banker available'}
+            
+            # Validate amount
+            try:
+                principal_amount = float(kw['amount'])
+                if principal_amount <= 0:
+                    return {'success': False, 'error': 'Amount must be positive'}
+            except ValueError:
+                return {'success': False, 'error': 'Invalid amount'}
+            
+            # Validate interest rate
+            try:
+                interest_rate = float(kw['interest_rate'])
+                if interest_rate < 0 or interest_rate > 50:
+                    return {'success': False, 'error': 'Interest rate must be between 0% and 50%'}
+            except ValueError:
+                return {'success': False, 'error': 'Invalid interest rate'}
+            
+            # Validate term sessions
+            try:
+                term_sessions = int(kw['term_sessions'])
+                if term_sessions <= 0:
+                    return {'success': False, 'error': 'Term sessions must be positive'}
+                if term_sessions > 1000:
+                    return {'success': False, 'error': 'Term sessions cannot exceed 1000'}
+            except ValueError:
+                return {'success': False, 'error': 'Invalid term sessions'}
+            
+            # Prepare loan data
+            loan_data = {
+                'user_id': borrower.id,  # Changed from borrower_id to user_id (actual field name)
+                'banker_id': lender_id,  # Changed from lender_id to banker_id (actual field name)
+                'loan_type': kw['loan_type'],
+                'amount': principal_amount,  # Changed from principal_amount to amount (actual field name)
+                'interest_rate': interest_rate,
+                'term_sessions': term_sessions,
+            }
+            
+            # Add optional fields
+            if kw.get('term_sessions'):
+                try:
+                    term_sessions = int(kw['term_sessions'])
+                    if term_sessions > 0:
+                        loan_data['term_sessions'] = term_sessions
+                except ValueError:
+                    pass
+            
+            if kw.get('collateral_amount'):
+                try:
+                    collateral_amount = float(kw['collateral_amount'])
+                    if collateral_amount > 0:
+                        loan_data['collateral_amount'] = collateral_amount
+                except ValueError:
+                    pass
+            
+            # Create loan with sudo (banker/admin privilege)
+            loan = request.env['stock.loan'].sudo().create(loan_data)
+            
+            # Auto-approve if requested
+            if kw.get('auto_approve'):
+                loan.action_approve()
+                message = f'Loan {loan.name} created and approved successfully'
+            else:
+                message = f'Loan {loan.name} created successfully'
+            
+            return {
+                'success': True,
+                'message': message,
+                'loan_id': loan.id
+            }
+            
+        except Exception as e:
+            _logger.error(f"Error creating loan: {str(e)}")
+            return {'success': False, 'error': f'Unable to create loan: {str(e)}'}
+
+    @http.route(['/market/loans/action'], type='json', auth="user", methods=['POST'])
+    def loan_action_api(self, **kw):
+        """Perform actions on loans (approve, disburse, repay, default)"""
+        try:
+            user = request.env.user
+            
+            # Get loan
+            loan_id = kw.get('loan_id')
+            action = kw.get('action')
+            
+            if not loan_id or not action:
+                return {'success': False, 'error': 'Missing loan_id or action'}
+            
+            loan = request.env['stock.loan'].sudo().browse(int(loan_id))
+            if not loan.exists():
+                return {'success': False, 'error': 'Loan not found'}
+            
+            # Check permissions based on action and user type
+            if action == 'approve':
+                # Only bankers and admins can approve loans
+                if user.user_type not in ['banker', 'admin']:
+                    return {'success': False, 'error': 'Access denied. Only bankers and admins can approve loans.'}
+                
+                # Additional check: banker can only approve their own loans
+                if user.user_type == 'banker' and loan.banker_id.id != user.id:
+                    return {'success': False, 'error': 'You can only approve your own loans.'}
+                
+                loan.action_approve()
+                message = f'Loan {loan.name} approved successfully'
+                
+            elif action == 'disburse':
+                # Only bankers and admins can disburse loans
+                if user.user_type not in ['banker', 'admin']:
+                    return {'success': False, 'error': 'Access denied. Only bankers and admins can disburse loans.'}
+                
+                if user.user_type == 'banker' and loan.banker_id.id != user.id:
+                    return {'success': False, 'error': 'You can only disburse your own loans.'}
+                
+                loan.action_disburse()
+                message = f'Loan {loan.name} disbursed successfully'
+                
+            elif action == 'repay':
+                # Borrowers can repay their own loans, bankers can process repayments
+                if user.user_type == 'investor' and loan.user_id.id != user.id:
+                    return {'success': False, 'error': 'You can only repay your own loans.'}
+                elif user.user_type == 'banker' and loan.banker_id.id != user.id:
+                    return {'success': False, 'error': 'You can only process repayments for your own loans.'}
+                elif user.user_type not in ['investor', 'banker', 'admin']:
+                    return {'success': False, 'error': 'Access denied.'}
+                
+                # Get repayment amount if provided
+                amount = kw.get('amount')
+                if amount:
+                    try:
+                        amount = float(amount)
+                        loan.action_make_payment(amount)
+                        message = f'Payment of ${amount:,.2f} made on loan {loan.name}'
+                    except ValueError:
+                        return {'success': False, 'error': 'Invalid repayment amount'}
+                else:
+                    loan.action_repay()
+                    message = f'Loan {loan.name} fully repaid'
+                
+            elif action == 'default':
+                # Only bankers and admins can mark loans as defaulted
+                if user.user_type not in ['banker', 'admin']:
+                    return {'success': False, 'error': 'Access denied. Only bankers and admins can mark loans as defaulted.'}
+                
+                if user.user_type == 'banker' and loan.banker_id.id != user.id:
+                    return {'success': False, 'error': 'You can only default your own loans.'}
+                
+                loan.action_default()
+                message = f'Loan {loan.name} marked as defaulted'
+                
+            else:
+                return {'success': False, 'error': f'Invalid action: {action}'}
+            
+            return {
+                'success': True,
+                'message': message
+            }
+            
+        except Exception as e:
+            _logger.error(f"Error performing loan action {action} for loan {loan_id}: {str(e)}")
+            return {'success': False, 'error': f'Unable to {action} loan: {str(e)}'}
 
     @http.route(['/market/clients'], type='http', auth="user", website=True)
     def market_clients(self, **kw):
@@ -1319,6 +1836,7 @@ class StockMarketPortal(CustomerPortal):
         values = {
             'user': user,
             'page_title': 'Clients',
+            **self._get_session_context(),
         }
         return request.render("stock_market_simulation.market_portal_layout", values)
 
@@ -1771,3 +2289,323 @@ class StockMarketPortal(CustomerPortal):
         except Exception as e:
             import traceback
             return f"Error: {str(e)}\n\nTraceback:\n{traceback.format_exc()}"
+
+    # Deposits API endpoints
+    @http.route(['/market/deposits/create'], type='json', auth="user", methods=['POST'])
+    def market_deposits_create(self, **kw):
+        """Create a new deposit"""
+        try:
+            user = request.env.user
+            try:
+                is_system_admin = request.env.user.has_group('base.group_system')
+            except Exception:
+                is_system_admin = False
+            
+            # Only bankers and admins can create deposits
+            if user.user_type not in ['banker', 'admin'] and not is_system_admin:
+                return {'success': False, 'error': 'Access denied'}
+            
+            # Validate required fields
+            required = ['investor_id', 'deposit_type', 'amount', 'interest_rate']
+            for field in required:
+                if not kw.get(field):
+                    return {'success': False, 'error': f'Missing required field: {field}'}
+            
+            # Parse values
+            investor_id = int(kw.get('investor_id'))
+            amount = float(kw.get('amount'))
+            interest_rate = float(kw.get('interest_rate'))
+            term_months = int(kw.get('term_months', 0))
+            
+            # Validate investor
+            investor = request.env['res.users'].browse(investor_id)
+            if not investor.exists() or investor.user_type != 'investor':
+                return {'success': False, 'error': 'Invalid investor selected'}
+            
+            # Validate amount
+            if amount <= 0:
+                return {'success': False, 'error': 'Amount must be positive'}
+            
+            # Check investor has sufficient funds
+            if investor.cash_balance < amount:
+                return {'success': False, 'error': f'Investor has insufficient funds. Available: ${investor.cash_balance:,.2f}, Required: ${amount:,.2f}'}
+            
+            # Determine banker
+            if user.user_type == 'banker':
+                banker_id = user.id
+            else:
+                # Admin can specify banker or use first available
+                banker_id = int(kw.get('banker_id', 0))
+                if not banker_id:
+                    first_banker = request.env['res.users'].search([('user_type', '=', 'banker')], limit=1)
+                    if not first_banker:
+                        return {'success': False, 'error': 'No banker available'}
+                    banker_id = first_banker.id
+            
+            # Create deposit
+            vals = {
+                'user_id': investor_id,
+                'banker_id': banker_id,
+                'deposit_type': kw.get('deposit_type'),
+                'amount': amount,
+                'interest_rate': interest_rate,
+                'term_months': term_months if term_months > 0 else None,
+            }
+            
+            deposit = request.env['stock.deposit'].create(vals)
+            
+            # Auto-confirm if requested
+            if kw.get('auto_confirm'):
+                deposit.action_confirm()
+            
+            return {
+                'success': True,
+                'message': f'Deposit #{deposit.name} created successfully',
+                'deposit_id': deposit.id,
+                'deposit_name': deposit.name
+            }
+            
+        except Exception as e:
+            _logger.error(f"Error creating deposit: {str(e)}")
+            return {'success': False, 'error': f'Failed to create deposit: {str(e)}'}
+
+    @http.route(['/market/deposits/<int:deposit_id>/action'], type='json', auth="user", methods=['POST'])
+    def market_deposits_action(self, deposit_id, action=None, **kw):
+        """Perform actions on deposits (confirm, withdraw, etc.)"""
+        try:
+            user = request.env.user
+            try:
+                is_system_admin = request.env.user.has_group('base.group_system')
+            except Exception:
+                is_system_admin = False
+            
+            deposit = request.env['stock.deposit'].browse(deposit_id)
+            if not deposit.exists():
+                return {'success': False, 'error': 'Deposit not found'}
+            
+            # Check permissions
+            can_manage = (
+                user.user_type in ['banker', 'admin'] or 
+                is_system_admin or 
+                (user.user_type == 'investor' and deposit.user_id.id == user.id)
+            )
+            
+            if not can_manage:
+                return {'success': False, 'error': 'Access denied'}
+            
+            # Perform action
+            if action == 'confirm':
+                if user.user_type not in ['banker', 'admin'] and not is_system_admin:
+                    return {'success': False, 'error': 'Only bankers can confirm deposits'}
+                deposit.action_confirm()
+                message = f'Deposit #{deposit.name} confirmed'
+                
+            elif action == 'withdraw':
+                deposit.action_withdraw()
+                message = f'Deposit #{deposit.name} withdrawn'
+                
+            elif action == 'cancel':
+                deposit.action_cancel()
+                message = f'Deposit #{deposit.name} cancelled'
+                
+            else:
+                return {'success': False, 'error': 'Invalid action'}
+            
+            return {'success': True, 'message': message}
+            
+        except Exception as e:
+            _logger.error(f"Error in deposit action {action} for deposit {deposit_id}: {str(e)}")
+            return {'success': False, 'error': f'Failed to {action} deposit: {str(e)}'}
+
+    # Loans API endpoints
+    @http.route(['/market/loans/create'], type='json', auth="user", methods=['POST'])
+    def market_loans_create(self, **kw):
+        """Create a new loan"""
+        try:
+            user = request.env.user
+            try:
+                is_system_admin = request.env.user.has_group('base.group_system')
+            except Exception:
+                is_system_admin = False
+            
+            # Only bankers and admins can create loans
+            if user.user_type not in ['banker', 'admin'] and not is_system_admin:
+                return {'success': False, 'error': 'Access denied'}
+            
+            # Validate required fields
+            required = ['investor_id', 'loan_type', 'amount', 'interest_rate', 'term_months']
+            for field in required:
+                if not kw.get(field):
+                    return {'success': False, 'error': f'Missing required field: {field}'}
+            
+            # Parse values
+            investor_id = int(kw.get('investor_id'))
+            amount = float(kw.get('amount'))
+            interest_rate = float(kw.get('interest_rate'))
+            term_months = int(kw.get('term_months'))
+            loan_type = kw.get('loan_type')
+            
+            # Validate investor
+            investor = request.env['res.users'].browse(investor_id)
+            if not investor.exists() or investor.user_type != 'investor':
+                return {'success': False, 'error': 'Invalid investor selected'}
+            
+            # Validate amount
+            if amount <= 0:
+                return {'success': False, 'error': 'Amount must be positive'}
+            
+            # Validate term
+            if term_months <= 0:
+                return {'success': False, 'error': 'Term must be positive'}
+            
+            # Determine banker
+            if user.user_type == 'banker':
+                banker_id = user.id
+            else:
+                # Admin can specify banker or use first available
+                banker_id = int(kw.get('banker_id', 0))
+                if not banker_id:
+                    first_banker = request.env['res.users'].search([('user_type', '=', 'banker')], limit=1)
+                    if not first_banker:
+                        return {'success': False, 'error': 'No banker available'}
+                    banker_id = first_banker.id
+            
+            # Validate collateral for secured loans
+            collateral_security_id = None
+            collateral_quantity = 0
+            
+            if loan_type in ['margin', 'secured']:
+                if not kw.get('collateral_security_id') or not kw.get('collateral_quantity'):
+                    return {'success': False, 'error': 'Collateral security and quantity required for secured loans'}
+                
+                collateral_security_id = int(kw.get('collateral_security_id'))
+                collateral_quantity = int(kw.get('collateral_quantity'))
+                
+                # Check investor has sufficient shares
+                position = request.env['stock.position'].search([
+                    ('user_id', '=', investor_id),
+                    ('security_id', '=', collateral_security_id)
+                ], limit=1)
+                
+                if not position or position.available_quantity < collateral_quantity:
+                    return {'success': False, 'error': 'Investor has insufficient shares for collateral'}
+            
+            # Create loan
+            vals = {
+                'user_id': investor_id,
+                'banker_id': banker_id,
+                'loan_type': loan_type,
+                'amount': amount,
+                'interest_rate': interest_rate,
+                'term_months': term_months,
+            }
+            
+            if collateral_security_id:
+                vals.update({
+                    'collateral_security_id': collateral_security_id,
+                    'collateral_quantity': collateral_quantity,
+                })
+            
+            loan = request.env['stock.loan'].create(vals)
+            
+            # Auto-approve and disburse if requested
+            if kw.get('auto_approve'):
+                loan.action_approve()
+                if kw.get('auto_disburse'):
+                    loan.action_disburse()
+            
+            return {
+                'success': True,
+                'message': f'Loan #{loan.name} created successfully',
+                'loan_id': loan.id,
+                'loan_name': loan.name
+            }
+            
+        except Exception as e:
+            _logger.error(f"Error creating loan: {str(e)}")
+            return {'success': False, 'error': f'Failed to create loan: {str(e)}'}
+
+    @http.route(['/market/loans/<int:loan_id>/action'], type='json', auth="user", methods=['POST'])
+    def market_loans_action(self, loan_id, action=None, **kw):
+        """Perform actions on loans (approve, disburse, etc.)"""
+        try:
+            user = request.env.user
+            try:
+                is_system_admin = request.env.user.has_group('base.group_system')
+            except Exception:
+                is_system_admin = False
+            
+            loan = request.env['stock.loan'].browse(loan_id)
+            if not loan.exists():
+                return {'success': False, 'error': 'Loan not found'}
+            
+            # Check permissions
+            can_manage = (
+                user.user_type in ['banker', 'admin'] or 
+                is_system_admin or 
+                (user.user_type == 'investor' and loan.user_id.id == user.id and action in ['make_payment'])
+            )
+            
+            if not can_manage:
+                return {'success': False, 'error': 'Access denied'}
+            
+            # Perform action
+            if action == 'approve':
+                if user.user_type not in ['banker', 'admin'] and not is_system_admin:
+                    return {'success': False, 'error': 'Only bankers can approve loans'}
+                loan.action_approve()
+                message = f'Loan #{loan.name} approved'
+                
+            elif action == 'disburse':
+                if user.user_type not in ['banker', 'admin'] and not is_system_admin:
+                    return {'success': False, 'error': 'Only bankers can disburse loans'}
+                loan.action_disburse()
+                message = f'Loan #{loan.name} disbursed'
+                
+            elif action == 'make_payment':
+                # Create payment record
+                amount = float(kw.get('amount', 0))
+                if amount <= 0:
+                    return {'success': False, 'error': 'Payment amount must be positive'}
+                
+                if loan.user_id.cash_balance < amount:
+                    return {'success': False, 'error': 'Insufficient funds for payment'}
+                
+                # Calculate payment components
+                interest_due = loan.interest_accrued
+                penalty_due = loan.penalty_amount
+                
+                penalty_component = min(amount, penalty_due)
+                remaining = amount - penalty_component
+                
+                interest_component = min(remaining, interest_due)
+                remaining -= interest_component
+                
+                principal_component = min(remaining, loan.principal_outstanding)
+                
+                # Create payment
+                payment_vals = {
+                    'loan_id': loan.id,
+                    'amount': amount,
+                    'principal_component': principal_component,
+                    'interest_component': interest_component,
+                    'penalty_component': penalty_component,
+                    'payment_type': kw.get('payment_type', 'emi'),
+                }
+                
+                payment = request.env['stock.loan.payment'].create(payment_vals)
+                
+                # Transfer funds
+                loan.user_id.cash_balance -= amount
+                loan.banker_id.cash_balance += amount
+                
+                message = f'Payment of ${amount:,.2f} made on loan #{loan.name}'
+                
+            else:
+                return {'success': False, 'error': 'Invalid action'}
+            
+            return {'success': True, 'message': message}
+            
+        except Exception as e:
+            _logger.error(f"Error in loan action {action} for loan {loan_id}: {str(e)}")
+            return {'success': False, 'error': f'Failed to {action} loan: {str(e)}'}

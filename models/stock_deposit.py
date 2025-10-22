@@ -26,7 +26,8 @@ class StockDeposit(models.Model):
         'res.users',
         string='Depositor',
         required=True,
-        readonly="status != 'draft'",
+        states={'draft': [('readonly', False)]},
+        readonly=True,
         domain=[('user_type', '=', 'investor')],
         tracking=True
     )
@@ -35,7 +36,8 @@ class StockDeposit(models.Model):
         'res.users',
         string='Bank',
         required=True,
-        readonly="status != 'draft'",
+        states={'draft': [('readonly', False)]},
+        readonly=True,
         domain=[('user_type', '=', 'banker')],
         tracking=True
     )
@@ -51,7 +53,8 @@ class StockDeposit(models.Model):
         string='Principal Amount',
         digits='Product Price',
         required=True,
-        readonly="status != 'draft'",
+        states={'draft': [('readonly', False)]},
+        readonly=True,
         tracking=True
     )
     
@@ -59,32 +62,39 @@ class StockDeposit(models.Model):
         string='Interest Rate (%)',
         digits=(16, 2),
         required=True,
-        readonly="status != 'draft'",
+        states={'draft': [('readonly', False)]},
+        readonly=True,
         help='Annual interest rate',
         tracking=True
     )
     
-    term_months = fields.Integer(
-        string='Term (Months)',
-        readonly="status != 'draft'",
-        help='Deposit term in months'
+    term_sessions = fields.Integer(
+        string='Term (Sessions)',
+        states={'draft': [('readonly', False)]},
+        readonly=True,
+        help='Deposit term in trading sessions'
     )
     
-    # Dates
-    deposit_date = fields.Date(
-        string='Deposit Date',
+    # Sessions
+    deposit_session_id = fields.Many2one(
+        'stock.session',
+        string='Deposit Session',
         required=True,
-        default=fields.Date.today,
-        readonly="status != 'draft'",
-        tracking=True
+        states={'draft': [('readonly', False)]},
+        readonly=True,
+        tracking=True,
+        help='Session when deposit was created'
     )
     
-    maturity_date = fields.Date(
-        string='Maturity Date',
-        compute='_compute_maturity_date',
+    maturity_session_id = fields.Many2one(
+        'stock.session',
+        string='Maturity Session',
+        compute='_compute_maturity_session',
         store=True,
-        readonly="status in ['active', 'matured']",
-        tracking=True
+        states={'draft': [('readonly', False)]},
+        readonly=True,
+        tracking=True,
+        help='Session when deposit matures'
     )
     
     # Status
@@ -118,9 +128,10 @@ class StockDeposit(models.Model):
         help='Principal + Accrued Interest'
     )
     
-    days_to_maturity = fields.Integer(
-        string='Days to Maturity',
-        compute='_compute_days_to_maturity'
+    sessions_to_maturity = fields.Integer(
+        string='Sessions to Maturity',
+        compute='_compute_sessions_to_maturity',
+        help='Number of sessions until maturity'
     )
     
     # Additional fields
@@ -131,15 +142,11 @@ class StockDeposit(models.Model):
         help='Penalty for early withdrawal'
     )
     
-    session_id = fields.Many2one(
+    withdrawal_session_id = fields.Many2one(
         'stock.session',
-        string='Session Created',
-        help='Trading session when deposit was created'
-    )
-    
-    withdrawal_date = fields.Date(
-        string='Withdrawal Date',
-        readonly=True
+        string='Withdrawal Session',
+        readonly=True,
+        help='Session when deposit was withdrawn'
     )
     
     withdrawal_amount = fields.Float(
@@ -148,33 +155,46 @@ class StockDeposit(models.Model):
         readonly=True
     )
     
-    @api.depends('deposit_date', 'term_months')
-    def _compute_maturity_date(self):
+    @api.depends('deposit_session_id', 'term_sessions')
+    def _compute_maturity_session(self):
         for deposit in self:
-            if deposit.deposit_date and deposit.term_months:
-                deposit.maturity_date = deposit.deposit_date + timedelta(days=deposit.term_months * 30)
+            if deposit.deposit_session_id and deposit.term_sessions:
+                # Find the session that is term_sessions after the deposit session
+                all_sessions = self.env['stock.session'].search([
+                    ('session_number', '>=', deposit.deposit_session_id.session_number)
+                ], order='session_number')
+                
+                if len(all_sessions) >= deposit.term_sessions:
+                    deposit.maturity_session_id = all_sessions[deposit.term_sessions - 1]
+                else:
+                    deposit.maturity_session_id = False
             else:
-                deposit.maturity_date = False
+                deposit.maturity_session_id = False
     
-    @api.depends('amount', 'interest_rate', 'deposit_date', 'status')
+    @api.depends('amount', 'interest_rate', 'deposit_session_id', 'status')
     def _compute_interest(self):
         for deposit in self:
             if deposit.status in ['active', 'matured', 'withdrawn']:
-                # Calculate days
-                if deposit.status == 'withdrawn' and deposit.withdrawal_date:
-                    end_date = deposit.withdrawal_date
+                # Calculate sessions elapsed
+                current_session = self.env['stock.session'].search([('state', '=', 'open')], limit=1)
+                if not current_session:
+                    # Use latest session if no open session
+                    current_session = self.env['stock.session'].search([], order='session_number desc', limit=1)
+                
+                if current_session and deposit.deposit_session_id:
+                    sessions_elapsed = max(0, current_session.session_number - deposit.deposit_session_id.session_number + 1)
                 else:
-                    end_date = fields.Date.today()
+                    sessions_elapsed = 0
                 
-                days = (end_date - deposit.deposit_date).days
-                
-                # Simple interest calculation
-                deposit.accrued_interest = (deposit.amount * deposit.interest_rate * days) / (365 * 100)
+                # Session-based interest calculation (interest per session)
+                # Convert annual rate to per-session rate (assuming ~12 trading sessions per year)
+                sessions_per_year = 12
+                session_interest_rate = deposit.interest_rate / sessions_per_year
+                deposit.accrued_interest = (deposit.amount * session_interest_rate * sessions_elapsed) / 100
                 
                 # Maturity amount
-                if deposit.maturity_date:
-                    maturity_days = (deposit.maturity_date - deposit.deposit_date).days
-                    maturity_interest = (deposit.amount * deposit.interest_rate * maturity_days) / (365 * 100)
+                if deposit.maturity_session_id and deposit.term_sessions:
+                    maturity_interest = (deposit.amount * session_interest_rate * deposit.term_sessions) / 100
                     deposit.maturity_amount = deposit.amount + maturity_interest
                 else:
                     deposit.maturity_amount = deposit.amount
@@ -185,14 +205,19 @@ class StockDeposit(models.Model):
                 deposit.maturity_amount = deposit.amount
                 deposit.current_value = deposit.amount
     
-    @api.depends('maturity_date', 'status')
-    def _compute_days_to_maturity(self):
+    @api.depends('maturity_session_id', 'status')
+    def _compute_sessions_to_maturity(self):
         for deposit in self:
-            if deposit.maturity_date and deposit.status == 'active':
-                days = (deposit.maturity_date - fields.Date.today()).days
-                deposit.days_to_maturity = max(0, days)
+            if deposit.maturity_session_id and deposit.status == 'active':
+                # Get current session
+                current_session = self.env['stock.session'].search([('state', '=', 'open')], limit=1)
+                if current_session:
+                    sessions_diff = deposit.maturity_session_id.session_number - current_session.session_number
+                    deposit.sessions_to_maturity = max(0, sessions_diff)
+                else:
+                    deposit.sessions_to_maturity = 0
             else:
-                deposit.days_to_maturity = 0
+                deposit.sessions_to_maturity = 0
     
     @api.constrains('amount')
     def _check_amount(self):
@@ -214,23 +239,30 @@ class StockDeposit(models.Model):
             if deposit.status != 'draft':
                 raise UserError("Only draft deposits can be confirmed.")
             
+            # Use sudo to ensure proper access for fund transfers
+            deposit_sudo = deposit.sudo()
+            user_sudo = deposit_sudo.user_id.sudo()
+            banker_sudo = deposit_sudo.banker_id.sudo()
+            
             # Check user has sufficient funds
-            if deposit.user_id.cash_balance < deposit.amount:
+            if user_sudo.cash_balance < deposit_sudo.amount:
                 raise ValidationError(
-                    f"Insufficient funds. Available: {deposit.user_id.cash_balance:.2f}, "
-                    f"Required: {deposit.amount:.2f}"
+                    f"Insufficient funds. Available: {user_sudo.cash_balance:.2f}, "
+                    f"Required: {deposit_sudo.amount:.2f}"
                 )
             
             # Get active session
             active_session = self.env['stock.session'].search([('state', '=', 'open')], limit=1)
+            if not active_session:
+                raise UserError("No active trading session found. Please ensure a session is open before confirming deposits.")
             
-            # Transfer funds
-            deposit.user_id.cash_balance -= deposit.amount
-            deposit.banker_id.cash_balance += deposit.amount
+            # Transfer funds with sudo privileges
+            user_sudo.write({'cash_balance': user_sudo.cash_balance - deposit_sudo.amount})
+            banker_sudo.write({'cash_balance': banker_sudo.cash_balance + deposit_sudo.amount})
             
-            deposit.write({
+            deposit_sudo.write({
                 'status': 'active',
-                'session_id': active_session.id if active_session else False
+                'deposit_session_id': active_session.id
             })
             
             # Log the transaction
@@ -245,10 +277,16 @@ class StockDeposit(models.Model):
             if deposit.status != 'active':
                 raise UserError("Only active deposits can be matured.")
             
-            if fields.Date.today() < deposit.maturity_date:
-                raise UserError(
-                    f"Deposit has not reached maturity date ({deposit.maturity_date})."
-                )
+            # Check if deposit has reached maturity session
+            current_session = self.env['stock.session'].search([('state', '=', 'open')], limit=1)
+            if not current_session:
+                current_session = self.env['stock.session'].search([], order='session_number desc', limit=1)
+            
+            if deposit.maturity_session_id and current_session:
+                if current_session.session_number < deposit.maturity_session_id.session_number:
+                    raise UserError(
+                        f"Deposit has not reached maturity session ({deposit.maturity_session_id.name})."
+                    )
             
             deposit.status = 'matured'
             deposit.message_post(body="Deposit has matured and is ready for withdrawal.")
@@ -259,8 +297,18 @@ class StockDeposit(models.Model):
             if deposit.status not in ['active', 'matured']:
                 raise UserError("Only active or matured deposits can be withdrawn.")
             
+            # Get current session
+            current_session = self.env['stock.session'].search([('state', '=', 'open')], limit=1)
+            if not current_session:
+                current_session = self.env['stock.session'].search([], order='session_number desc', limit=1)
+            
             # Calculate withdrawal amount
-            if deposit.status == 'active' and fields.Date.today() < deposit.maturity_date:
+            early_withdrawal = False
+            if deposit.status == 'active' and deposit.maturity_session_id and current_session:
+                if current_session.session_number < deposit.maturity_session_id.session_number:
+                    early_withdrawal = True
+            
+            if early_withdrawal:
                 # Early withdrawal - apply penalty
                 penalty_amount = deposit.current_value * deposit.early_withdrawal_penalty / 100
                 withdrawal_amount = deposit.current_value - penalty_amount
@@ -271,20 +319,25 @@ class StockDeposit(models.Model):
             else:
                 withdrawal_amount = deposit.current_value
             
+            # Use sudo to ensure proper access for fund transfers
+            deposit_sudo = deposit.sudo()
+            user_sudo = deposit_sudo.user_id.sudo()
+            banker_sudo = deposit_sudo.banker_id.sudo()
+            
             # Check bank has sufficient funds
-            if deposit.banker_id.cash_balance < withdrawal_amount:
+            if banker_sudo.cash_balance < withdrawal_amount:
                 raise ValidationError(
                     f"Bank has insufficient funds for withdrawal. "
                     f"Required: {withdrawal_amount:,.2f}"
                 )
             
-            # Transfer funds back
-            deposit.banker_id.cash_balance -= withdrawal_amount
-            deposit.user_id.cash_balance += withdrawal_amount
+            # Transfer funds back with sudo privileges
+            banker_sudo.write({'cash_balance': banker_sudo.cash_balance - withdrawal_amount})
+            user_sudo.write({'cash_balance': user_sudo.cash_balance + withdrawal_amount})
             
-            deposit.write({
+            deposit_sudo.write({
                 'status': 'withdrawn',
-                'withdrawal_date': fields.Date.today(),
+                'withdrawal_session_id': current_session.id if current_session else False,
                 'withdrawal_amount': withdrawal_amount
             })
             
@@ -305,20 +358,26 @@ class StockDeposit(models.Model):
     
     @api.model
     def check_matured_deposits(self):
-        """Cron job to automatically mark matured deposits"""
-        matured_deposits = self.search([
-            ('status', '=', 'active'),
-            ('maturity_date', '<=', fields.Date.today())
-        ])
+        """Check for deposits that have reached maturity session"""
+        current_session = self.env['stock.session'].search([('state', '=', 'open')], limit=1)
+        if not current_session:
+            current_session = self.env['stock.session'].search([], order='session_number desc', limit=1)
         
-        for deposit in matured_deposits:
-            try:
-                deposit.action_mature()
-            except Exception as e:
-                deposit.message_post(
-                    body=f"Failed to auto-mature deposit: {str(e)}",
-                    message_type='comment'
-                )
+        if current_session:
+            matured_deposits = self.search([
+                ('status', '=', 'active'),
+                ('maturity_session_id', '!=', False),
+                ('maturity_session_id.session_number', '<=', current_session.session_number)
+            ])
+            
+            for deposit in matured_deposits:
+                try:
+                    deposit.action_mature()
+                except Exception as e:
+                    deposit.message_post(
+                        body=f"Failed to auto-mature deposit: {str(e)}",
+                        message_type='comment'
+                    )
     
     def _calculate_interest(self):
         """Calculate and apply interest for active deposits (called at session end)"""

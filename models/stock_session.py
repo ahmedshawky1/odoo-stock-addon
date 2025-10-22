@@ -10,7 +10,7 @@ _logger = logging.getLogger(__name__)
 class StockSession(models.Model):
     _name = 'stock.session'
     _description = 'Stock Trading Session'
-    _order = 'actual_start_date desc, planned_start_date desc, id desc'
+    _order = 'session_number desc, id desc'
     _inherit = ['mail.thread', 'mail.activity.mixin']
     
     name = fields.Char(
@@ -20,6 +20,14 @@ class StockSession(models.Model):
         copy=False,
         tracking=True,
         help='Auto-generated session number (e.g., Session 01)'
+    )
+    
+    session_number = fields.Integer(
+        string='Session Number',
+        required=True,
+        readonly=True,
+        copy=False,
+        help='Sequential session number for ordering and calculations'
     )
     
     state = fields.Selection([
@@ -175,7 +183,7 @@ class StockSession(models.Model):
     @api.model
     def create(self, vals):
         """Auto-generate session name with serial number in format 'Session 01', 'Session 02', etc."""
-        if not vals.get('name'):
+        if not vals.get('name') or not vals.get('session_number'):
             # Get the last session number by searching for sessions with Session pattern
             last_session = self.search([
                 ('name', 'like', 'Session %')
@@ -196,7 +204,10 @@ class StockSession(models.Model):
             else:
                 new_num = 1
             
-            vals['name'] = f'Session {new_num:02d}'
+            if not vals.get('name'):
+                vals['name'] = f'Session {new_num:02d}'
+            if not vals.get('session_number'):
+                vals['session_number'] = new_num
         
         return super(StockSession, self).create(vals)
     
