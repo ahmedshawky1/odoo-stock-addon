@@ -1949,7 +1949,7 @@
                                 <tr t-foreach="positions" t-as="position">
                                     <td><strong><t t-esc="position.security_id.symbol"/></strong><br/><small class="text-muted"><t t-esc="position.security_id.name"/></small></td>
                                     <td><t t-esc="position.quantity"/></td>
-                                    <td>$<t t-esc="'{:,.2f}'.format(position.average_price or 0.0)"/></td>
+                                    <td>$<t t-esc="'{:,.2f}'.format(position.average_cost or 0.0)"/></td>
                                     <td>$<t t-esc="'{:,.2f}'.format(position.security_id.current_price or 0.0)"/></td>
                                     <td>$<t t-esc="'{:,.2f}'.format(position.market_value or 0.0)"/></td>
                                     <td t-attf-class="#{(position.unrealized_pnl or 0.0) >= 0 and 'text-success' or 'text-danger'}">
