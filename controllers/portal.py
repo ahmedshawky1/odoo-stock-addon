@@ -2105,7 +2105,83 @@ class StockMarketPortal(CustomerPortal):
         total_deposits = sum(d.current_value for d in deposits.filtered(lambda d: d.status == 'active'))
         total_loans = sum(l.principal_outstanding for l in loans.filtered(lambda l: l.status == 'active'))
         
-        total_assets = view_user.cash_balance + total_positions_value
+        # Calculate net worth: Cash + Portfolio + Deposits - Loans
+        net_worth = (view_user.cash_balance or 0) + total_positions_value + total_deposits - total_loans
+        
+        # Build comprehensive transaction history
+        all_transactions = []
+        running_balance = 0
+        
+        # Collect all transactions chronologically
+        transaction_list = []
+        
+        # Add deposits
+        for deposit in deposits:
+            transaction_list.append({
+                'date': deposit.create_date,
+                'type': 'DEPOSIT',
+                'description': f'Deposit #{deposit.id} - {deposit.deposit_type or "Standard"}',
+                'amount': deposit.amount or 0,
+                'balance_impact': deposit.amount or 0,
+                'impact': 'Cash Balance',
+                'badge_class': 'bg-success'
+            })
+        
+        # Add loans
+        for loan in loans:
+            transaction_list.append({
+                'date': loan.create_date,
+                'type': 'LOAN',
+                'description': f'Loan #{loan.id} - ${(loan.amount or 0):,.2f} at {(loan.interest_rate or 0):.2f}%',
+                'amount': loan.amount or 0,
+                'balance_impact': loan.amount or 0,
+                'impact': 'Cash Balance',
+                'badge_class': 'bg-warning'
+            })
+        
+        # Add trades (both buys and sells)
+        for trade in trades:
+            if trade.buyer_id.id == user_id:
+                # This user was the buyer
+                transaction_list.append({
+                    'date': trade.trade_date,
+                    'type': 'BUY',
+                    'description': f'Bought {trade.quantity} shares of {trade.security_id.symbol} at ${trade.price:.2f}',
+                    'amount': -(trade.quantity * trade.price),
+                    'balance_impact': -(trade.quantity * trade.price),
+                    'impact': 'Cash Balance (Stock Purchase)',
+                    'badge_class': 'bg-danger'
+                })
+            
+            if trade.seller_id.id == user_id:
+                # This user was the seller
+                transaction_list.append({
+                    'date': trade.trade_date,
+                    'type': 'SELL',
+                    'description': f'Sold {trade.quantity} shares of {trade.security_id.symbol} at ${trade.price:.2f}',
+                    'amount': trade.quantity * trade.price,
+                    'balance_impact': trade.quantity * trade.price,
+                    'impact': 'Cash Balance (Stock Sale)',
+                    'badge_class': 'bg-success'
+                })
+        
+        # Sort all transactions by date
+        transaction_list.sort(key=lambda x: x['date'] or request.env.user.create_date)
+        
+        # Calculate running balance starting from initial capital
+        running_balance = view_user.initial_capital or 0
+        
+        for txn in transaction_list:
+            running_balance += txn['balance_impact']
+            all_transactions.append({
+                'date': txn['date'].strftime('%Y-%m-%d %H:%M') if txn['date'] else 'Unknown',
+                'type': txn['type'],
+                'description': txn['description'],
+                'amount': txn['amount'],
+                'running_balance': running_balance,
+                'impact': txn['impact'],
+                'badge_class': txn['badge_class']
+            })
         
         values.update({
             'page_name': 'user_360',
@@ -2120,7 +2196,8 @@ class StockMarketPortal(CustomerPortal):
             'total_unrealized_pnl': total_unrealized_pnl,
             'total_deposits': total_deposits,
             'total_loans': total_loans,
-            'total_assets': total_assets,
+            'net_worth': net_worth,
+            'all_transactions': all_transactions,
         })
         
         return request.render("stock_market_simulation.admin_user_360_view", values)

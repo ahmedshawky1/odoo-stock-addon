@@ -2341,6 +2341,25 @@
     <template id="admin_user_360_view" name="Admin User 360 View">
         <t t-call="stock_market_simulation.market_portal_layout">
             <div class="container-fluid">
+                <style>
+                    .col-md-5th {
+                        flex: 0 0 20%;
+                        max-width: 20%;
+                    }
+                    @media (max-width: 768px) {
+                        .col-md-5th {
+                            flex: 0 0 50%;
+                            max-width: 50%;
+                        }
+                    }
+                    @media (max-width: 576px) {
+                        .col-md-5th {
+                            flex: 0 0 100%;
+                            max-width: 100%;
+                        }
+                    }
+                </style>
+                
                 <!-- Header -->
                 <div class="page-header mb-4">
                     <div class="row align-items-center">
@@ -2361,77 +2380,146 @@
                 
                 <!-- Financial Summary Cards -->
                 <div class="row mb-4">
-                    <div class="col-md-3 mb-3">
-                        <div class="card text-center">
+                    <div class="col-md-5th mb-3">
+                        <div class="card text-center border-primary">
                             <div class="card-body">
-                                <h6 class="card-title text-muted">Cash Balance</h6>
-                                <h3 class="card-text" t-attf-style="color: #{view_user.cash_balance >= 0 and 'green' or 'red'}">
+                                <h6 class="card-title text-muted">
+                                    <i class="fa fa-money text-success"></i> Cash Balance
+                                </h6>
+                                <h3 class="card-text" t-attf-style="color: #{view_user.cash_balance >= 0 and '#28a745' or '#dc3545'}">
                                     $<t t-esc="'{:,.2f}'.format(view_user.cash_balance or 0.0)"/>
                                 </h3>
+                                <small class="text-muted">Actual liquid cash available</small>
                             </div>
                         </div>
                     </div>
-                    <div class="col-md-3 mb-3">
-                        <div class="card text-center">
+                    <div class="col-md-5th mb-3">
+                        <div class="card text-center border-info">
                             <div class="card-body">
-                                <h6 class="card-title text-muted">Initial Capital</h6>
-                                <h3 class="card-text">$<t t-esc="'{:,.2f}'.format(view_user.initial_capital or 0.0)"/></h3>
-                            </div>
-                        </div>
-                    </div>
-                    <div class="col-md-3 mb-3">
-                        <div class="card text-center">
-                            <div class="card-body">
-                                <h6 class="card-title text-muted">Positions Value</h6>
-                                <h3 class="card-text">$<t t-esc="'{:,.2f}'.format(total_positions_value or 0.0)"/></h3>
-                            </div>
-                        </div>
-                    </div>
-                    <div class="col-md-3 mb-3">
-                        <div class="card text-center">
-                            <div class="card-body">
-                                <h6 class="card-title text-muted">Total Assets</h6>
-                                <h3 class="card-text" t-attf-style="color: #{total_assets >= (view_user.initial_capital or 0) and 'green' or 'red'}">
-                                    $<t t-esc="'{:,.2f}'.format(total_assets or 0.0)"/>
+                                <h6 class="card-title text-muted">
+                                    <i class="fa fa-briefcase text-info"></i> Portfolio Value
+                                </h6>
+                                <h3 class="card-text text-info">
+                                    $<t t-esc="'{:,.2f}'.format(total_positions_value or 0.0)"/>
                                 </h3>
+                                <small class="text-muted">Stock holdings value only</small>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-5th mb-3">
+                        <div class="card text-center border-warning">
+                            <div class="card-body">
+                                <h6 class="card-title text-muted">
+                                    <i class="fa fa-bank text-warning"></i> Total Deposits
+                                </h6>
+                                <h3 class="card-text text-warning">
+                                    $<t t-esc="'{:,.2f}'.format(total_deposits or 0.0)"/>
+                                </h3>
+                                <small class="text-muted">Active deposits separately</small>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-5th mb-3">
+                        <div class="card text-center border-danger">
+                            <div class="card-body">
+                                <h6 class="card-title text-muted">
+                                    <i class="fa fa-credit-card text-danger"></i> Total Loans
+                                </h6>
+                                <h3 class="card-text text-danger">
+                                    $<t t-esc="'{:,.2f}'.format(total_loans or 0.0)"/>
+                                </h3>
+                                <small class="text-muted">Outstanding loans separately</small>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-5th mb-3">
+                        <div class="card text-center border-success">
+                            <div class="card-body">
+                                <h6 class="card-title text-muted">
+                                    <i class="fa fa-pie-chart text-success"></i> Total Assets
+                                </h6>
+                                <h3 class="card-text" t-attf-style="color: #{net_worth >= (view_user.initial_capital or 0) and '#28a745' or '#dc3545'}">
+                                    $<t t-esc="'{:,.2f}'.format(net_worth or 0.0)"/>
+                                </h3>
+                                <small class="text-muted">Comprehensive net worth</small>
                             </div>
                         </div>
                     </div>
                 </div>
                 
-                <!-- Unrealized P&L -->
+                <!-- Balance Sheet & Transaction History -->
                 <div class="row mb-4">
-                    <div class="col-md-4">
+                    <div class="col-12">
                         <div class="card">
-                            <div class="card-body text-center">
-                                <h6 class="card-title text-muted">Unrealized P&amp;L</h6>
-                                <h3 class="card-text" t-attf-style="color: #{total_unrealized_pnl >= 0 and 'green' or 'red'}">
-                                    $<t t-esc="'{:,.2f}'.format(total_unrealized_pnl or 0.0)"/>
-                                </h3>
-                                <small class="text-muted">
-                                    <t t-if="total_positions_cost > 0">
-                                        <t t-set="pnl_pct" t-value="(total_unrealized_pnl / total_positions_cost * 100) if total_positions_cost else 0"/>
-                                        (<t t-esc="'{:,.2f}'.format(pnl_pct)"/>%)
-                                    </t>
-                                </small>
+                            <div class="card-header bg-dark text-white">
+                                <h5 class="mb-0">
+                                    <i class="fa fa-list-alt"></i> Complete Balance Sheet &amp; Transaction History
+                                </h5>
+                                <small>Every transaction from initial cash to current value</small>
                             </div>
-                        </div>
-                    </div>
-                    <div class="col-md-4">
-                        <div class="card">
-                            <div class="card-body text-center">
-                                <h6 class="card-title text-muted">Deposits</h6>
-                                <h3 class="card-text">$<t t-esc="'{:,.2f}'.format(total_deposits or 0.0)"/></h3>
-                                <small class="text-muted"><t t-esc="len(deposits)"/> active</small>
-                            </div>
-                        </div>
-                    </div>
-                    <div class="col-md-4">
-                        <div class="card">
-                            <div class="card-body text-center">
-                                <h6 class="card-title text-muted">Loans</h6>
-                                <h3 class="card-text">$<t t-esc="'{:,.2f}'.format(total_loans or 0.0)"/></h3>
-                                <small class="text-muted"><t t-esc="len(loans)"/> active</small>
+                            <div class="card-body p-0">
+                                <div class="table-responsive">
+                                    <table class="table table-sm mb-0">
+                                        <thead class="table-light">
+                                            <tr>
+                                                <th>Date</th>
+                                                <th>Transaction Type</th>
+                                                <th>Description</th>
+                                                <th class="text-right">Amount</th>
+                                                <th class="text-right">Running Balance</th>
+                                                <th>Impact</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            <!-- Initial Capital -->
+                                            <tr class="table-primary">
+                                                <td>
+                                                    <t t-if="view_user.create_date">
+                                                        <t t-esc="view_user.create_date.strftime('%Y-%m-%d')"/>
+                                                    </t>
+                                                    <t t-else="">Account Creation</t>
+                                                </td>
+                                                <td><span class="badge bg-primary">INITIAL CAPITAL</span></td>
+                                                <td>Starting cash balance</td>
+                                                <td class="text-right text-success">
+                                                    +$<t t-esc="'{:,.2f}'.format(view_user.initial_capital or 0.0)"/>
+                                                </td>
+                                                <td class="text-right">
+                                                    $<t t-esc="'{:,.2f}'.format(view_user.initial_capital or 0.0)"/>
+                                                </td>
+                                                <td>Cash Balance</td>
+                                            </tr>
+                                            
+                                            <!-- All Transaction History in Chronological Order -->
+                                            <t t-foreach="all_transactions" t-as="txn">
+                                                <tr>
+                                                    <td><t t-esc="txn['date']"/></td>
+                                                    <td>
+                                                        <span t-attf-class="badge #{txn['badge_class']}">
+                                                            <t t-esc="txn['type']"/>
+                                                        </span>
+                                                    </td>
+                                                    <td><t t-esc="txn['description']"/></td>
+                                                    <td class="text-right" t-attf-class="#{txn['amount'] >= 0 and 'text-success' or 'text-danger'}">
+                                                        <t t-if="txn['amount'] >= 0">+</t>$<t t-esc="'{:,.2f}'.format(abs(txn['amount']))"/>
+                                                    </td>
+                                                    <td class="text-right font-weight-bold">
+                                                        $<t t-esc="'{:,.2f}'.format(txn['running_balance'])"/>
+                                                    </td>
+                                                    <td><t t-esc="txn['impact']"/></td>
+                                                </tr>
+                                            </t>
+                                            
+                                            <!-- Current Position Summary -->
+                                            <tr class="table-dark text-white">
+                                                <td colspan="3"><strong>CURRENT POSITION SUMMARY</strong></td>
+                                                <td class="text-right"><strong>$<t t-esc="'{:,.2f}'.format(net_worth or 0.0)"/></strong></td>
+                                                <td class="text-right"><strong>$<t t-esc="'{:,.2f}'.format(net_worth or 0.0)"/></strong></td>
+                                                <td><strong>Total Net Worth</strong></td>
+                                            </tr>
+                                        </tbody>
+                                    </table>
+                                </div>
                             </div>
                         </div>
                     </div>
@@ -2512,7 +2600,12 @@
                                             <tbody>
                                                 <t t-foreach="deposits" t-as="dep">
                                                     <tr>
-                                                        <td><t t-esc="dep.deposit_date.strftime('%Y-%m-%d')"/></td>
+                                                        <td>
+                                                            <t t-if="dep.create_date">
+                                                                <t t-esc="dep.create_date.strftime('%Y-%m-%d')"/>
+                                                            </t>
+                                                            <t t-else="">-</t>
+                                                        </td>
                                                         <td class="text-right">$<t t-esc="'{:,.2f}'.format(dep.amount or 0.0)"/></td>
                                                         <td class="text-right">$<t t-esc="'{:,.2f}'.format(dep.current_value or 0.0)"/></td>
                                                         <td>
@@ -2555,8 +2648,13 @@
                                             <tbody>
                                                 <t t-foreach="loans" t-as="loan">
                                                     <tr>
-                                                        <td><t t-esc="loan.loan_date.strftime('%Y-%m-%d')"/></td>
-                                                        <td class="text-right">$<t t-esc="'{:,.2f}'.format(loan.principal_amount or 0.0)"/></td>
+                                                        <td>
+                                                            <t t-if="loan.create_date">
+                                                                <t t-esc="loan.create_date.strftime('%Y-%m-%d')"/>
+                                                            </t>
+                                                            <t t-else="">-</t>
+                                                        </td>
+                                                        <td class="text-right">$<t t-esc="'{:,.2f}'.format(loan.amount or 0.0)"/></td>
                                                         <td class="text-right">$<t t-esc="'{:,.2f}'.format(loan.principal_outstanding or 0.0)"/></td>
                                                         <td>
                                                             <span t-attf-class="badge #{loan.status == 'active' and 'badge-success' or loan.status == 'pending' and 'badge-warning' or 'badge-danger'}">
