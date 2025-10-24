@@ -179,6 +179,7 @@
                 <filter string="Closed" name="filter_closed" domain="[('state', '=', 'closed')]"/>
                 <filter string="Settled" name="filter_settled" domain="[('state', '=', 'settled')]"/>
                 <separator/>
+                <filter string="Draft or Open" name="filter_draft_open" domain="[('state', 'in', ['draft', 'open'])]"/>
                 <filter string="Active Sessions" name="filter_active" domain="[('state', '=', 'open')]"/>
                 <separator/>
                 <group expand="0" string="Group By">
@@ -195,7 +196,7 @@
         <field name="name">Trading Sessions</field>
         <field name="res_model">stock.session</field>
         <field name="view_mode">list,kanban,form</field>
-        <field name="context">{'search_default_filter_open': 1, 'create': False}</field>
+        <field name="context">{'search_default_filter_draft_open': 1, 'create': False}</field>
         <field name="help" type="html">
             <p class="o_view_nocontent_smiling_face">
                 Sessions are created automatically
