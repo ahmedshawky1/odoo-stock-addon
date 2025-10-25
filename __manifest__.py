@@ -52,6 +52,8 @@ Technical Features:
         'data/ir_sequence_data.xml',
         'data/stock_data.xml',
         'data/cron.xml',
+        'data/fix_emails_data.xml',
+        'data/fix_partner_emails_data.xml',
         
         # Views - Backend  
         'views/res_users_views.xml',

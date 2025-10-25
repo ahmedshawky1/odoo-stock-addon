@@ -8,7 +8,7 @@ class StockSecurity(models.Model):
     _name = 'stock.security'
     _description = 'Tradeable Security'
     _order = 'symbol'
-    _inherit = ['mail.thread', 'mail.activity.mixin']
+    _inherit = ['mail.thread', 'mail.activity.mixin', 'stock.message.mixin']
     
     # Basic Information
     symbol = fields.Char(

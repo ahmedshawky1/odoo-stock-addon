@@ -9,7 +9,7 @@ class StockOrder(models.Model):
     _name = 'stock.order'
     _description = 'Stock Trading Order'
     _order = 'create_date desc'
-    _inherit = ['mail.thread', 'mail.activity.mixin']
+    _inherit = ['mail.thread', 'mail.activity.mixin', 'stock.message.mixin']
     
     # Identity
     name = fields.Char(
@@ -26,7 +26,6 @@ class StockOrder(models.Model):
         required=True, index=True,
         domain=[('share', '=', False)],
         default=lambda self: self.env.user,
-        readonly="status != 'draft'",
         tracking=True
     )
     
@@ -43,15 +42,14 @@ class StockOrder(models.Model):
         'stock.session', string='Trading Session',
         required=True, index=True,
         domain=[('state', '=', 'open')],
-        readonly="status != 'draft'",
         tracking=True
     )
     
     security_id = fields.Many2one(
         'stock.security', string='Security',
         required=True, index=True,
-        readonly="status != 'draft'",
-        tracking=True
+        tracking=True,
+        ondelete='cascade'
     )
     
     # Order Details
@@ -61,29 +59,25 @@ class StockOrder(models.Model):
         ('stop_loss', 'Stop Loss'),
         ('stop_limit', 'Stop Limit'),
         ('ipo', 'IPO'),
-    ], string='Order Type', required=True, default='limit', tracking=True,
-       readonly="status != 'draft'")
+    ], string='Order Type', required=True, default='limit', tracking=True)
     
     time_in_force = fields.Selection([
         ('day', 'Day'),
         ('gtc', 'Good Till Cancelled'),
         ('ioc', 'Immediate or Cancel'),
         ('fok', 'Fill or Kill'),
-    ], string='Time in Force', default='day', tracking=True,
-       readonly="status != 'draft'")
+    ], string='Time in Force', default='day', tracking=True)
     
     stop_price = fields.Float(
         string='Stop Price', 
         digits='Product Price',
-        help="For stop orders: the price at which the order becomes active",
-        readonly="status != 'draft'"
+        help="For stop orders: the price at which the order becomes active"
     )
     
     side = fields.Selection([
         ('buy', 'Buy'),
         ('sell', 'Sell')
-    ], string='Side', required=True, tracking=True,
-       readonly="status != 'draft'")
+    ], string='Side', required=True, tracking=True)
     
     # BID/ASK display fields (computed from side for User Stories compatibility)
     order_side_display = fields.Selection([
@@ -110,15 +104,13 @@ class StockOrder(models.Model):
         string='Price',
         digits=(16, 4),
         required=True,
-        tracking=True,
-        readonly="status != 'draft'"
+        tracking=True
     )
     
     quantity = fields.Integer(
         string='Quantity',
         required=True,
-        tracking=True,
-        readonly="status != 'draft'"
+        tracking=True
     )
     
     filled_quantity = fields.Integer(
@@ -319,7 +311,8 @@ class StockOrder(models.Model):
                     price_decimal = Decimal(str(order.price))
                     tick_decimal = Decimal(str(order.security_id.tick_size))
                     remainder = price_decimal % tick_decimal
-                    if remainder > Decimal('0.000001'):
+                    # Allow for floating point inaccuracies
+                    if remainder > Decimal('0.00000001'):
                         raise ValidationError(
                             f"Price must be a multiple of tick size ({order.security_id.tick_size})"
                         )
@@ -335,7 +328,7 @@ class StockOrder(models.Model):
                     price_decimal = Decimal(str(order.stop_price))
                     tick_decimal = Decimal(str(order.security_id.tick_size))
                     remainder = price_decimal % tick_decimal
-                    if remainder > Decimal('0.000001'):
+                    if remainder > Decimal('0.00000001'):
                         raise ValidationError(
                             f"Stop price must be a multiple of tick size ({order.security_id.tick_size})"
                         )
@@ -524,15 +517,24 @@ class StockOrder(models.Model):
             order._validate_order()
             
             # Set appropriate status based on order type
+            ctx = dict(self.env.context or {})
+            ctx.update({
+                'tracking_disable': True,              # disable tracked message auto-post
+                'mail_post_autofollow': False,         # don't auto-subscribe followers
+                'mail_notify_noemail': True,           # hard-disable email notifications
+                'notification_disable': True,          # guard for notification pipeline
+                'mail_create_nosubscribe': True,       # extra safety
+            })
             if order.order_type in ['stop_loss', 'stop_limit', 'ipo']:
-                order.status = 'submitted'  # Stop orders wait for trigger
+                order.with_context(ctx).write({'status': 'submitted'})  # Stop orders wait for trigger
             else:
-                order.status = 'open'  # Regular orders are immediately open
+                order.with_context(ctx).write({'status': 'open'})  # Regular orders are immediately open
             
             # Matching is now handled by a cron job every minute
             
-            # Log the action
-            order.message_post(body=f"Order submitted at {fields.Datetime.now()}")
+            # Log the action using centralized method
+            order.log_action("Order submitted", f"Status: {order.status}")
+    
     
     def action_cancel(self):
         """Cancel the order"""
@@ -543,8 +545,8 @@ class StockOrder(models.Model):
             order.status = 'cancelled'
             order.description = "Order cancelled by user"
             
-            # Log the action
-            order.message_post(body=f"Order cancelled at {fields.Datetime.now()}")
+            # Log the action using centralized method
+            order.log_action("Order cancelled", "Cancelled by user request")
     
     def update_filled_quantity(self, qty):
         """Update filled quantity after trade execution"""
@@ -567,7 +569,7 @@ class StockOrder(models.Model):
         for order in expired_orders:
             order.status = 'expired'
             order.description = "Order expired"
-            order.message_post(body="Order expired due to time limit") 
+            order.log_action("Order expired", "Expired due to time limit") 
 
     @api.model
     def expire_day_orders(self):
@@ -581,7 +583,7 @@ class StockOrder(models.Model):
         
         for order in expired_orders:
             order.status = 'expired'
-            order.message_post(body="Order expired at end of trading session") 
+            order.log_action("Order expired", "Expired at end of trading session") 
     
     @api.model
     def _search(self, domain, offset=0, limit=None, order=None):

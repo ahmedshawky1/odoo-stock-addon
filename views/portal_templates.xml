@@ -291,7 +291,7 @@
                                             <label class="btn btn-outline-primary active" id="trading_tab">
                                                 <input type="radio" name="order_category" value="trading" checked="checked"/> Regular Trading
                                             </label>
-                                            <t t-if="request.env.user.user_type in ['admin', 'superadmin']">
+                                            <t t-if="ipo_securities and request.env.user.user_type in ['admin', 'superadmin', 'broker']">
                                                 <label class="btn btn-outline-success" id="ipo_tab">
                                                     <input type="radio" name="order_category" value="ipo"/> IPO/PO Orders
                                                 </label>
@@ -399,7 +399,7 @@
                             </div>
                             
                             <!-- IPO Order Form -->
-                            <t t-if="request.env.user.user_type in ['admin', 'superadmin']">
+                            <t t-if="request.env.user.user_type in ['admin', 'superadmin', 'broker']">
                                 <div id="ipo_form" class="order-form" style="display: none;">
                                 <form id="ipo_order_form" onsubmit="return false;">
                                     <input type="hidden" name="csrf_token" t-att-value="request.csrf_token()"/>
@@ -503,7 +503,7 @@
                                             <li><strong>Buy/Sell:</strong> Standard trading operations</li>
                                         </ul>
                                     </div>
-                                    <t t-if="request.env.user.user_type in ['admin', 'superadmin']">
+                                    <t t-if="request.env.user.user_type in ['admin', 'superadmin', 'broker']">
                                         <div class="trading-help" id="ipo_help" style="display: none;">
                                             <h6><i class="fa fa-star me-2"></i>IPO/PO Orders</h6>
                                             <p class="small mb-2">Participate in Initial Public Offerings or Public Offerings.</p>
@@ -1353,7 +1353,7 @@
                                 <i class="fa fa-file-text"></i>
                                 <span class="nav-text">Reports</span>
                             </a>
-                            <t t-if="request.env.user.user_type in ['admin', 'superadmin']">
+                            <t t-if="request.env.user.user_type in ['admin', 'superadmin', 'broker']">
                                 <a href="/market/ipo" class="nav-link" data-page="ipo" data-tooltip="IPO &amp; Allocation">
                                     <i class="fa fa-rocket"></i>
                                     <span class="nav-text">IPO &amp; Allocation</span>
@@ -1700,8 +1700,18 @@
                             </div>
                             <div class="card-body">
                                 <div class="form-group">
-                                    <label>Investor ID</label>
-                                    <input type="number" class="form-control" id="alloc_user_id" placeholder="res.users ID"/>
+                                    <label>Investor</label>
+                                    <select class="form-control" id="alloc_user_id">
+                                        <option value="">-- Select Investor --</option>
+                                        <t t-foreach="investors" t-as="investor">
+                                            <option t-att-value="investor.id">
+                                                <t t-esc="investor.name"/> 
+                                                <span class="text-muted">
+                                                    (ID: <t t-esc="investor.id"/>, Balance: $<t t-esc="'{:,.2f}'.format(investor.cash_balance)"/>)
+                                                </span>
+                                            </option>
+                                        </t>
+                                    </select>
                                 </div>
                                 <div class="form-group">
                                     <label>Security</label>
@@ -1741,6 +1751,17 @@
                         const ipo_price = document.getElementById('ipo_price').value;
                         const total_shares = document.getElementById('ipo_total_shares').value;
                         const ipo_quantity = document.getElementById('ipo_alloc_qty').value;
+                        
+                        // Validate required fields
+                        if (!security_id) {
+                            toast('Please select a security', 'danger');
+                            return;
+                        }
+                        if (!ipo_price || ipo_price <= 0) {
+                            toast('Please enter a valid IPO price', 'danger');
+                            return;
+                        }
+                        
                         try {
                             const resp = await fetch('/market/ipo/create', {
                                 method: 'POST',
@@ -1749,9 +1770,19 @@
                             });
                             const raw = await resp.json();
                             const payload = raw?.result || raw;
-                            if (payload.success) toast('IPO processed', 'success');
-                            else toast(payload.error || 'IPO failed', 'danger');
-                        } catch (e) { toast('Network error', 'danger'); }
+                            if (payload.success) {
+                                toast('IPO processed successfully', 'success');
+                                // Clear form
+                                document.getElementById('ipo_security').value = '';
+                                document.getElementById('ipo_price').value = '';
+                                document.getElementById('ipo_total_shares').value = '';
+                                document.getElementById('ipo_alloc_qty').value = '';
+                            } else {
+                                toast(payload.error || 'IPO failed', 'danger');
+                            }
+                        } catch (e) { 
+                            toast('Network error: ' + e.message, 'danger'); 
+                        }
                     });
                 }
                 if (btnAlloc) {
@@ -1760,6 +1791,25 @@
                         const security_id = document.getElementById('alloc_security').value;
                         const quantity = document.getElementById('alloc_qty').value;
                         const price = document.getElementById('alloc_price').value;
+                        
+                        // Validate required fields
+                        if (!user_id) {
+                            toast('Please select an investor', 'danger');
+                            return;
+                        }
+                        if (!security_id) {
+                            toast('Please select a security', 'danger');
+                            return;
+                        }
+                        if (!quantity || quantity <= 0) {
+                            toast('Please enter a valid quantity', 'danger');
+                            return;
+                        }
+                        if (!price || price <= 0) {
+                            toast('Please enter a valid price', 'danger');
+                            return;
+                        }
+                        
                         try {
                             const resp = await fetch('/market/allocation/direct', {
                                 method: 'POST',
@@ -1768,9 +1818,19 @@
                             });
                             const raw = await resp.json();
                             const payload = raw?.result || raw;
-                            if (payload.success) toast('Allocation done', 'success');
-                            else toast(payload.error || 'Allocation failed', 'danger');
-                        } catch (e) { toast('Network error', 'danger'); }
+                            if (payload.success) {
+                                toast('Allocation completed successfully', 'success');
+                                // Clear form
+                                document.getElementById('alloc_user_id').value = '';
+                                document.getElementById('alloc_security').value = '';
+                                document.getElementById('alloc_qty').value = '';
+                                document.getElementById('alloc_price').value = '';
+                            } else {
+                                toast(payload.error || 'Allocation failed', 'danger');
+                            }
+                        } catch (e) { 
+                            toast('Network error: ' + e.message, 'danger'); 
+                        }
                     });
                 }
             });

@@ -9,7 +9,7 @@ class StockTrade(models.Model):
     _name = 'stock.trade'
     _description = 'Executed Trade'
     _order = 'trade_date desc'
-    _inherit = ['mail.thread', 'mail.activity.mixin']
+    _inherit = ['mail.thread', 'mail.activity.mixin', 'stock.message.mixin']
     
     # Identity
     name = fields.Char(
@@ -217,7 +217,8 @@ class StockTrade(models.Model):
         </ul>
         """
         
-        self.message_post(body=body, message_type='notification')
+        trade_details = f"Price: {self.price}, Quantity: {self.quantity}, Buyer: {self.buyer_id.name}, Seller: {self.seller_id.name if self.seller_id else 'IPO'}"
+        self.log_action("Trade executed", trade_details)
     
     def action_view_buy_order(self):
         """View the buy order"""

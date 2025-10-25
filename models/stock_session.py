@@ -11,7 +11,7 @@ class StockSession(models.Model):
     _name = 'stock.session'
     _description = 'Stock Trading Session'
     _order = 'session_number desc, id desc'
-    _inherit = ['mail.thread', 'mail.activity.mixin']
+    _inherit = ['mail.thread', 'mail.activity.mixin', 'stock.message.mixin']
     
     name = fields.Char(
         string='Session Name',
@@ -300,13 +300,8 @@ class StockSession(models.Model):
             'actual_start_date': now,
         })
         
-        # Log the action (matches C# news system)
-        self.message_post(
-            body=f"Session {self.name} Started @ {now.strftime('%Y-%m-%d %H:%M:%S')}",
-            subject="Session Started",
-            message_type='notification',
-            subtype_xmlid='mail.mt_note'
-        )
+        # Log the action using centralized method
+        self.log_action("Session started", f"Started at {now.strftime('%Y-%m-%d %H:%M:%S')}")
         
         _logger.info(f"Session {self.name} started at {now} - Updated {len(active_securities)} securities")
     
@@ -402,12 +397,7 @@ class StockSession(models.Model):
             duration_str = "unknown"
         
         # Log the action (matches C# news system)
-        self.message_post(
-            body=f"Session {self.name} Ended @ {now.strftime('%Y-%m-%d %H:%M:%S')} - Duration: {duration_str} - Recorded {history_count} price snapshots",
-            subject="Session Ended",
-            message_type='notification',
-            subtype_xmlid='mail.mt_note'
-        )
+        self.log_action("Session ended", f"Ended at {now.strftime('%Y-%m-%d %H:%M:%S')} - Duration: {duration_str} - Recorded {history_count} price snapshots")
         
         # Auto-create next session (always enabled)
         next_session = self._create_next_session()
@@ -482,8 +472,8 @@ class StockSession(models.Model):
         # Generate session report
         self._generate_session_report()
         
-        # Log the action
-        self.message_post(body=f"Trading session settled at {fields.Datetime.now()}")
+        # Log the action using centralized method
+        self.log_action("Session settled", "Trading session settlement completed")
     
     def _generate_session_report(self):
         """Generate end-of-session report"""

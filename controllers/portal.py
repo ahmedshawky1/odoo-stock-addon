@@ -222,17 +222,17 @@ class StockMarketPortal(CustomerPortal):
                 ('user_type', '=', 'investor'),
                 ('active', '=', True)
             ])
-            # Get positions for all clients (for sell orders)
+            # Get positions for all clients (for sell orders) - filter by quantity > blocked_quantity
             client_positions = request.env['stock.position'].search([
                 ('user_id', 'in', clients.ids),
-                ('available_quantity', '>', 0)
-            ])
+                ('quantity', '>', 0)
+            ]).filtered(lambda p: p.available_quantity > 0)
         else:  # investor
-            # Get their own positions for sell orders
+            # Get their own positions for sell orders - filter by quantity > blocked_quantity
             client_positions = request.env['stock.position'].search([
                 ('user_id', '=', user.id),
-                ('available_quantity', '>', 0)
-            ])
+                ('quantity', '>', 0)
+            ]).filtered(lambda p: p.available_quantity > 0)
         
         values.update({
             'user': user,
@@ -251,6 +251,33 @@ class StockMarketPortal(CustomerPortal):
         block_check = request.env['stock.user.block'].check_user_blocked(user.id)
         if block_check['is_blocked']:
             return {'error': f"Access denied: {block_check['reason']}. Blocked until: {block_check['blocked_until']}", 'type': 'blocked'}
+        
+        # Validate required fields first
+        required_fields = ['security_id', 'side', 'order_type', 'quantity']
+        missing_fields = []
+        
+        for field in required_fields:
+            if not kw.get(field):
+                if field == 'security_id':
+                    missing_fields.append('Security')
+                elif field == 'side':
+                    missing_fields.append('Order Side (Buy/Sell)')
+                elif field == 'order_type':
+                    missing_fields.append('Order Type')
+                elif field == 'quantity':
+                    missing_fields.append('Quantity')
+                else:
+                    missing_fields.append(field)
+        
+        # Price is required for limit orders
+        if kw.get('order_type') == 'limit' and not kw.get('price'):
+            missing_fields.append('Price (required for limit orders)')
+            
+        if missing_fields:
+            if len(missing_fields) == 1:
+                return {'error': f'Missing required field: {missing_fields[0]}', 'type': 'validation'}
+            else:
+                return {'error': f'Missing required fields: {", ".join(missing_fields)}', 'type': 'validation'}
         
         # Allow brokers and admins to place orders on behalf of clients
         try:
@@ -284,24 +311,41 @@ class StockMarketPortal(CustomerPortal):
             return {'error': 'No active trading session'}
         
         try:
+            # Validate and convert numeric inputs
+            try:
+                security_id = int(kw.get('security_id'))
+                quantity = int(kw.get('quantity'))
+                price = float(kw.get('price', 0)) if kw.get('price') else 0.0
+            except (ValueError, TypeError) as e:
+                return {'error': 'Invalid numeric values provided', 'type': 'validation'}
+            
+            # Validate positive values
+            if quantity <= 0:
+                return {'error': 'Quantity must be greater than zero', 'type': 'validation'}
+            
+            if kw.get('order_type') == 'limit' and price <= 0:
+                return {'error': 'Price must be greater than zero for limit orders', 'type': 'validation'}
+            
             # Create order on behalf of client (status decided by action_submit)
             order_vals = {
                 'user_id': order_user.id,  # Client who owns the order
                 'session_id': active_session.id,
-                'security_id': int(kw.get('security_id')),
+                'security_id': security_id,
                 'side': kw.get('side'),
                 'order_type': kw.get('order_type'),
-                'quantity': int(kw.get('quantity')),
-                'price': float(kw.get('price', 0)),
+                'quantity': quantity,
+                'price': price,
                 'entered_by_id': user.id,
             }
             
             # Additional validation with user-friendly messages
-            security = request.env['stock.security'].browse(int(kw.get('security_id')))
-            quantity = int(kw.get('quantity'))
-            price = float(kw.get('price', 0))
+            security = request.env['stock.security'].browse(security_id)
             side = kw.get('side')
             order_type = kw.get('order_type')
+            
+            # Validate security exists
+            if not security.exists():
+                return {'error': 'Selected security not found', 'type': 'validation'}
             
             # IPO order specific validations
             if order_type == 'ipo':
@@ -366,19 +410,26 @@ class StockMarketPortal(CustomerPortal):
             
             # Create the order, then submit to set correct status (open/submitted)
             # Use sudo for creation but explicitly set entered_by_id to current user
-            order = request.env['stock.order'].sudo().create(order_vals)
+            # Use comprehensive mail context to prevent email issues
+            mail_context = {
+                'mail_create_nolog': True,
+                'mail_create_nosubscribe': True,
+                'mail_notify_noemail': True,
+                'notification_disable': True,
+                'mail_post_autofollow': False,
+                'tracking_disable': True,
+                'mail_auto_subscribe_no_notify': True
+            }
+            order = request.env['stock.order'].sudo().with_context(**mail_context).create(order_vals)
             try:
-                order.sudo().action_submit()
+                order.with_context(**mail_context).sudo().action_submit()
             except Exception as e:
                 # Rollback create if submit fails
                 order.unlink()
                 return {'error': f'Failed to submit order: {str(e)}'}
             
-            # Log the broker action
-            order.message_post(
-                body=f"Order placed by broker {user.name} on behalf of client {order_user.name}",
-                message_type='comment'
-            )
+            # Log the broker action using centralized method
+            order.log_broker_action(user, order_user, "Order placed")
             
             return {
                 'success': True,
@@ -518,11 +569,20 @@ class StockMarketPortal(CustomerPortal):
                 except Exception:
                     pass
             
-            # Create order with mail context disabled to prevent email sending
-            order = request.env['stock.order'].with_context(mail_create_nolog=True, mail_create_nosubscribe=True).create(order_data)
+            # Create order with comprehensive mail context disabled to prevent email sending
+            mail_context = {
+                'mail_create_nolog': True, 
+                'mail_create_nosubscribe': True,
+                'mail_notify_noemail': True,
+                'notification_disable': True,
+                'mail_post_autofollow': False,
+                'tracking_disable': True,
+                'mail_auto_subscribe_no_notify': True
+            }
+            order = request.env['stock.order'].with_context(**mail_context).create(order_data)
             # Submit to set proper status and trigger model-level validations
             try:
-                order.sudo().action_submit()
+                order.with_context(**mail_context).sudo().action_submit()
             except Exception as e:
                 order.unlink()
                 return request.make_response(
@@ -546,6 +606,42 @@ class StockMarketPortal(CustomerPortal):
                 headers=[('Content-Type', 'application/json')]
             )
 
+    @http.route(['/market/data/update'], type='json', auth="public")
+    def market_data_update(self, **kw):
+        """Endpoint for frontend to fetch updated market data."""
+        try:
+            # Get active session
+            active_session = request.env['stock.session'].sudo().search([('state', '=', 'open')], limit=1)
+            if not active_session:
+                return {'success': False, 'error': 'No active session'}
+
+            # Get all active securities
+            securities = request.env['stock.security'].sudo().search([('active', '=', True)])
+            
+            securities_data = []
+            for sec in securities:
+                securities_data.append({
+                    'id': sec.id,
+                    'symbol': sec.symbol,
+                    'current_price': sec.current_price,
+                    'change_amount': sec.change_amount,
+                    'change_percentage': sec.change_percentage,
+                    'volume_today': sec.volume_today,
+                    'status': sec.status,
+                })
+            
+            return {
+                'success': True,
+                'securities': securities_data,
+                'session': {
+                    'id': active_session.id,
+                    'name': active_session.name,
+                    'state': active_session.state,
+                }
+            }
+        except Exception as e:
+            _logger.error(f"Error fetching market data: {str(e)}")
+            return {'success': False, 'error': str(e)}
     # Market Data
     @http.route(['/market', '/market/home'], type='http', auth="user", website=True)
     def market_home(self, **kw):
@@ -635,11 +731,11 @@ class StockMarketPortal(CustomerPortal):
                     headers=[('Content-Type', 'application/json')]
                 )
             
-            # Get investor positions
+            # Get investor positions - filter by quantity > blocked_quantity
             positions = request.env['stock.position'].search([
                 ('user_id', '=', investor_id),
-                ('available_quantity', '>', 0)
-            ])
+                ('quantity', '>', 0)
+            ]).filtered(lambda p: p.available_quantity > 0)
             
             position_data = []
             for pos in positions:
@@ -673,9 +769,6 @@ class StockMarketPortal(CustomerPortal):
     def market_trading(self, **kw):
         """Trading view in market portal - for brokers and admins to place orders on behalf of clients"""
         _logger.info(f"TRADING PAGE CALLED - Method: {request.httprequest.method}, User: {request.env.user.name} ({request.env.user.user_type})")
-        if request.httprequest.method == 'POST':
-            _logger.error(f"TRADING PAGE RECEIVED POST REQUEST! Data: {kw}")
-            _logger.error("THIS SHOULD NOT HAPPEN - Forms should submit to /my/order/submit")
         
         user = request.env.user
         
@@ -691,48 +784,41 @@ class StockMarketPortal(CustomerPortal):
         active_session = request.env['stock.session'].sudo().search([('state', '=', 'open')], limit=1)
         
         if not active_session:
-            return request.redirect('/market')
-        
+            # Redirect or render an error message if no session is active
+            return request.render("stock_market_simulation.market_portal_layout", {
+                'user': user,
+                'page_name': 'trading',
+                'error': 'No active trading session. Trading is currently closed.'
+            })
+
         # Get securities by IPO status
-        # Regular trading securities
         trading_securities = request.env['stock.security'].sudo().search([
             ('active', '=', True),
             ('ipo_status', '=', 'trading')
         ])
         
-        # IPO/PO securities
         ipo_securities = request.env['stock.security'].sudo().search([
+            ('active', '=', True),
             ('ipo_status', 'in', ['ipo', 'po'])
         ])
         
-        # All securities for compatibility
-        securities = trading_securities + ipo_securities
-        
-        # Get all investors (any broker can place orders for any investor)
+        # Get all investors (clients)
         clients = request.env['res.users'].search([
             ('user_type', '=', 'investor'),
             ('active', '=', True)
         ])
         
-        # Get positions for all clients (for sell orders)
-        client_positions = request.env['stock.position'].search([
-            ('user_id', 'in', clients.ids),
-            ('available_quantity', '>', 0)
-        ])
-        
         values = {
             'user': user,
-            'securities': securities,
             'trading_securities': trading_securities,
             'ipo_securities': ipo_securities,
             'clients': clients,
-            'client_positions': client_positions,
             'active_session': active_session,
             'page_name': 'trading',
             **self._get_session_context(),
         }
         
-        return request.render("stock_market_simulation.market_trading_view", values)
+        return request.render("stock_market_simulation.portal_order_new", values)
     
     @http.route(['/market/orders'], type='http', auth="user", website=True)
     def market_orders(self, **kw):
@@ -1144,10 +1230,18 @@ class StockMarketPortal(CustomerPortal):
             return request.redirect('/market')
         securities = request.env['stock.security'].search([])
         active_session = request.env['stock.session'].search([('state', '=', 'open')], limit=1)
+        
+        # Get list of investors for direct allocation dropdown
+        investors = request.env['res.users'].search([
+            ('user_type', '=', 'investor'),
+            ('active', '=', True)
+        ], order='name')
+        
         values = {
             'user': user,
             'page_title': 'IPO & Allocations',
             'securities': securities,
+            'investors': investors,
             'active_session': active_session,
         }
         return request.render("stock_market_simulation.portal_ipo_page", values)
@@ -1163,8 +1257,20 @@ class StockMarketPortal(CustomerPortal):
                 is_system_admin = False
             if user.user_type not in ['admin', 'superadmin'] and not is_system_admin:
                 return {'success': False, 'error': 'Access denied'}
-            if not security_id or not ipo_price:
-                return {'success': False, 'error': 'Missing security_id or ipo_price'}
+                
+            # Detailed field validation
+            missing_fields = []
+            if not security_id:
+                missing_fields.append('Security')
+            if not ipo_price:
+                missing_fields.append('IPO Price')
+                
+            if missing_fields:
+                if len(missing_fields) == 1:
+                    return {'success': False, 'error': f'Missing required field: {missing_fields[0]}'}
+                else:
+                    return {'success': False, 'error': f'Missing required fields: {", ".join(missing_fields)}'}
+            
             # Parse inputs
             try:
                 sec_id = int(security_id)
@@ -1218,8 +1324,24 @@ class StockMarketPortal(CustomerPortal):
                 is_system_admin = False
             if current.user_type not in ['admin', 'superadmin'] and not is_system_admin:
                 return {'success': False, 'error': 'Access denied'}
-            if not user_id or not security_id or not quantity or not price:
-                return {'success': False, 'error': 'Missing required fields'}
+                
+            # Detailed field validation with specific error messages
+            missing_fields = []
+            if not user_id:
+                missing_fields.append('Investor')
+            if not security_id:
+                missing_fields.append('Security')
+            if not quantity:
+                missing_fields.append('Quantity')
+            if not price:
+                missing_fields.append('Price')
+                
+            if missing_fields:
+                if len(missing_fields) == 1:
+                    return {'success': False, 'error': f'Missing required field: {missing_fields[0]}'}
+                else:
+                    return {'success': False, 'error': f'Missing required fields: {", ".join(missing_fields)}'}
+            
             # Parse numeric inputs safely
             try:
                 inv_id = int(user_id)
@@ -1731,7 +1853,8 @@ class StockMarketPortal(CustomerPortal):
             return {
                 'success': True,
                 'message': message,
-                'loan_id': loan.id
+                'loan_id': loan.id,
+                'loan_name': loan.name
             }
             
         except Exception as e:
@@ -2367,7 +2490,6 @@ class StockMarketPortal(CustomerPortal):
             import traceback
             return f"Error: {str(e)}\n\nTraceback:\n{traceback.format_exc()}"
 
-    # Deposits API endpoints
     @http.route(['/market/deposits/create'], type='json', auth="user", methods=['POST'])
     def market_deposits_create(self, **kw):
         """Create a new deposit"""

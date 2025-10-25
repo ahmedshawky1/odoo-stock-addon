@@ -9,6 +9,7 @@ _logger = logging.getLogger(__name__)
 class StockMatchingEngine(models.TransientModel):
     _name = 'stock.matching.engine'
     _description = 'Order Matching Engine'
+    _inherit = ['stock.message.mixin']
     
     @api.model
     def cron_run_matching(self):
@@ -98,7 +99,7 @@ class StockMatchingEngine(models.TransientModel):
                 submitted_regulars.write({'status': 'open'})
                 for o in submitted_regulars:
                     try:
-                        o.message_post(body="Order promoted from Submitted to Open during matching cycle")
+                        o.log_action("Order promoted", "Promoted from Submitted to Open during matching cycle")
                     except Exception:
                         pass
         except Exception as e:
@@ -209,7 +210,7 @@ class StockMatchingEngine(models.TransientModel):
                 self._try_immediate_fill(order, session)
                 if order.remaining_quantity > 0:
                     order.status = 'cancelled'
-                    order.message_post(body=f"IOC order partially filled. Remaining {order.remaining_quantity} cancelled.")
+                    order.log_action("IOC order cancelled", f"Partially filled. Remaining {order.remaining_quantity} cancelled")
             
             elif order.time_in_force == 'fok':
                 # Check if full quantity can be filled
@@ -218,7 +219,7 @@ class StockMatchingEngine(models.TransientModel):
                     self._try_immediate_fill(order, session)
                 else:
                     order.status = 'cancelled'
-                    order.message_post(body="FOK order cancelled - insufficient liquidity")
+                    order.log_action("FOK order cancelled", "Insufficient liquidity for complete fill")
     
     def _try_immediate_fill(self, order, session):
         """Try to immediately fill an order against existing orders"""

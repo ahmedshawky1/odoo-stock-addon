@@ -7,6 +7,7 @@ class StockPriceHistory(models.Model):
     _description = 'Stock Price History'
     _order = 'change_date desc'
     _rec_name = 'display_name'
+    _inherit = ['stock.message.mixin']
     
     # Identity
     display_name = fields.Char(
@@ -120,7 +121,9 @@ class StockPriceHistory(models.Model):
                 <li>Reason: {dict(self._fields['change_reason'].selection).get(history.change_reason, '')}</li>
             </ul>
             """
-            history.security_id.message_post(body=body, message_type='notification')
+            change_reason_display = dict(self._fields['change_reason'].selection).get(history.change_reason, '')
+            price_details = f"New Price: {history.new_price}, Change: {history.change_amount:+.4f} ({history.change_percentage:+.2f}%), Reason: {change_reason_display}"
+            history.security_id.log_action("Price updated", price_details)
         
         return history
     

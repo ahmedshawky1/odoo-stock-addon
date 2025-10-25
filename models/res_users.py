@@ -2,9 +2,19 @@
 
 from odoo import models, fields, api
 from odoo.exceptions import ValidationError
+import logging
+
+_logger = logging.getLogger(__name__)
 
 class ResUsers(models.Model):
     _inherit = 'res.users'
+    
+    # Override email field to have a default value
+    email = fields.Char(
+        string='Email',
+        default='example@example.com',
+        help='Email address of the user'
+    )
     
     # User Type - Following User Stories 5-tier hierarchy
     user_type = fields.Selection([
@@ -253,6 +263,7 @@ class ResUsers(models.Model):
                     # Fall back to field default (100000.0)
                     init_cap = 100000.0
                 v = dict(v, cash_balance=init_cap)
+            
             return v
         if isinstance(vals, list):
             vals = [_prepare(v) for v in vals]
@@ -341,3 +352,30 @@ class ResUsers(models.Model):
             # If ref not found or any issue, ignore
             pass
         return patched
+
+    @api.model
+    def fix_missing_emails(self):
+        """Add default email to users without email to prevent email configuration errors"""
+        try:
+            users_without_email = self.sudo().search([
+                '|', ('email', '=', False), ('email', '=', '')
+            ])
+            count = len(users_without_email)
+            
+            if count > 0:
+                _logger.info(f"Fixing {count} users without email addresses")
+                for user in users_without_email:
+                    user.email = 'example@example.com'
+                    # Also update the related partner if it exists
+                    if user.partner_id and not user.partner_id.email:
+                        user.partner_id.email = 'example@example.com'
+                        
+                _logger.info(f"Successfully updated {count} users with default email")
+                return {'success': True, 'updated_count': count}
+            else:
+                _logger.info("All users already have email addresses")
+                return {'success': True, 'updated_count': 0}
+                
+        except Exception as e:
+            _logger.error(f"Error fixing user emails: {str(e)}")
+            return {'success': False, 'error': str(e)}
