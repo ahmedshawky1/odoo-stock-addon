@@ -313,7 +313,7 @@ class StockSession(models.Model):
         
         # Check if there are IPO/PO securities that need attention
         ipo_securities = self.env['stock.security'].search([
-            ('ipo_status', 'in', ['ipo', 'po'])
+            ('status', 'in', ['ipo', 'po'])
         ])
         
         if ipo_securities:
@@ -336,6 +336,10 @@ class StockSession(models.Model):
         
         # Set actual end date to current time
         now = fields.Datetime.now()
+        
+        # Handle any orphaned submitted orders for securities that are now trading
+        # This covers cases where securities were manually changed to trading status
+        self._handle_orphaned_submitted_orders()
         
         # Cancel all pending orders EXCEPT IPO orders (they carry over)
         pending_orders = self.order_ids.filtered(
@@ -409,6 +413,61 @@ class StockSession(models.Model):
     def action_force_close_after_ipo(self):
         """Force close session after IPO wizard completion"""
         return self._perform_session_close()
+    
+    def _handle_orphaned_submitted_orders(self):
+        """Handle submitted orders for securities that are now in trading status"""
+        self.ensure_one()
+        
+        # Find submitted orders for securities that are now trading
+        submitted_orders = self.env['stock.order'].search([
+            ('status', '=', 'submitted'),
+            ('security_id.status', '=', 'trade')  # Security is now trading
+        ])
+        
+        if submitted_orders:
+            _logger.info(f"Found {len(submitted_orders)} submitted orders for trading securities - promoting to open")
+            
+            for order in submitted_orders:
+                if order.order_type == 'ipo':
+                    # IPO orders for trading securities should be cancelled/rejected
+                    order.write({
+                        'status': 'rejected',
+                        'rejection_reason': 'IPO order for security that is already trading'
+                    })
+                    order.log_action("Order rejected", "IPO order rejected - security already trading")
+                else:
+                    # Regular orders should be promoted to open
+                    order.write({'status': 'open'})
+                    order.log_action("Order promoted", "Promoted from Submitted to Open - security now trading")
+    
+    @api.model 
+    def cleanup_orphaned_orders(self):
+        """Utility method to clean up orphaned submitted orders across all sessions"""
+        # Find submitted orders for securities that are now trading
+        submitted_orders = self.env['stock.order'].search([
+            ('status', '=', 'submitted'),
+            ('security_id.status', '=', 'trade')  # Security is now trading
+        ])
+        
+        if submitted_orders:
+            _logger.info(f"Cleanup: Found {len(submitted_orders)} submitted orders for trading securities")
+            
+            for order in submitted_orders:
+                if order.order_type == 'ipo':
+                    # IPO orders for trading securities should be cancelled/rejected
+                    order.write({
+                        'status': 'rejected',
+                        'rejection_reason': 'IPO order for security that is already trading'
+                    })
+                    order.log_action("Order rejected", "IPO order rejected - security already trading (cleanup)")
+                else:
+                    # Regular orders should be promoted to open
+                    order.write({'status': 'open'})
+                    order.log_action("Order promoted", "Promoted from Submitted to Open - security now trading (cleanup)")
+            
+            return f"Cleaned up {len(submitted_orders)} orphaned orders"
+        else:
+            return "No orphaned orders found"
     
     def _process_session_interest(self):
         """Process interest calculations for deposits and loans at session end"""

@@ -111,6 +111,7 @@
                 <field name="price"/>
                 <field name="quantity"/>
                 <field name="remaining_quantity"/>
+                <field name="status"/>
                 <field name="user_id"/>
                 <field name="order_date"/>
             </list>
