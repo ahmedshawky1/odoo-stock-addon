@@ -364,8 +364,8 @@ class StockMatchingEngine(models.TransientModel):
         )
         
         # Update order filled quantities
-        buy_order.update_filled_quantity(trade_quantity)
-        sell_order.update_filled_quantity(trade_quantity)
+        buy_order.update_filled_quantity(trade_quantity, trade_price)
+        sell_order.update_filled_quantity(trade_quantity, trade_price)
         
         # Log the trade
         _logger.info(
@@ -634,7 +634,7 @@ class StockMatchingEngine(models.TransientModel):
             })
         
         # Update order
-        order.update_filled_quantity(allocation)
+        order.update_filled_quantity(allocation, ipo_price)
         
         _logger.info(f"IPO allocation: {allocation} shares to {order.user_id.name}")
         return True 

@@ -120,6 +120,14 @@ class StockOrder(models.Model):
         tracking=True
     )
     
+    average_price = fields.Float(
+        string='Average Price',
+        digits=(16, 4),
+        default=0.0,
+        readonly=True,
+        help='Volume-weighted average price of filled trades'
+    )
+    
     remaining_quantity = fields.Integer(
         string='Remaining Quantity',
         compute='_compute_remaining_quantity',
@@ -475,7 +483,10 @@ class StockOrder(models.Model):
             ('id', '!=', self.id)
         ])
         
-        today_volume = sum(o.filled_quantity * o.average_price for o in today_orders)
+        today_volume = sum(
+            o.filled_quantity * (o.average_price if o.average_price > 0 else o.price) 
+            for o in today_orders
+        )
         if self.order_type in ['limit', 'stop_limit']:
             new_volume = self.quantity * self.price
         else:
@@ -548,9 +559,23 @@ class StockOrder(models.Model):
             # Log the action using centralized method
             order.log_action("Order cancelled", "Cancelled by user request")
     
-    def update_filled_quantity(self, qty):
-        """Update filled quantity after trade execution"""
+    def update_filled_quantity(self, qty, trade_price=None):
+        """Update filled quantity and average price after trade execution"""
         self.ensure_one()
+        
+        if trade_price is None:
+            trade_price = self.price
+        
+        # Calculate new average price using volume-weighted average
+        old_total_value = self.filled_quantity * self.average_price
+        new_trade_value = qty * trade_price
+        new_total_quantity = self.filled_quantity + qty
+        
+        if new_total_quantity > 0:
+            self.average_price = (old_total_value + new_trade_value) / new_total_quantity
+        else:
+            self.average_price = 0.0
+        
         self.filled_quantity += qty
         
         if self.filled_quantity >= self.quantity:
