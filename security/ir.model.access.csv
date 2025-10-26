@@ -36,3 +36,5 @@ access_session_end_ipo_wizard_admin,session.end.ipo.wizard admin,model_session_e
 access_session_end_ipo_wizard_portal,session.end.ipo.wizard portal,model_session_end_ipo_wizard,base.group_portal,1,0,0,0
 access_session_end_ipo_wizard_line_admin,session.end.ipo.wizard.line admin,model_session_end_ipo_wizard_line,base.group_user,1,1,1,1
 access_session_end_ipo_wizard_line_portal,session.end.ipo.wizard.line portal,model_session_end_ipo_wizard_line,base.group_portal,1,0,0,0
+access_stock_transaction_log_admin,stock.transaction.log admin,model_stock_transaction_log,base.group_user,1,1,1,1
+access_stock_transaction_log_portal,stock.transaction.log portal,model_stock_transaction_log,base.group_portal,1,0,0,0

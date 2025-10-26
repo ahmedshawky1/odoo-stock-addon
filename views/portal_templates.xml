@@ -2517,6 +2517,31 @@
                                 </h5>
                                 <small>Every transaction from initial cash to current value</small>
                             </div>
+                            
+                            <!-- Category Summary -->
+                            <div class="card-body border-bottom">
+                                <h6 class="text-muted mb-3">Transaction Summary by Category</h6>
+                                <div class="row">
+                                    <t t-foreach="category_summaries.items()" t-as="cat_item">
+                                        <t t-set="cat_key" t-value="cat_item[0]"/>
+                                        <t t-set="cat_data" t-value="cat_item[1]"/>
+                                        <div class="col-md-3 col-sm-6 mb-2">
+                                            <div class="card bg-light">
+                                                <div class="card-body p-2">
+                                                    <h6 class="card-title text-truncate" t-esc="cat_data['name']"/>
+                                                    <p class="mb-1">
+                                                        <span t-attf-class="text-#{cat_data['total_cash_impact'] >= 0 and 'success' or 'danger'}">
+                                                            <t t-if="cat_data['total_cash_impact'] >= 0">+</t>$<t t-esc="'{:,.2f}'.format(abs(cat_data['total_cash_impact']))"/>
+                                                        </span>
+                                                    </p>
+                                                    <small class="text-muted"><t t-esc="cat_data['transaction_count']"/> transactions</small>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </t>
+                                </div>
+                            </div>
+                            
                             <div class="card-body p-0">
                                 <div class="table-responsive">
                                     <table class="table table-sm mb-0">
@@ -2527,29 +2552,11 @@
                                                 <th>Description</th>
                                                 <th class="text-right">Amount</th>
                                                 <th class="text-right">Running Balance</th>
-                                                <th>Impact</th>
+                                                <th>Category</th>
+                                                <th>Reference</th>
                                             </tr>
                                         </thead>
                                         <tbody>
-                                            <!-- Initial Capital -->
-                                            <tr class="table-primary">
-                                                <td>
-                                                    <t t-if="view_user.create_date">
-                                                        <t t-esc="view_user.create_date.strftime('%Y-%m-%d')"/>
-                                                    </t>
-                                                    <t t-else="">Account Creation</t>
-                                                </td>
-                                                <td><span class="badge bg-primary">INITIAL CAPITAL</span></td>
-                                                <td>Starting cash balance</td>
-                                                <td class="text-right text-success">
-                                                    +$<t t-esc="'{:,.2f}'.format(view_user.initial_capital or 0.0)"/>
-                                                </td>
-                                                <td class="text-right">
-                                                    $<t t-esc="'{:,.2f}'.format(view_user.initial_capital or 0.0)"/>
-                                                </td>
-                                                <td>Cash Balance</td>
-                                            </tr>
-                                            
                                             <!-- All Transaction History in Chronological Order -->
                                             <t t-foreach="all_transactions" t-as="txn">
                                                 <tr>
@@ -2566,16 +2573,17 @@
                                                     <td class="text-right font-weight-bold">
                                                         $<t t-esc="'{:,.2f}'.format(txn['running_balance'])"/>
                                                     </td>
-                                                    <td><t t-esc="txn['impact']"/></td>
+                                                    <td><small class="text-muted"><t t-esc="txn['category'].replace('_', ' ').title()"/></small></td>
+                                                    <td><small class="text-muted"><t t-esc="txn.get('reference', '')"/></small></td>
                                                 </tr>
                                             </t>
                                             
                                             <!-- Current Position Summary -->
                                             <tr class="table-dark text-white">
-                                                <td colspan="3"><strong>CURRENT POSITION SUMMARY</strong></td>
-                                                <td class="text-right"><strong>$<t t-esc="'{:,.2f}'.format(net_worth or 0.0)"/></strong></td>
+                                                <td colspan="4"><strong>CURRENT POSITION SUMMARY</strong></td>
                                                 <td class="text-right"><strong>$<t t-esc="'{:,.2f}'.format(net_worth or 0.0)"/></strong></td>
                                                 <td><strong>Total Net Worth</strong></td>
+                                                <td></td>
                                             </tr>
                                         </tbody>
                                     </table>

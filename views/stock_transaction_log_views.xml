@@ -1,0 +1,146 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<odoo>
+    <data>
+        <!-- Transaction Log Views -->
+        <record id="view_stock_transaction_log_tree" model="ir.ui.view">
+            <field name="name">stock.transaction.log.tree</field>
+            <field name="model">stock.transaction.log</field>
+            <field name="arch" type="xml">
+                <list string="Transaction Log" create="false" edit="false">
+                    <field name="transaction_date"/>
+                    <field name="user_id"/>
+                    <field name="transaction_type"/>
+                    <field name="category"/>
+                    <field name="description"/>
+                    <field name="amount" sum="Total Amount"/>
+                    <field name="cash_impact" sum="Total Cash Impact"/>
+                    <field name="running_balance"/>
+                    <field name="reference"/>
+                    <field name="session_id"/>
+                </list>
+            </field>
+        </record>
+
+        <record id="view_stock_transaction_log_form" model="ir.ui.view">
+            <field name="name">stock.transaction.log.form</field>
+            <field name="model">stock.transaction.log</field>
+            <field name="arch" type="xml">
+                <form string="Transaction Log" create="false" edit="false">
+                    <sheet>
+                        <group>
+                            <group name="basic_info" string="Basic Information">
+                                <field name="transaction_date"/>
+                                <field name="user_id"/>
+                                <field name="session_id"/>
+                                <field name="transaction_type"/>
+                                <field name="category"/>
+                            </group>
+                            <group name="amounts" string="Amounts">
+                                <field name="amount"/>
+                                <field name="cash_impact"/>
+                                <field name="running_balance"/>
+                            </group>
+                        </group>
+                        <group>
+                            <group name="description" string="Description">
+                                <field name="description" nolabel="1"/>
+                            </group>
+                        </group>
+                        <group>
+                            <group name="related_records" string="Related Records">
+                                <field name="order_id"/>
+                                <field name="trade_id"/>
+                                <field name="deposit_id"/>
+                                <field name="loan_id"/>
+                                <field name="security_id"/>
+                            </group>
+                            <group name="transaction_details" string="Transaction Details">
+                                <field name="quantity"/>
+                                <field name="price"/>
+                                <field name="reference"/>
+                                <field name="entered_by_id"/>
+                            </group>
+                        </group>
+                        <group string="Notes">
+                            <field name="notes" nolabel="1"/>
+                        </group>
+                    </sheet>
+                </form>
+            </field>
+        </record>
+
+        <record id="view_stock_transaction_log_search" model="ir.ui.view">
+            <field name="name">stock.transaction.log.search</field>
+            <field name="model">stock.transaction.log</field>
+            <field name="arch" type="xml">
+                <search string="Transaction Log">
+                    <field name="user_id"/>
+                    <field name="transaction_type"/>
+                    <field name="category"/>
+                    <field name="description"/>
+                    <field name="reference"/>
+                    <field name="session_id"/>
+                    <field name="security_id"/>
+                    
+                    <filter name="cash_inflow" string="Cash Inflows" domain="[('cash_impact', '>', 0)]"/>
+                    <filter name="cash_outflow" string="Cash Outflows" domain="[('cash_impact', '&lt;', 0)]"/>
+                    
+                    <separator/>
+                    <filter name="today" string="Today" domain="[('transaction_date', '&gt;=', datetime.datetime.combine(context_today(), datetime.time(0,0,0)))]"/>
+                    <filter name="this_week" string="This Week" domain="[('transaction_date', '&gt;=', (context_today() - datetime.timedelta(weeks=1)))]"/>
+                    <filter name="this_month" string="This Month" domain="[('transaction_date', '&gt;=', (context_today() - datetime.timedelta(days=30)))]"/>
+                    
+                    <separator/>
+                    <group expand="0" string="Group By">
+                        <filter name="group_user" string="User" context="{'group_by': 'user_id'}"/>
+                        <filter name="group_type" string="Transaction Type" context="{'group_by': 'transaction_type'}"/>
+                        <filter name="group_category" string="Category" context="{'group_by': 'category'}"/>
+                        <filter name="group_session" string="Session" context="{'group_by': 'session_id'}"/>
+                        <filter name="group_date" string="Date" context="{'group_by': 'transaction_date:day'}"/>
+                    </group>
+                </search>
+            </field>
+        </record>
+
+        <!-- Action -->
+        <record id="action_stock_transaction_log" model="ir.actions.act_window">
+            <field name="name">Transaction Log</field>
+            <field name="type">ir.actions.act_window</field>
+            <field name="res_model">stock.transaction.log</field>
+            <field name="view_mode">list,form</field>
+            <field name="search_view_id" ref="view_stock_transaction_log_search"/>
+            <field name="help" type="html">
+                <p class="o_view_nocontent_smiling_face">
+                    No transactions found!
+                </p>
+                <p>
+                    The transaction log automatically records all financial transactions in the system.
+                </p>
+            </field>
+        </record>
+
+        <!-- Migration Action for existing data -->
+        <record id="action_migrate_transaction_data" model="ir.actions.server">
+            <field name="name">Migrate Existing Data to Transaction Log</field>
+            <field name="model_id" ref="model_stock_transaction_log"/>
+            <field name="state">code</field>
+            <field name="code">
+                model.migrate_existing_data()
+            </field>
+        </record>
+
+        <!-- Menu Items -->
+        <menuitem id="menu_stock_transaction_log" 
+                  name="Transaction Log" 
+                  parent="menu_stock_admin" 
+                  action="action_stock_transaction_log" 
+                  sequence="60"/>
+        
+        <menuitem id="menu_stock_migrate_data" 
+                  name="Migrate Data" 
+                  parent="menu_stock_admin" 
+                  action="action_migrate_transaction_data" 
+                  sequence="70" 
+                  groups="base.group_system"/>
+    </data>
+</odoo>

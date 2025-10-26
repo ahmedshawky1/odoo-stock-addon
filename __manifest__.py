@@ -66,6 +66,7 @@ Technical Features:
         'views/stock_loan_views.xml',
         'views/stock_price_history_views.xml',
         'views/stock_new_models_views.xml',
+        'views/stock_transaction_log_views.xml',
         'views/menu_views.xml',
         'views/stock_config_views.xml',
         

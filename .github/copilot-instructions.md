@@ -61,6 +61,7 @@ Refer to the official Odoo documentation for best practices in model design, vie
 - **Portal-first**: Apply changes to portal views unless specified otherwise  
 - **No @import**: Use asset bundle loading order in `__manifest__.py`
 - **Git**: Only commit when user requests
+- **port** 8443
 
 ## Quick Commands
 ```bash

@@ -2339,80 +2339,37 @@ class StockMarketPortal(CustomerPortal):
         # Calculate net worth: Cash + Portfolio + Deposits - Loans
         net_worth = (view_user.cash_balance or 0) + total_positions_value + total_deposits - total_loans
         
-        # Build comprehensive transaction history
-        all_transactions = []
-        running_balance = 0
+        # Build comprehensive transaction history from transaction log
+        transaction_log = request.env['stock.transaction.log']
+        balance_sheet_data = transaction_log.get_user_balance_sheet(user_id)
         
-        # Collect all transactions chronologically
+        # Get all transactions ordered by date
+        all_transactions = balance_sheet_data['transactions']
+        transaction_categories = balance_sheet_data['categories']
+        
+        # Prepare transaction data for template
         transaction_list = []
-        
-        # Add deposits
-        for deposit in deposits:
+        for txn in all_transactions:
             transaction_list.append({
-                'date': deposit.create_date,
-                'type': 'DEPOSIT',
-                'description': f'Deposit #{deposit.id} - {deposit.deposit_type or "Standard"}',
-                'amount': deposit.amount or 0,
-                'balance_impact': deposit.amount or 0,
-                'impact': 'Cash Balance',
-                'badge_class': 'bg-success'
+                'date': txn.transaction_date.strftime('%Y-%m-%d %H:%M') if txn.transaction_date else 'Unknown',
+                'type': txn.transaction_type.upper().replace('_', ' '),
+                'description': txn.description,
+                'amount': txn.cash_impact,
+                'running_balance': txn.running_balance,
+                'category': txn.category,
+                'reference': txn.reference or '',
+                'badge_class': 'bg-success' if txn.cash_impact >= 0 else 'bg-danger'
             })
         
-        # Add loans
-        for loan in loans:
-            transaction_list.append({
-                'date': loan.create_date,
-                'type': 'LOAN',
-                'description': f'Loan #{loan.id} - ${(loan.amount or 0):,.2f} at {(loan.interest_rate or 0):.2f}%',
-                'amount': loan.amount or 0,
-                'balance_impact': loan.amount or 0,
-                'impact': 'Cash Balance',
-                'badge_class': 'bg-warning'
-            })
-        
-        # Add trades (both buys and sells)
-        for trade in trades:
-            if trade.buyer_id.id == user_id:
-                # This user was the buyer
-                transaction_list.append({
-                    'date': trade.trade_date,
-                    'type': 'BUY',
-                    'description': f'Bought {trade.quantity} shares of {trade.security_id.symbol} at ${trade.price:.2f}',
-                    'amount': -(trade.quantity * trade.price),
-                    'balance_impact': -(trade.quantity * trade.price),
-                    'impact': 'Cash Balance (Stock Purchase)',
-                    'badge_class': 'bg-danger'
-                })
-            
-            if trade.seller_id.id == user_id:
-                # This user was the seller
-                transaction_list.append({
-                    'date': trade.trade_date,
-                    'type': 'SELL',
-                    'description': f'Sold {trade.quantity} shares of {trade.security_id.symbol} at ${trade.price:.2f}',
-                    'amount': trade.quantity * trade.price,
-                    'balance_impact': trade.quantity * trade.price,
-                    'impact': 'Cash Balance (Stock Sale)',
-                    'badge_class': 'bg-success'
-                })
-        
-        # Sort all transactions by date
-        transaction_list.sort(key=lambda x: x['date'] or request.env.user.create_date)
-        
-        # Calculate running balance starting from initial capital
-        running_balance = view_user.initial_capital or 0
-        
-        for txn in transaction_list:
-            running_balance += txn['balance_impact']
-            all_transactions.append({
-                'date': txn['date'].strftime('%Y-%m-%d %H:%M') if txn['date'] else 'Unknown',
-                'type': txn['type'],
-                'description': txn['description'],
-                'amount': txn['amount'],
-                'running_balance': running_balance,
-                'impact': txn['impact'],
-                'badge_class': txn['badge_class']
-            })
+        # Calculate summary by category
+        category_summaries = {}
+        for cat_name, cat_data in transaction_categories.items():
+            category_summaries[cat_name] = {
+                'name': cat_name.replace('_', ' ').title(),
+                'total_amount': cat_data['total_amount'],
+                'total_cash_impact': cat_data['total_cash_impact'],
+                'transaction_count': len(cat_data['transactions'])
+            }
         
         values.update({
             'page_name': 'user_360',
@@ -2428,7 +2385,9 @@ class StockMarketPortal(CustomerPortal):
             'total_deposits': total_deposits,
             'total_loans': total_loans,
             'net_worth': net_worth,
-            'all_transactions': all_transactions,
+            'all_transactions': transaction_list,
+            'category_summaries': category_summaries,
+            'balance_sheet_data': balance_sheet_data,
         })
         
         return request.render("stock_market_simulation.admin_user_360_view", values)

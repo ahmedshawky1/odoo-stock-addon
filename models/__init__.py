@@ -20,3 +20,4 @@ from . import stock_news
 from . import stock_bond
 from . import stock_bond_order
 from . import mail_thread_tracking_override
+from . import stock_transaction_log

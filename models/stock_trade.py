@@ -196,6 +196,9 @@ class StockTrade(models.Model):
         
         trade = super().create(vals)
         
+        # Log transactions for buyer and seller
+        trade._log_trade_transactions()
+        
         # Post to chatter
         trade._post_trade_message()
         
@@ -219,6 +222,81 @@ class StockTrade(models.Model):
         
         trade_details = f"Price: {self.price}, Quantity: {self.quantity}, Buyer: {self.buyer_id.name}, Seller: {self.seller_id.name if self.seller_id else 'IPO'}"
         self.log_action("Trade executed", trade_details)
+    
+    def _log_trade_transactions(self):
+        """Log all transactions related to this trade"""
+        self.ensure_one()
+        transaction_log = self.env['stock.transaction.log']
+        
+        # Log buyer transactions
+        if self.buyer_id:
+            # Stock purchase transaction
+            transaction_log.log_transaction(
+                user_id=self.buyer_id.id,
+                transaction_type='stock_purchase',
+                amount=-(self.quantity * self.price),
+                cash_impact=-(self.quantity * self.price),
+                description=f'Purchased {self.quantity:,} shares of {self.security_id.symbol} at ${self.price:.2f}',
+                transaction_date=self.trade_date,
+                session_id=self.session_id.id,
+                trade_id=self.id,
+                security_id=self.security_id.id,
+                quantity=self.quantity,
+                price=self.price,
+                reference=f'TRADE-{self.name}',
+                notes=f'Trade #{self.name} - Buy side'
+            )
+            
+            # Broker commission on buy (if applicable)
+            if self.buy_commission > 0:
+                transaction_log.log_transaction(
+                    user_id=self.buyer_id.id,
+                    transaction_type='broker_commission_buy',
+                    amount=-self.buy_commission,
+                    cash_impact=-self.buy_commission,
+                    description=f'Broker commission on purchase of {self.security_id.symbol}',
+                    transaction_date=self.trade_date,
+                    session_id=self.session_id.id,
+                    trade_id=self.id,
+                    security_id=self.security_id.id,
+                    reference=f'COMM-BUY-{self.name}',
+                    notes=f'Commission for trade #{self.name}'
+                )
+        
+        # Log seller transactions (if not IPO)
+        if self.seller_id:
+            # Stock sale transaction
+            transaction_log.log_transaction(
+                user_id=self.seller_id.id,
+                transaction_type='stock_sale',
+                amount=self.quantity * self.price,
+                cash_impact=self.quantity * self.price,
+                description=f'Sold {self.quantity:,} shares of {self.security_id.symbol} at ${self.price:.2f}',
+                transaction_date=self.trade_date,
+                session_id=self.session_id.id,
+                trade_id=self.id,
+                security_id=self.security_id.id,
+                quantity=self.quantity,
+                price=self.price,
+                reference=f'TRADE-{self.name}',
+                notes=f'Trade #{self.name} - Sell side'
+            )
+            
+            # Broker commission on sell (if applicable)
+            if self.sell_commission > 0:
+                transaction_log.log_transaction(
+                    user_id=self.seller_id.id,
+                    transaction_type='broker_commission_sell',
+                    amount=-self.sell_commission,
+                    cash_impact=-self.sell_commission,
+                    description=f'Broker commission on sale of {self.security_id.symbol}',
+                    transaction_date=self.trade_date,
+                    session_id=self.session_id.id,
+                    trade_id=self.id,
+                    security_id=self.security_id.id,
+                    reference=f'COMM-SELL-{self.name}',
+                    notes=f'Commission for trade #{self.name}'
+                )
     
     def action_view_buy_order(self):
         """View the buy order"""

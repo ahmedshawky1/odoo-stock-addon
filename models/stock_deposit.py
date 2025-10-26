@@ -266,6 +266,19 @@ class StockDeposit(models.Model):
             })
             
             # Log the transaction
+            self.env['stock.transaction.log'].log_transaction(
+                user_id=deposit.user_id.id,
+                transaction_type='deposit_investment',
+                amount=-deposit.amount,
+                cash_impact=-deposit.amount,
+                description=f'Deposit investment - {deposit.deposit_type}',
+                session_id=active_session.id,
+                deposit_id=deposit.id,
+                reference=f'DEP-{deposit.name}',
+                notes=f'Deposit confirmed with banker {deposit.banker_id.name}'
+            )
+            
+            # Log the transaction
             deposit.message_post(
                 body=f"Deposit confirmed. {deposit.amount:,.2f} transferred from "
                      f"{deposit.user_id.name} to {deposit.banker_id.name}"
@@ -340,6 +353,49 @@ class StockDeposit(models.Model):
                 'withdrawal_session_id': current_session.id if current_session else False,
                 'withdrawal_amount': withdrawal_amount
             })
+            
+            # Log interest earned transaction if any
+            interest_earned = deposit.accrued_interest
+            if interest_earned > 0:
+                self.env['stock.transaction.log'].log_transaction(
+                    user_id=deposit.user_id.id,
+                    transaction_type='deposit_interest',
+                    amount=interest_earned,
+                    cash_impact=interest_earned,
+                    description=f'Interest earned on deposit - {deposit.deposit_type}',
+                    session_id=current_session.id if current_session else False,
+                    deposit_id=deposit.id,
+                    reference=f'INT-DEP-{deposit.name}',
+                    notes=f'Interest from deposit #{deposit.name}'
+                )
+            
+            # Log withdrawal transaction (principal amount)
+            self.env['stock.transaction.log'].log_transaction(
+                user_id=deposit.user_id.id,
+                transaction_type='deposit_withdrawal',
+                amount=deposit.amount,
+                cash_impact=deposit.amount,
+                description=f'Deposit withdrawal - {deposit.deposit_type}',
+                session_id=current_session.id if current_session else False,
+                deposit_id=deposit.id,
+                reference=f'WTH-DEP-{deposit.name}',
+                notes=f'Principal withdrawal from deposit #{deposit.name}'
+            )
+            
+            # If early withdrawal with penalty, log the penalty
+            if early_withdrawal:
+                penalty_amount = deposit.current_value * deposit.early_withdrawal_penalty / 100
+                self.env['stock.transaction.log'].log_transaction(
+                    user_id=deposit.user_id.id,
+                    transaction_type='fee',
+                    amount=-penalty_amount,
+                    cash_impact=-penalty_amount,
+                    description=f'Early withdrawal penalty - {deposit.deposit_type}',
+                    session_id=current_session.id if current_session else False,
+                    deposit_id=deposit.id,
+                    reference=f'PEN-DEP-{deposit.name}',
+                    notes=f'Early withdrawal penalty from deposit #{deposit.name}'
+                )
             
             # Log the transaction
             deposit.message_post(

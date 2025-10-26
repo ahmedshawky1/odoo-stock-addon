@@ -399,6 +399,19 @@ class StockLoan(models.Model):
                 'principal_outstanding': loan_sudo.amount
             })
             
+            # Log the disbursement transaction
+            self.env['stock.transaction.log'].log_transaction(
+                user_id=loan.user_id.id,
+                transaction_type='loan_disbursement',
+                amount=loan.amount,
+                cash_impact=loan.amount,
+                description=f'Loan disbursement - {loan.loan_type}',
+                session_id=active_session.id if active_session else False,
+                loan_id=loan.id,
+                reference=f'LOAN-{loan.name}',
+                notes=f'Loan disbursed by banker {loan.banker_id.name}'
+            )
+            
             # Set margin call price using configuration
             if loan.collateral_security_id:
                 config = self.env['stock.config'].get_config()
@@ -661,6 +674,50 @@ class StockLoanPayment(models.Model):
     @api.model
     def create(self, vals):
         payment = super().create(vals)
+        
+        # Log payment transactions
+        current_session = self.env['stock.session'].search([('state', '=', 'open')], limit=1)
+        
+        # Log loan payment transaction
+        self.env['stock.transaction.log'].log_transaction(
+            user_id=payment.loan_id.user_id.id,
+            transaction_type='loan_payment',
+            amount=-payment.amount,
+            cash_impact=-payment.amount,
+            description=f'Loan payment - {payment.loan_id.loan_type}',
+            session_id=current_session.id if current_session else False,
+            loan_id=payment.loan_id.id,
+            reference=f'PAY-{payment.loan_id.name}-{payment.id}',
+            notes=f'Payment for loan #{payment.loan_id.name} (Principal: {payment.principal_component}, Interest: {payment.interest_component}, Penalty: {payment.penalty_component})'
+        )
+        
+        # If there's interest, log it as separate interest expense
+        if payment.interest_component > 0:
+            self.env['stock.transaction.log'].log_transaction(
+                user_id=payment.loan_id.user_id.id,
+                transaction_type='loan_interest',
+                amount=-payment.interest_component,
+                cash_impact=0,  # Already accounted in the payment above
+                description=f'Interest on loan - {payment.loan_id.loan_type}',
+                session_id=current_session.id if current_session else False,
+                loan_id=payment.loan_id.id,
+                reference=f'INT-{payment.loan_id.name}-{payment.id}',
+                notes=f'Interest component of payment for loan #{payment.loan_id.name}'
+            )
+        
+        # If there's penalty, log it as separate fee
+        if payment.penalty_component > 0:
+            self.env['stock.transaction.log'].log_transaction(
+                user_id=payment.loan_id.user_id.id,
+                transaction_type='loan_penalty',
+                amount=-payment.penalty_component,
+                cash_impact=0,  # Already accounted in the payment above
+                description=f'Penalty on loan - {payment.loan_id.loan_type}',
+                session_id=current_session.id if current_session else False,
+                loan_id=payment.loan_id.id,
+                reference=f'PEN-{payment.loan_id.name}-{payment.id}',
+                notes=f'Penalty component of payment for loan #{payment.loan_id.name}'
+            )
         
         # Update loan principal and penalty
         if payment.principal_component:

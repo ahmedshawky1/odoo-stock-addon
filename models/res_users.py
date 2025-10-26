@@ -251,6 +251,7 @@ class ResUsers(models.Model):
                 raise ValidationError("Cash balance cannot be negative.")
 
     @api.model
+    @api.model
     def create(self, vals):
         """Seed investor wallet with initial capital on creation if cash_balance not provided."""
         # Support batch creates
@@ -265,11 +266,34 @@ class ResUsers(models.Model):
                 v = dict(v, cash_balance=init_cap)
             
             return v
+        
         if isinstance(vals, list):
             vals = [_prepare(v) for v in vals]
         else:
             vals = _prepare(vals)
-        return super().create(vals)
+        
+        # Create user
+        users = super().create(vals)
+        
+        # Log initial capital for investors
+        for user in users:
+            if user.user_type == 'investor' and user.initial_capital > 0:
+                try:
+                    self.env['stock.transaction.log'].log_transaction(
+                        user_id=user.id,
+                        transaction_type='initial_capital',
+                        amount=user.initial_capital,
+                        cash_impact=user.initial_capital,
+                        description=f'Initial capital allocation',
+                        transaction_date=user.create_date or fields.Datetime.now(),
+                        reference='INITIAL-CAP',
+                        notes=f'Starting capital for investor {user.name}'
+                    )
+                except Exception as e:
+                    # Don't fail user creation if transaction log fails
+                    _logger.warning(f"Failed to log initial capital for user {user.name}: {str(e)}")
+        
+        return users
     
     def action_view_portfolio(self):
         """Open portfolio view for this user"""
