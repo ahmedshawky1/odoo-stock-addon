@@ -913,15 +913,46 @@ class StockMarketPortal(CustomerPortal):
             is_system_admin = request.env.user.has_group('base.group_system')
         except Exception:
             is_system_admin = False
-        if user.user_type not in ['broker', 'admin'] and not is_system_admin:
+        if user.user_type not in ['broker', 'admin', 'superadmin'] and not is_system_admin:
             return request.redirect('/my')
         
         # Get commission data based on user type
-        # Since default broker functionality removed, all users see all trades
         trades = request.env['stock.trade'].search([])
         
-        # Total commission calculation simplified (no broker-specific logic)
+        # Total commission calculation
         total_commission = sum(t.buy_commission + t.sell_commission for t in trades)
+        
+        # For superadmin/admin users, show broker breakdown
+        broker_commissions = {}
+        if user.user_type in ['admin', 'superadmin'] or is_system_admin:
+            # Get all brokers and their commission data
+            all_brokers = request.env['res.users'].search([
+                ('user_type', 'in', ['broker', 'admin', 'superadmin'])
+            ])
+            
+            for broker in all_brokers:
+                broker_trades = trades.filtered(lambda t: 
+                    (t.buy_order_id.entered_by_id.id == broker.id) or 
+                    (t.sell_order_id.entered_by_id.id == broker.id)
+                )
+                
+                broker_total = 0
+                trade_count = 0
+                for trade in broker_trades:
+                    # Add commission based on which side the broker handled
+                    if trade.buy_order_id.entered_by_id.id == broker.id:
+                        broker_total += trade.buy_commission
+                        trade_count += 1
+                    if trade.sell_order_id.entered_by_id.id == broker.id:
+                        broker_total += trade.sell_commission
+                        trade_count += 1
+                
+                if broker_total > 0:  # Only include brokers with commissions
+                    broker_commissions[broker] = {
+                        'total': broker_total,
+                        'trades': trade_count,
+                        'recent_trades': broker_trades[:10]
+                    }
         
         # Group by session
         session_commissions = {}
@@ -930,18 +961,95 @@ class StockMarketPortal(CustomerPortal):
             if session not in session_commissions:
                 session_commissions[session] = 0
             
-            # Add both buy and sell commissions for all trades (no broker filtering)
             session_commissions[session] += trade.buy_commission + trade.sell_commission
         
         values.update({
             'user': user,
             'total_commission': total_commission,
             'session_commissions': session_commissions,
+            'broker_commissions': broker_commissions,
             'recent_trades': trades[:20],
             'page_name': 'commission',
+            'is_super_user': user.user_type in ['admin', 'superadmin'] or is_system_admin,
         })
         
         return request.render("stock_market_simulation.portal_broker_commissions", values)
+
+    # Market Commission Report - redirect to /my/commissions for compatibility
+    @http.route(['/market/commissions'], type='http', auth="user", website=True)
+    def market_broker_commissions(self, **kw):
+        """Market portal commission view with enhanced broker breakdown for super users"""
+        user = request.env.user
+        
+        try:
+            is_system_admin = request.env.user.has_group('base.group_system')
+        except Exception:
+            is_system_admin = False
+        if user.user_type not in ['broker', 'admin', 'superadmin'] and not is_system_admin:
+            return request.redirect('/market')
+        
+        # Get commission data
+        values = self._prepare_portal_layout_values()
+        trades = request.env['stock.trade'].search([])
+        sessions = request.env['stock.session'].search([])
+        
+        # Total commission calculation
+        total_commission = sum(t.buy_commission + t.sell_commission for t in trades)
+        
+        # For superadmin/admin users, show broker breakdown
+        broker_commissions = {}
+        if user.user_type in ['admin', 'superadmin'] or is_system_admin:
+            # Get all brokers and their commission data
+            all_brokers = request.env['res.users'].search([
+                ('user_type', 'in', ['broker', 'admin', 'superadmin'])
+            ])
+            
+            for broker in all_brokers:
+                broker_trades = trades.filtered(lambda t: 
+                    (t.buy_order_id.entered_by_id.id == broker.id) or 
+                    (t.sell_order_id.entered_by_id.id == broker.id)
+                )
+                
+                broker_total = 0
+                trade_count = 0
+                for trade in broker_trades:
+                    # Add commission based on which side the broker handled
+                    if trade.buy_order_id.entered_by_id.id == broker.id:
+                        broker_total += trade.buy_commission
+                        trade_count += 1
+                    if trade.sell_order_id.entered_by_id.id == broker.id:
+                        broker_total += trade.sell_commission
+                        trade_count += 1
+                
+                if broker_total > 0:  # Only include brokers with commissions
+                    broker_commissions[broker] = {
+                        'total': broker_total,
+                        'trades': trade_count,
+                        'recent_trades': broker_trades[:10]
+                    }
+        
+        # Group by session
+        session_commissions = {}
+        for trade in trades:
+            session = trade.session_id
+            if session not in session_commissions:
+                session_commissions[session] = 0
+            
+            session_commissions[session] += trade.buy_commission + trade.sell_commission
+        
+        values.update({
+            'user': user,
+            'sessions': sessions,
+            'total_commission': total_commission,
+            'session_commissions': session_commissions,
+            'broker_commissions': broker_commissions,
+            'trades': trades,
+            'page_name': 'commissions',
+            'is_super_user': user.user_type in ['admin', 'superadmin'] or is_system_admin,
+            **self._get_session_context(),
+        })
+        
+        return request.render("stock_market_simulation.market_commissions_page", values)
 
     # Placeholder routes for sidebar links (securities, session, reports, deposits, loans, clients)
     @http.route(['/market/securities'], type='http', auth="public", website=True)
@@ -2470,6 +2578,73 @@ class StockMarketPortal(CustomerPortal):
         except Exception as e:
             import traceback
             return f"Error: {str(e)}\n\nTraceback:\n{traceback.format_exc()}"
+
+    @http.route(['/test/commission/data'], type='http', auth="user", website=True)
+    def test_commission_data(self, **kw):
+        """Test endpoint to check commission data structure"""
+        try:
+            user = request.env.user
+            
+            # Get all users who have placed orders
+            orders = request.env['stock.order'].search([('entered_by_id', '!=', False)])
+            brokers = orders.mapped('entered_by_id')
+            
+            # Get all trades
+            trades = request.env['stock.trade'].search([])
+            
+            result = {
+                'total_trades': len(trades),
+                'total_orders': len(orders),
+                'brokers_found': [],
+                'sample_trade_data': []
+            }
+            
+            for broker in brokers[:5]:  # First 5 brokers
+                broker_orders = orders.filtered(lambda o: o.entered_by_id.id == broker.id)
+                broker_trades = trades.filtered(lambda t: 
+                    (t.buy_order_id.entered_by_id.id == broker.id) or 
+                    (t.sell_order_id.entered_by_id.id == broker.id)
+                )
+                
+                total_commission = 0
+                for trade in broker_trades:
+                    if trade.buy_order_id.entered_by_id.id == broker.id:
+                        total_commission += trade.buy_commission
+                    if trade.sell_order_id.entered_by_id.id == broker.id:
+                        total_commission += trade.sell_commission
+                
+                result['brokers_found'].append({
+                    'id': broker.id,
+                    'name': broker.name,
+                    'user_type': broker.user_type,
+                    'orders_placed': len(broker_orders),
+                    'trades_handled': len(broker_trades),
+                    'total_commission': total_commission
+                })
+            
+            # Sample trade data
+            for trade in trades[:3]:
+                result['sample_trade_data'].append({
+                    'id': trade.id,
+                    'security': trade.security_id.symbol,
+                    'buy_broker': trade.buy_order_id.entered_by_id.name if trade.buy_order_id else 'N/A',
+                    'sell_broker': trade.sell_order_id.entered_by_id.name if trade.sell_order_id else 'N/A',
+                    'buy_commission': trade.buy_commission,
+                    'sell_commission': trade.sell_commission,
+                    'total_commission': trade.total_commission
+                })
+            
+            return request.make_response(
+                json.dumps({'success': True, 'data': result}, indent=2, default=str),
+                headers=[('Content-Type', 'application/json')]
+            )
+            
+        except Exception as e:
+            import traceback
+            return request.make_response(
+                json.dumps({'success': False, 'error': str(e), 'traceback': traceback.format_exc()}, indent=2),
+                headers=[('Content-Type', 'application/json')]
+            )
 
     @http.route(['/test/public/health'], type='http', auth="public", website=True)
     def test_public_health(self, **kw):

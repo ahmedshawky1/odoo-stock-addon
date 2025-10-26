@@ -108,4 +108,18 @@
         <field name="context">{'search_default_filter_my_trades': 1, 'search_default_filter_today': 1}</field>
     </record>
     
+    <!-- Commission Report Action -->
+    <record id="action_stock_commission_report" model="ir.actions.act_window">
+        <field name="name">Commission Report</field>
+        <field name="res_model">stock.trade</field>
+        <field name="view_mode">list</field>
+        <field name="domain">[('buy_commission', '>', 0), ('sell_commission', '>', 0)]</field>
+        <field name="context">{
+            'search_default_group_by_session': 1,
+            'group_by': ['session_id'], 
+            'default_view_type': 'commission_report'
+        }</field>
+        <field name="help">View broker commission earnings from all trades. Shows commission earned per session and per trade.</field>
+    </record>
+    
 </odoo> 

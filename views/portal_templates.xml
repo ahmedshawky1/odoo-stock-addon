@@ -56,7 +56,7 @@
                             <a href="/my/portfolio" class="btn btn-secondary">View Portfolio</a>
                             <a href="/my/orders" class="btn btn-secondary">My Orders</a>
                         </t>
-                        <t t-if="user_type == 'broker'">
+                        <t t-if="user_type in ['broker', 'admin', 'superadmin'] or request.env.user.has_group('base.group_system')">
                             <a href="/my/commissions" class="btn btn-primary">Commission Report</a>
                         </t>
                         <t t-if="user_type == 'banker'">
@@ -1324,7 +1324,7 @@
                         </t>
                         
                         <!-- Broker Section -->
-                        <t t-if="request.env.user.user_type in ['broker', 'admin']">
+                        <t t-if="request.env.user.user_type in ['broker', 'admin', 'superadmin'] or request.env.user.has_group('base.group_system')">
                             <div class="sidebar-section">
                                 <div class="sidebar-section-title">Broker Tools</div>
                                 <a href="/market/commissions" class="nav-link" data-page="commissions" data-tooltip="Commissions">
@@ -4294,6 +4294,467 @@
                         });
                     }
                 });
+            //]]></script>
+        </t>
+    </template>
+
+    <!-- Market Commissions Template -->
+    <template id="market_commissions_page" name="Market Commissions Page">
+        <t t-call="stock_market_simulation.market_portal_layout">
+            <div class="container-fluid">
+                <div class="row">
+                    <div class="col-12">
+                        <div class="d-flex justify-content-between align-items-center mb-4">
+                            <h2><i class="fa fa-money text-success me-2"></i>Commission Report</h2>
+                            <small class="text-muted">Broker commission earnings by session</small>
+                        </div>
+
+                        <!-- Commission Summary -->
+                        <div class="row mb-4">
+                            <div class="col-12">
+                                <div class="card">
+                                    <div class="card-header">
+                                        <h5 class="card-title mb-0">Commission Summary</h5>
+                                    </div>
+                                    <div class="card-body">
+                                        <div class="row">
+                                            <div class="col-md-3">
+                                                <div class="text-center">
+                                                    <h4 class="text-success mb-1">$<t t-esc="'{:,.2f}'.format(total_commission)"/></h4>
+                                                    <small class="text-muted">Total Commission Earned</small>
+                                                </div>
+                                            </div>
+                                            <div class="col-md-3">
+                                                <div class="text-center">
+                                                    <h4 class="text-primary mb-1" t-esc="len(sessions)"/>
+                                                    <small class="text-muted">Sessions</small>
+                                                </div>
+                                            </div>
+                                            <div class="col-md-3">
+                                                <div class="text-center">
+                                                    <h4 class="text-info mb-1" t-esc="len(trades)"/>
+                                                    <small class="text-muted">Total Trades</small>
+                                                </div>
+                                            </div>
+                                            <div class="col-md-3">
+                                                <div class="text-center">
+                                                    <h4 class="text-warning mb-1">$<t t-esc="'{:,.2f}'.format(total_commission / len(sessions) if sessions else 0)"/></h4>
+                                                    <small class="text-muted">Avg Commission/Session</small>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Commission by Session -->
+                        <div class="row">
+                            <div class="col-12">
+                                <div class="card">
+                                    <div class="card-header">
+                                        <h5 class="card-title mb-0">Commission by Session</h5>
+                                    </div>
+                                    <div class="card-body">
+                                        <t t-if="sessions">
+                                            <div class="table-responsive">
+                                                <table class="table table-striped">
+                                                    <thead>
+                                                        <tr>
+                                                            <th>Session</th>
+                                                            <th>Start Date</th>
+                                                            <th>End Date</th>
+                                                            <th>Commission Rate</th>
+                                                            <th class="text-end">Commission Earned</th>
+                                                        </tr>
+                                                    </thead>
+                                                    <tbody>
+                                                        <t t-foreach="sessions" t-as="session">
+                                                            <tr>
+                                                                <td>
+                                                                    <strong t-esc="session.name"/>
+                                                                    <t t-if="session.state == 'active'">
+                                                                        <span class="badge bg-success ms-2">Active</span>
+                                                                    </t>
+                                                                    <t t-elif="session.state == 'ended'">
+                                                                        <span class="badge bg-secondary ms-2">Ended</span>
+                                                                    </t>
+                                                                </td>
+                                                                <td t-esc="session.actual_start_date and session.actual_start_date.strftime('%Y-%m-%d %H:%M') or 'Not started'"/>
+                                                                <td t-esc="session.actual_end_date and session.actual_end_date.strftime('%Y-%m-%d %H:%M') or 'Ongoing'"/>
+                                                                <td><t t-esc="session.broker_commission_rate"/>%</td>
+                                                                <td class="text-end">
+                                                                    <strong class="text-success">$<t t-esc="'{:,.2f}'.format(session_commissions.get(session, 0))"/></strong>
+                                                                </td>
+                                                            </tr>
+                                                        </t>
+                                                    </tbody>
+                                                </table>
+                                            </div>
+                                        </t>
+                                        <t t-else="">
+                                            <div class="text-center py-4">
+                                                <i class="fa fa-inbox text-muted" style="font-size: 48px;"></i>
+                                                <h5 class="mt-3 text-muted">No Sessions Available</h5>
+                                                <p class="text-muted">No trading sessions have been created yet.</p>
+                                            </div>
+                                        </t>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- Broker Commission Breakdown (Super User Only) -->
+                        <t t-if="is_super_user and broker_commissions">
+                            <div class="row mt-4">
+                                <div class="col-12">
+                                    <div class="card">
+                                        <div class="card-header">
+                                            <h5 class="card-title mb-0">
+                                                <i class="fa fa-users me-2"></i>Commission by Broker
+                                                <small class="text-muted ms-2">(Super User View)</small>
+                                            </h5>
+                                        </div>
+                                        <div class="card-body">
+                                            <div class="table-responsive">
+                                                <table class="table table-striped">
+                                                    <thead>
+                                                        <tr>
+                                                            <th>Broker</th>
+                                                            <th>User Type</th>
+                                                            <th class="text-center">Trades Handled</th>
+                                                            <th class="text-end">Commission Earned</th>
+                                                            <th class="text-center">Actions</th>
+                                                        </tr>
+                                                    </thead>
+                                                    <tbody>
+                                                        <t t-foreach="broker_commissions.items()" t-as="broker_data">
+                                                            <tr>
+                                                                <td>
+                                                                    <strong t-esc="broker_data[0].name"/>
+                                                                    <br/>
+                                                                    <small class="text-muted" t-esc="broker_data[0].login"/>
+                                                                </td>
+                                                                <td>
+                                                                    <span class="badge" t-attf-class="bg-{{'primary' if broker_data[0].user_type == 'broker' else 'warning' if broker_data[0].user_type == 'admin' else 'danger'}}" t-esc="broker_data[0].user_type.title()"/>
+                                                                </td>
+                                                                <td class="text-center">
+                                                                    <strong t-esc="broker_data[1]['trades']"/>
+                                                                </td>
+                                                                <td class="text-end">
+                                                                    <strong class="text-success">$<t t-esc="'{:,.2f}'.format(broker_data[1]['total'])"/></strong>
+                                                                </td>
+                                                                <td class="text-center">
+                                                                    <button class="btn btn-sm btn-outline-info" onclick="toggleBrokerDetails(this)" t-att-data-broker-id="broker_data[0].id">
+                                                                        <i class="fa fa-eye"></i> Details
+                                                                    </button>
+                                                                </td>
+                                                            </tr>
+                                                            <!-- Broker Details Row (Hidden by default) -->
+                                                            <tr style="display: none;" t-att-id="'broker-details-' + str(broker_data[0].id)">
+                                                                <td colspan="5">
+                                                                    <div class="p-3 bg-light">
+                                                                        <h6>Recent Trades:</h6>
+                                                                        <t t-if="broker_data[1]['recent_trades']">
+                                                                            <div class="table-responsive">
+                                                                                <table class="table table-sm">
+                                                                                    <thead>
+                                                                                        <tr>
+                                                                                            <th>Trade Date</th>
+                                                                                            <th>Security</th>
+                                                                                            <th>Side</th>
+                                                                                            <th>Quantity</th>
+                                                                                            <th>Price</th>
+                                                                                            <th class="text-end">Commission</th>
+                                                                                        </tr>
+                                                                                    </thead>
+                                                                                    <tbody>
+                                                                                        <t t-foreach="broker_data[1]['recent_trades']" t-as="trade">
+                                                                                            <tr>
+                                                                                                <td t-esc="trade.trade_date.strftime('%Y-%m-%d %H:%M') if trade.trade_date else 'N/A'"/>
+                                                                                                <td t-esc="trade.security_id.symbol"/>
+                                                                                                <td>
+                                                                                                    <t t-if="trade.buy_order_id.entered_by_id.id == broker_data[0].id">
+                                                                                                        <span class="badge bg-success">BUY</span>
+                                                                                                    </t>
+                                                                                                    <t t-if="trade.sell_order_id.entered_by_id.id == broker_data[0].id">
+                                                                                                        <span class="badge bg-danger">SELL</span>
+                                                                                                    </t>
+                                                                                                </td>
+                                                                                                <td t-esc="'{:,}'.format(int(trade.quantity))"/>
+                                                                                                <td>$<t t-esc="'{:.2f}'.format(trade.price)"/></td>
+                                                                                                <td class="text-end">
+                                                                                                    $<t t-esc="'{:.2f}'.format((trade.buy_commission if trade.buy_order_id.entered_by_id.id == broker_data[0].id else 0) + (trade.sell_commission if trade.sell_order_id.entered_by_id.id == broker_data[0].id else 0))"/>
+                                                                                                </td>
+                                                                                            </tr>
+                                                                                        </t>
+                                                                                    </tbody>
+                                                                                </table>
+                                                                            </div>
+                                                                        </t>
+                                                                        <t t-else="">
+                                                                            <p class="text-muted mb-0">No recent trades found.</p>
+                                                                        </t>
+                                                                    </div>
+                                                                </td>
+                                                            </tr>
+                                                        </t>
+                                                    </tbody>
+                                                </table>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </t>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- JavaScript for broker details toggle -->
+            <script>//<![CDATA[
+                function toggleBrokerDetails(button) {
+                    const brokerId = button.getAttribute('data-broker-id');
+                    const detailsRow = document.getElementById('broker-details-' + brokerId);
+                    const icon = button.querySelector('i');
+                    
+                    if (detailsRow.style.display === 'none') {
+                        detailsRow.style.display = '';
+                        icon.className = 'fa fa-eye-slash';
+                        button.innerHTML = '<i class="fa fa-eye-slash"></i> Hide';
+                    } else {
+                        detailsRow.style.display = 'none';
+                        icon.className = 'fa fa-eye';
+                        button.innerHTML = '<i class="fa fa-eye"></i> Details';
+                    }
+                }
+            //]]></script>
+        </t>
+    </template>
+    
+    <!-- Portal Broker Commissions Template -->
+    <template id="portal_broker_commissions" name="Portal Broker Commissions">
+        <t t-call="portal.portal_layout">
+            <div class="container-fluid">
+                <div class="row">
+                    <div class="col-12">
+                        <div class="d-flex justify-content-between align-items-center mb-4">
+                            <h2><i class="fa fa-money text-success me-2"></i>Commission Report</h2>
+                            <small class="text-muted">
+                                <t t-if="is_super_user">Broker commission earnings (Super User View)</t>
+                                <t t-else="">Your commission earnings</t>
+                            </small>
+                        </div>
+
+                        <!-- Commission Summary -->
+                        <div class="row mb-4">
+                            <div class="col-12">
+                                <div class="card">
+                                    <div class="card-header">
+                                        <h5 class="card-title mb-0">Commission Summary</h5>
+                                    </div>
+                                    <div class="card-body">
+                                        <div class="row">
+                                            <div class="col-md-3">
+                                                <div class="text-center">
+                                                    <h4 class="text-success mb-1">$<t t-esc="'{:,.2f}'.format(total_commission)"/></h4>
+                                                    <small class="text-muted">Total Commission Earned</small>
+                                                </div>
+                                            </div>
+                                            <div class="col-md-3">
+                                                <div class="text-center">
+                                                    <h4 class="text-primary mb-1" t-esc="len(session_commissions)"/>
+                                                    <small class="text-muted">Sessions</small>
+                                                </div>
+                                            </div>
+                                            <div class="col-md-3">
+                                                <div class="text-center">
+                                                    <h4 class="text-info mb-1" t-esc="len(recent_trades)"/>
+                                                    <small class="text-muted">Recent Trades</small>
+                                                </div>
+                                            </div>
+                                            <div class="col-md-3">
+                                                <div class="text-center">
+                                                    <h4 class="text-warning mb-1" t-esc="len(broker_commissions) if is_super_user else '1'"/>
+                                                    <small class="text-muted">
+                                                        <t t-if="is_super_user">Active Brokers</t>
+                                                        <t t-else="">Broker</t>
+                                                    </small>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Broker Commission Breakdown (Super User Only) -->
+                        <t t-if="is_super_user and broker_commissions">
+                            <div class="row mb-4">
+                                <div class="col-12">
+                                    <div class="card">
+                                        <div class="card-header">
+                                            <h5 class="card-title mb-0">
+                                                <i class="fa fa-users me-2"></i>Commission by Broker
+                                            </h5>
+                                        </div>
+                                        <div class="card-body">
+                                            <div class="table-responsive">
+                                                <table class="table table-striped">
+                                                    <thead>
+                                                        <tr>
+                                                            <th>Broker</th>
+                                                            <th>User Type</th>
+                                                            <th class="text-center">Trades Handled</th>
+                                                            <th class="text-end">Commission Earned</th>
+                                                            <th class="text-center">Actions</th>
+                                                        </tr>
+                                                    </thead>
+                                                    <tbody>
+                                                        <t t-foreach="broker_commissions.items()" t-as="broker_data">
+                                                            <tr>
+                                                                <td>
+                                                                    <strong t-esc="broker_data[0].name"/>
+                                                                    <br/>
+                                                                    <small class="text-muted" t-esc="broker_data[0].login"/>
+                                                                </td>
+                                                                <td>
+                                                                    <span class="badge" t-attf-class="bg-{{'primary' if broker_data[0].user_type == 'broker' else 'warning' if broker_data[0].user_type == 'admin' else 'danger'}}" t-esc="broker_data[0].user_type.title()"/>
+                                                                </td>
+                                                                <td class="text-center">
+                                                                    <strong t-esc="broker_data[1]['trades']"/>
+                                                                </td>
+                                                                <td class="text-end">
+                                                                    <strong class="text-success">$<t t-esc="'{:,.2f}'.format(broker_data[1]['total'])"/></strong>
+                                                                </td>
+                                                                <td class="text-center">
+                                                                    <button class="btn btn-sm btn-outline-info" onclick="toggleBrokerDetails(this)" t-att-data-broker-id="broker_data[0].id">
+                                                                        <i class="fa fa-eye"></i> Details
+                                                                    </button>
+                                                                </td>
+                                                            </tr>
+                                                            <!-- Broker Details Row (Hidden by default) -->
+                                                            <tr style="display: none;" t-att-id="'broker-details-' + str(broker_data[0].id)">
+                                                                <td colspan="5">
+                                                                    <div class="p-3 bg-light">
+                                                                        <h6>Recent Trades:</h6>
+                                                                        <t t-if="broker_data[1]['recent_trades']">
+                                                                            <div class="table-responsive">
+                                                                                <table class="table table-sm">
+                                                                                    <thead>
+                                                                                        <tr>
+                                                                                            <th>Trade Date</th>
+                                                                                            <th>Security</th>
+                                                                                            <th>Side</th>
+                                                                                            <th>Quantity</th>
+                                                                                            <th>Price</th>
+                                                                                            <th class="text-end">Commission</th>
+                                                                                        </tr>
+                                                                                    </thead>
+                                                                                    <tbody>
+                                                                                        <t t-foreach="broker_data[1]['recent_trades']" t-as="trade">
+                                                                                            <tr>
+                                                                                                <td t-esc="trade.trade_date.strftime('%Y-%m-%d %H:%M') if trade.trade_date else 'N/A'"/>
+                                                                                                <td t-esc="trade.security_id.symbol"/>
+                                                                                                <td>
+                                                                                                    <t t-if="trade.buy_order_id.entered_by_id.id == broker_data[0].id">
+                                                                                                        <span class="badge bg-success">BUY</span>
+                                                                                                    </t>
+                                                                                                    <t t-if="trade.sell_order_id.entered_by_id.id == broker_data[0].id">
+                                                                                                        <span class="badge bg-danger">SELL</span>
+                                                                                                    </t>
+                                                                                                </td>
+                                                                                                <td t-esc="'{:,}'.format(int(trade.quantity))"/>
+                                                                                                <td>$<t t-esc="'{:.2f}'.format(trade.price)"/></td>
+                                                                                                <td class="text-end">
+                                                                                                    $<t t-esc="'{:.2f}'.format((trade.buy_commission if trade.buy_order_id.entered_by_id.id == broker_data[0].id else 0) + (trade.sell_commission if trade.sell_order_id.entered_by_id.id == broker_data[0].id else 0))"/>
+                                                                                                </td>
+                                                                                            </tr>
+                                                                                        </t>
+                                                                                    </tbody>
+                                                                                </table>
+                                                                            </div>
+                                                                        </t>
+                                                                        <t t-else="">
+                                                                            <p class="text-muted mb-0">No recent trades found.</p>
+                                                                        </t>
+                                                                    </div>
+                                                                </td>
+                                                            </tr>
+                                                        </t>
+                                                    </tbody>
+                                                </table>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </t>
+
+                        <!-- Commission by Session -->
+                        <div class="row">
+                            <div class="col-12">
+                                <div class="card">
+                                    <div class="card-header">
+                                        <h5 class="card-title mb-0">Commission by Session</h5>
+                                    </div>
+                                    <div class="card-body">
+                                        <t t-if="session_commissions">
+                                            <div class="table-responsive">
+                                                <table class="table table-striped">
+                                                    <thead>
+                                                        <tr>
+                                                            <th>Session</th>
+                                                            <th class="text-end">Commission Earned</th>
+                                                        </tr>
+                                                    </thead>
+                                                    <tbody>
+                                                        <t t-foreach="session_commissions.items()" t-as="session_data">
+                                                            <tr>
+                                                                <td>
+                                                                    <strong t-esc="session_data[0]"/>
+                                                                </td>
+                                                                <td class="text-end">
+                                                                    <strong class="text-success">$<t t-esc="'{:,.2f}'.format(session_data[1])"/></strong>
+                                                                </td>
+                                                            </tr>
+                                                        </t>
+                                                    </tbody>
+                                                </table>
+                                            </div>
+                                        </t>
+                                        <t t-else="">
+                                            <div class="text-center py-4">
+                                                <i class="fa fa-inbox text-muted" style="font-size: 48px;"></i>
+                                                <h5 class="mt-3 text-muted">No Sessions Available</h5>
+                                                <p class="text-muted">No trading sessions have been created yet.</p>
+                                            </div>
+                                        </t>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- JavaScript for broker details toggle -->
+            <script>//<![CDATA[
+                function toggleBrokerDetails(button) {
+                    const brokerId = button.getAttribute('data-broker-id');
+                    const detailsRow = document.getElementById('broker-details-' + brokerId);
+                    const icon = button.querySelector('i');
+                    
+                    if (detailsRow.style.display === 'none') {
+                        detailsRow.style.display = '';
+                        icon.className = 'fa fa-eye-slash';
+                        button.innerHTML = '<i class="fa fa-eye-slash"></i> Hide';
+                    } else {
+                        detailsRow.style.display = 'none';
+                        icon.className = 'fa fa-eye';
+                        button.innerHTML = '<i class="fa fa-eye"></i> Details';
+                    }
+                }
             //]]></script>
         </t>
     </template>
