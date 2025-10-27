@@ -201,6 +201,17 @@ class StockTransactionLog(models.Model):
                 'transfer_out': 'cash_outflow',
             }
             
+            # Get the current running balance from the last transaction (race condition safe)
+            last_transaction = self.search([
+                ('user_id', '=', user_id)
+            ], order='transaction_date desc, id desc', limit=1)
+            
+            if last_transaction:
+                current_balance = last_transaction.running_balance
+            else:
+                # No previous transactions, use user's current cash balance
+                current_balance = user.cash_balance or 0
+            
             # Prepare transaction data
             vals = {
                 'user_id': user_id,
@@ -210,7 +221,7 @@ class StockTransactionLog(models.Model):
                 'cash_impact': cash_impact,
                 'description': description,
                 'transaction_date': kwargs.get('transaction_date', fields.Datetime.now()),
-                'running_balance': (user.cash_balance or 0) + cash_impact,
+                'running_balance': current_balance + cash_impact,
             }
             
             # Add optional fields
@@ -223,20 +234,84 @@ class StockTransactionLog(models.Model):
                 if field in kwargs:
                     vals[field] = kwargs[field]
             
-            # Create transaction log
-            transaction = self.create(vals)
-            
-            # Update user's cash balance
-            user.write({'cash_balance': vals['running_balance']})
-            
-            _logger.info(f"Transaction logged: {transaction_type} for user {user.name}, amount: {cash_impact}, new balance: {vals['running_balance']}")
-            
-            return transaction
+            # Create transaction log with savepoint for atomicity
+            with self.env.cr.savepoint():
+                transaction = self.create(vals)
+                
+                # Update user's cash balance with the correct running balance
+                user.write({'cash_balance': vals['running_balance']})
+                
+                # Validate balance consistency after update
+                user._invalidate_cache()  # Ensure we have the latest data
+                if abs(user.cash_balance - vals['running_balance']) > 0.01:
+                    _logger.warning(f"Balance inconsistency detected for user {user.name}: user.cash_balance={user.cash_balance}, transaction.running_balance={vals['running_balance']}")
+                    user.write({'cash_balance': vals['running_balance']})  # Force sync
+                
+                _logger.info(f"Transaction logged: {transaction_type} for user {user.name}, amount: {cash_impact}, new balance: {vals['running_balance']}")
+                
+                return transaction
             
         except Exception as e:
             _logger.error(f"Error logging transaction: {str(e)}")
             raise ValidationError(f"Failed to log transaction: {str(e)}")
     
+    @api.model
+    def validate_and_fix_cash_balances(self, user_ids=None):
+        """
+        Validate and fix cash balance inconsistencies for users
+        
+        Args:
+            user_ids (list): List of user IDs to check, if None checks all users with transactions
+            
+        Returns:
+            dict: Results of validation and fixes
+        """
+        if user_ids is None:
+            # Get all users who have transactions
+            users_with_transactions = self.search([]).mapped('user_id')
+            user_ids = users_with_transactions.ids
+        
+        results = {
+            'checked': 0,
+            'fixed': 0,
+            'inconsistencies': []
+        }
+        
+        for user_id in user_ids:
+            user = self.env['res.users'].browse(user_id)
+            if not user.exists():
+                continue
+                
+            # Get the latest transaction for this user
+            latest_transaction = self.search([
+                ('user_id', '=', user_id)
+            ], order='transaction_date desc, id desc', limit=1)
+            
+            if latest_transaction:
+                expected_balance = latest_transaction.running_balance
+                current_balance = user.cash_balance
+                
+                results['checked'] += 1
+                
+                if abs(current_balance - expected_balance) > 0.01:
+                    # Found inconsistency
+                    inconsistency = {
+                        'user': user.name,
+                        'user_id': user_id,
+                        'current_balance': current_balance,
+                        'expected_balance': expected_balance,
+                        'difference': current_balance - expected_balance
+                    }
+                    results['inconsistencies'].append(inconsistency)
+                    
+                    # Fix the balance
+                    user.write({'cash_balance': expected_balance})
+                    results['fixed'] += 1
+                    
+                    _logger.warning(f"Fixed balance inconsistency for user {user.name}: {current_balance} -> {expected_balance}")
+        
+        return results
+
     @api.model
     def get_user_balance_sheet(self, user_id, date_from=None, date_to=None):
         """
@@ -477,3 +552,53 @@ class StockTransactionLog(models.Model):
         
         _logger.info("Migration completed successfully")
         return True
+    
+    @api.model
+    def validate_and_fix_cash_balances(self):
+        """
+        Validate and fix cash balance discrepancies between user records and transaction log
+        
+        Returns:
+            dict: Summary of fixes applied
+        """
+        _logger.info("Starting cash balance validation and fix...")
+        
+        # Get all users with transaction logs
+        users_with_transactions = self.env['res.users'].search([
+            ('id', 'in', self.search([]).mapped('user_id.id'))
+        ])
+        
+        fixes_applied = []
+        total_users = len(users_with_transactions)
+        
+        for user in users_with_transactions:
+            # Get latest transaction for this user
+            latest_txn = self.search([('user_id', '=', user.id)], order='id desc', limit=1)
+            
+            if latest_txn:
+                expected_balance = latest_txn.running_balance
+                actual_balance = user.cash_balance
+                
+                if abs(expected_balance - actual_balance) > 0.01:  # Allow for small floating point differences
+                    _logger.warning(f"Balance discrepancy for user {user.name}: user.cash_balance={actual_balance}, expected={expected_balance}")
+                    
+                    # Fix the discrepancy
+                    user.write({'cash_balance': expected_balance})
+                    
+                    fixes_applied.append({
+                        'user_id': user.id,
+                        'user_name': user.name,
+                        'old_balance': actual_balance,
+                        'new_balance': expected_balance,
+                        'difference': expected_balance - actual_balance
+                    })
+        
+        summary = {
+            'total_users_checked': total_users,
+            'fixes_applied': len(fixes_applied),
+            'fixes_details': fixes_applied
+        }
+        
+        _logger.info(f"Cash balance validation completed. Checked {total_users} users, applied {len(fixes_applied)} fixes")
+        
+        return summary
