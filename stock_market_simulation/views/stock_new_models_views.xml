@@ -1,0 +1,364 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <data>
+        
+        <!-- User Block Views -->
+        <record id="view_stock_user_block_list" model="ir.ui.view">
+            <field name="name">stock.user.block.list</field>
+            <field name="model">stock.user.block</field>
+            <field name="arch" type="xml">
+                <list string="User Blocks" decoration-danger="status == 'active'" decoration-muted="status in ['expired', 'cancelled']">
+                    <field name="name"/>
+                    <field name="user_id"/>
+                    <field name="block_type"/>
+                    <field name="block_reason"/>
+                    <field name="blocked_from_date"/>
+                    <field name="blocked_to_date"/>
+                    <field name="remaining_time"/>
+                    <field name="status"/>
+                    <field name="blocked_by_id"/>
+                </list>
+            </field>
+        </record>
+        
+        <record id="view_stock_user_block_form" model="ir.ui.view">
+            <field name="name">stock.user.block.form</field>
+            <field name="model">stock.user.block</field>
+            <field name="arch" type="xml">
+                <form string="User Block">
+                    <header>
+                        <button name="action_cancel_block" type="object" string="Cancel Block" 
+                               class="btn-warning" invisible="status != 'active'"/>
+                        <field name="status" widget="statusbar" statusbar_visible="active,expired,cancelled"/>
+                    </header>
+                    <sheet>
+                        <div class="oe_title">
+                            <h1><field name="name" readonly="1"/></h1>
+                        </div>
+                        <group>
+                            <group>
+                                <field name="user_id" readonly="status != 'active'"/>
+                                <field name="block_type" readonly="status != 'active'"/>
+                                <field name="block_reason" readonly="status != 'active'"/>
+                                <field name="custom_reason" readonly="status != 'active'"/>
+                                <field name="blocked_by_id" readonly="1"/>
+                            </group>
+                            <group>
+                                <field name="blocked_from_date" readonly="status != 'active'"/>
+                                <field name="blocked_to_date" readonly="status != 'active'" invisible="block_type == 'session'"/>
+                                <field name="duration_minutes" readonly="status != 'active'" invisible="block_type == 'session'"/>
+                                <field name="blocked_until_session" readonly="status != 'active'" invisible="block_type == 'time'"/>
+                                <field name="remaining_time" readonly="1"/>
+                                <field name="is_expired" readonly="1"/>
+                            </group>
+                        </group>
+                    </sheet>
+                    <div class="oe_chatter">
+                        <field name="message_follower_ids"/>
+                        <field name="activity_ids"/>
+                        <field name="message_ids"/>
+                    </div>
+                </form>
+            </field>
+        </record>
+        
+        <record id="action_stock_user_block" model="ir.actions.act_window">
+            <field name="name">User Blocks</field>
+            <field name="res_model">stock.user.block</field>
+            <field name="view_mode">list,form</field>
+            <field name="help" type="html">
+                <p class="o_view_nocontent_smiling_face">
+                    No user blocks found!
+                </p>
+                <p>
+                    User blocks are used to temporarily restrict user access to the trading system.
+                </p>
+            </field>
+        </record>
+        
+        <!-- News Views -->
+        <record id="view_stock_news_list" model="ir.ui.view">
+            <field name="name">stock.news.list</field>
+            <field name="model">stock.news</field>
+            <field name="arch" type="xml">
+                <list string="Market News" decoration-success="status == 'active'" decoration-muted="status in ['expired', 'cancelled']">
+                    <field name="name"/>
+                    <field name="headline"/>
+                    <field name="display_priority"/>
+                    <field name="news_type"/>
+                    <field name="stock_id"/>
+                    <field name="start_session"/>
+                    <field name="end_session"/>
+                    <field name="status"/>
+                    <field name="is_visible"/>
+                    <field name="view_count"/>
+                    <field name="published_by_id"/>
+                </list>
+            </field>
+        </record>
+        
+        <record id="view_stock_news_form" model="ir.ui.view">
+            <field name="name">stock.news.form</field>
+            <field name="model">stock.news</field>
+            <field name="arch" type="xml">
+                <form string="Market News">
+                    <header>
+                        <button name="action_publish" type="object" string="Publish" 
+                               class="btn-primary" invisible="status != 'draft'"/>
+                        <button name="action_schedule" type="object" string="Schedule" 
+                               class="btn-warning" invisible="status != 'draft'"/>
+                        <button name="action_cancel" type="object" string="Cancel" 
+                               class="btn-secondary" invisible="status not in ['draft', 'scheduled', 'active']"/>
+                        <field name="status" widget="statusbar" statusbar_visible="draft,scheduled,active,expired"/>
+                    </header>
+                    <sheet>
+                        <div class="oe_title">
+                            <h1><field name="headline" placeholder="News Headline..."/></h1>
+                        </div>
+                        <group>
+                            <group>
+                                <field name="name" readonly="1"/>
+                                <field name="priority"/>
+                                <field name="news_type"/>
+                                <field name="expected_impact"/>
+                                <field name="impact_magnitude"/>
+                            </group>
+                            <group>
+                                <field name="stock_id"/>
+                                <field name="sector_target"/>
+                                <field name="geographic_relevance"/>
+                                <field name="published_by_id" readonly="1"/>
+                                <field name="publish_date" readonly="1"/>
+                                <field name="view_count" readonly="1"/>
+                            </group>
+                        </group>
+                        <group string="Timing Control">
+                            <group>
+                                <field name="start_session"/>
+                                <field name="start_minute"/>
+                                <field name="current_session_num" readonly="1"/>
+                            </group>
+                            <group>
+                                <field name="end_session"/>
+                                <field name="end_minute"/>
+                                <field name="is_visible" readonly="1"/>
+                            </group>
+                        </group>
+                        <group string="Content">
+                            <field name="summary" placeholder="Brief summary..."/>
+                            <field name="content" placeholder="Detailed news content..."/>
+                        </group>
+                    </sheet>
+                    <div class="oe_chatter">
+                        <field name="message_follower_ids"/>
+                        <field name="activity_ids"/>
+                        <field name="message_ids"/>
+                    </div>
+                </form>
+            </field>
+        </record>
+        
+        <record id="action_stock_news" model="ir.actions.act_window">
+            <field name="name">Market News</field>
+            <field name="res_model">stock.news</field>
+            <field name="view_mode">list,form</field>
+            <field name="help" type="html">
+                <p class="o_view_nocontent_smiling_face">
+                    No market news found!
+                </p>
+                <p>
+                    Create market news to inform users about market events and developments.
+                </p>
+            </field>
+        </record>
+        
+        <!-- Bond Views -->
+        <record id="view_stock_bond_list" model="ir.ui.view">
+            <field name="name">stock.bond.list</field>
+            <field name="model">stock.bond</field>
+            <field name="arch" type="xml">
+                <list string="Bonds" decoration-success="status == 'trade'" decoration-muted="status == 'hidden'">
+                    <field name="symbol"/>
+                    <field name="name"/>
+                    <field name="sector"/>
+                    <field name="status"/>
+                    <field name="current_price"/>
+                    <field name="ipo_price"/>
+                    <field name="current_yield"/>
+                    <field name="time_to_maturity"/>
+                    <field name="start_session"/>
+                    <field name="end_session"/>
+                    <field name="is_active"/>
+                </list>
+            </field>
+        </record>
+        
+        <record id="view_stock_bond_form" model="ir.ui.view">
+            <field name="name">stock.bond.form</field>
+            <field name="model">stock.bond</field>
+            <field name="arch" type="xml">
+                <form string="Bond">
+                    <header>
+                        <button name="action_mature_bond" type="object" string="Process Maturity" 
+                               class="btn-primary" invisible="time_to_maturity > 0"/>
+                        <field name="status" widget="statusbar" statusbar_visible="ipo,po,trade,hidden"/>
+                    </header>
+                    <sheet>
+                        <div class="oe_title">
+                            <h1><field name="symbol" placeholder="Bond Symbol"/></h1>
+                            <h2><field name="name" placeholder="Company Name"/></h2>
+                        </div>
+                        <group>
+                            <group string="Basic Information">
+                                <field name="sector"/>
+                                <field name="bond_type"/>
+                                <field name="rate_type"/>
+                                <field name="quantity"/>
+                                <field name="is_active" readonly="1"/>
+                            </group>
+                            <group string="Pricing">
+                                <field name="ipo_price"/>
+                                <field name="current_price"/>
+                                <field name="hidden_price" invisible="status != 'hidden'"/>
+                                <field name="price_to_compare_with"/>
+                                <field name="session_start_price"/>
+                                <field name="return_price"/>
+                            </group>
+                        </group>
+                        <group>
+                            <group string="Session Timeline">
+                                <field name="start_session"/>
+                                <field name="end_session"/>
+                                <field name="time_to_maturity" readonly="1"/>
+                                <field name="first_pay_session"/>
+                                <field name="final_rate_session"/>
+                            </group>
+                            <group string="Financial Terms">
+                                <field name="percentage_rate_session"/>
+                                <field name="compensation_rate"/>
+                                <field name="step_percentage" invisible="rate_type != 'step_up_coupon'"/>
+                                <field name="current_yield" readonly="1"/>
+                                <field name="ytm" readonly="1"/>
+                                <field name="accrued_interest" readonly="1"/>
+                            </group>
+                        </group>
+                        <group string="Order Book">
+                            <group>
+                                <field name="bid_count" readonly="1"/>
+                                <field name="best_bid" readonly="1"/>
+                            </group>
+                            <group>
+                                <field name="ask_count" readonly="1"/>
+                                <field name="best_ask" readonly="1"/>
+                            </group>
+                        </group>
+                    </sheet>
+                    <div class="oe_chatter">
+                        <field name="message_follower_ids"/>
+                        <field name="activity_ids"/>
+                        <field name="message_ids"/>
+                    </div>
+                </form>
+            </field>
+        </record>
+        
+        <record id="action_stock_bond" model="ir.actions.act_window">
+            <field name="name">Bonds</field>
+            <field name="res_model">stock.bond</field>
+            <field name="view_mode">list,form</field>
+            <field name="help" type="html">
+                <p class="o_view_nocontent_smiling_face">
+                    No bonds found!
+                </p>
+                <p>
+                    Create bonds for fixed-income trading in the simulation.
+                </p>
+            </field>
+        </record>
+        
+        <!-- Bond Order Views -->
+        <record id="view_stock_bond_order_list" model="ir.ui.view">
+            <field name="name">stock.bond.order.list</field>
+            <field name="model">stock.bond.order</field>
+            <field name="arch" type="xml">
+                <list string="Bond Orders" decoration-info="status == 'open'" decoration-success="status == 'filled'">
+                    <field name="name"/>
+                    <field name="bond_id"/>
+                    <field name="user_id"/>
+                    <field name="order_side_display"/>
+                    <field name="order_type"/>
+                    <field name="quantity"/>
+                    <field name="price"/>
+                    <field name="filled_quantity"/>
+                    <field name="remaining_quantity"/>
+                    <field name="status"/>
+                    <field name="session_id"/>
+                </list>
+            </field>
+        </record>
+        
+        <record id="view_stock_bond_order_form" model="ir.ui.view">
+            <field name="name">stock.bond.order.form</field>
+            <field name="model">stock.bond.order</field>
+            <field name="arch" type="xml">
+                <form string="Bond Order">
+                    <header>
+                        <button name="action_submit" type="object" string="Submit" 
+                               class="btn-primary" invisible="status != 'draft'"/>
+                        <button name="action_cancel" type="object" string="Cancel" 
+                               class="btn-secondary" invisible="status not in ['draft', 'submitted', 'open', 'partial']"/>
+                        <field name="status" widget="statusbar" statusbar_visible="draft,submitted,open,partial,filled"/>
+                    </header>
+                    <sheet>
+                        <div class="oe_title">
+                            <h1><field name="name" readonly="1"/></h1>
+                        </div>
+                        <group>
+                            <group>
+                                <field name="bond_id" readonly="status != 'draft'"/>
+                                <field name="user_id" readonly="status != 'draft'"/>
+                                <field name="entered_by_id" readonly="1"/>
+                                <field name="session_id" readonly="status != 'draft'"/>
+                            </group>
+                            <group>
+                                <field name="order_type" readonly="status != 'draft'"/>
+                                <field name="side" readonly="status != 'draft'"/>
+                                <field name="order_side_display" readonly="1"/>
+                                <field name="price" readonly="status != 'draft'"/>
+                                <field name="quantity" readonly="status != 'draft'"/>
+                            </group>
+                        </group>
+                        <group>
+                            <group string="Order Status">
+                                <field name="filled_quantity" readonly="1"/>
+                                <field name="remaining_quantity" readonly="1"/>
+                                <field name="order_value" readonly="1"/>
+                                <field name="filled_value" readonly="1"/>
+                            </group>
+                            <group string="Commission">
+                                <field name="broker_commission_rate" readonly="1"/>
+                                <field name="broker_commission" readonly="1"/>
+                            </group>
+                        </group>
+                        <group>
+                            <field name="description" readonly="1"/>
+                            <field name="rejection_reason" readonly="1" invisible="not rejection_reason"/>
+                        </group>
+                    </sheet>
+                    <div class="oe_chatter">
+                        <field name="message_follower_ids"/>
+                        <field name="activity_ids"/>
+                        <field name="message_ids"/>
+                    </div>
+                </form>
+            </field>
+        </record>
+        
+        <record id="action_stock_bond_order" model="ir.actions.act_window">
+            <field name="name">Bond Orders</field>
+            <field name="res_model">stock.bond.order</field>
+            <field name="view_mode">list,form</field>
+        </record>
+        
+    </data>
+</odoo>

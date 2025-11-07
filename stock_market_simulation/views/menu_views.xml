@@ -1,0 +1,173 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    
+    <!-- Main Menu -->
+    <menuitem id="menu_stock_market_root"
+              name="Stock Market"
+              sequence="10"
+              web_icon="stock_market_simulation,static/description/icon.png"/>
+    
+    <!-- Trading Menu -->
+    <menuitem id="menu_stock_trading"
+              name="Trading"
+              parent="menu_stock_market_root"
+              sequence="10"
+              groups="group_stock_investor,group_stock_broker,group_stock_admin,base.group_system"/>
+    
+    <menuitem id="menu_stock_orders"
+              name="Orders"
+              parent="menu_stock_trading"
+              action="action_stock_order"
+              sequence="10"
+              groups="group_stock_investor,group_stock_broker,group_stock_admin,base.group_system"/>
+    
+    <menuitem id="menu_stock_trades"
+              name="Trades"
+              parent="menu_stock_trading"
+              action="action_stock_trade"
+              sequence="20"
+              groups="group_stock_investor,group_stock_broker,group_stock_admin,base.group_system"/>
+    
+    <menuitem id="menu_stock_positions"
+              name="Positions"
+              parent="menu_stock_trading"
+              action="action_stock_position"
+              sequence="30"
+              groups="group_stock_investor,group_stock_broker,group_stock_admin,base.group_system"/>
+    
+    <menuitem id="menu_stock_order_book"
+              name="Order Book"
+              parent="menu_stock_trading"
+              action="action_stock_order_book"
+              sequence="40"
+              groups="group_stock_investor,group_stock_broker,group_stock_admin,base.group_system"/>
+    
+    <!-- Market Data Menu -->
+    <menuitem id="menu_stock_market_data"
+              name="Market Data"
+              parent="menu_stock_market_root"
+              sequence="20"
+              groups="group_stock_investor,group_stock_broker,group_stock_banker,group_stock_admin,base.group_system"/>
+    
+    <menuitem id="menu_stock_securities"
+              name="Securities"
+              parent="menu_stock_market_data"
+              action="action_stock_security"
+              sequence="10"
+              groups="group_stock_investor,group_stock_broker,group_stock_banker,group_stock_admin,base.group_system"/>
+    
+    <menuitem id="menu_stock_price_history"
+              name="Price History"
+              parent="menu_stock_market_data"
+              action="action_stock_price_history"
+              sequence="20"
+              groups="group_stock_investor,group_stock_broker,group_stock_banker,group_stock_admin,base.group_system"/>
+              
+    <menuitem id="menu_stock_bonds"
+              name="Bonds"
+              parent="menu_stock_market_data"
+              action="action_stock_bond"
+              sequence="30"
+              groups="group_stock_investor,group_stock_broker,group_stock_banker,group_stock_admin,base.group_system"/>
+    
+    <!-- Bond Trading -->
+    <menuitem id="menu_bond_orders"
+              name="Bond Orders"
+              parent="menu_stock_trading"
+              action="action_stock_bond_order"
+              sequence="50"
+              groups="group_stock_investor,group_stock_broker,group_stock_admin,base.group_system"/>
+    
+    <!-- News -->
+    <menuitem id="menu_stock_news"
+              name="Market News"
+              parent="menu_stock_market_data"
+              action="action_stock_news"
+              sequence="40"
+              groups="group_stock_admin,base.group_system"/>
+    
+    <!-- Banking Menu -->
+    <menuitem id="menu_stock_banking"
+              name="Banking"
+              parent="menu_stock_market_root"
+              sequence="30"
+              groups="group_stock_banker,group_stock_admin,base.group_system"/>
+    
+    <menuitem id="menu_stock_deposits"
+              name="Deposits"
+              parent="menu_stock_banking"
+              action="action_stock_deposit"
+              sequence="10"
+              groups="group_stock_banker,group_stock_admin,base.group_system"/>
+    
+    <menuitem id="menu_stock_loans"
+              name="Loans"
+              parent="menu_stock_banking"
+              action="action_stock_loan"
+              sequence="20"
+              groups="group_stock_banker,group_stock_admin,base.group_system"/>
+    
+    <!-- Administration Menu -->
+    <menuitem id="menu_stock_admin"
+              name="Administration"
+              parent="menu_stock_market_root"
+              sequence="40"
+              groups="group_stock_admin,base.group_system"/>
+    
+    <menuitem id="menu_stock_sessions"
+              name="Trading Sessions"
+              parent="menu_stock_admin"
+              action="action_stock_session"
+              sequence="10"
+              groups="group_stock_admin,base.group_system"/>
+    
+    <menuitem id="menu_stock_users"
+              name="Market Users"
+              parent="menu_stock_admin"
+              action="action_stock_market_users"
+              sequence="20"
+              groups="group_stock_admin,base.group_system"/>
+              
+    <menuitem id="menu_stock_user_blocks"
+              name="User Blocks"
+              parent="menu_stock_admin"
+              action="action_stock_user_block"
+              sequence="30"
+              groups="group_stock_admin,base.group_system"/>
+    
+    <!-- Reports Menu - Commented out until report actions are implemented
+    <menuitem id="menu_stock_reports"
+              name="Reports"
+              parent="menu_stock_market_root"
+              sequence="50"/>
+    
+    <menuitem id="menu_stock_portfolio_report"
+              name="Portfolio Report"
+              parent="menu_stock_reports"
+              action="action_stock_portfolio_report"
+              sequence="10"
+              groups="group_stock_investor"/>
+    
+    <menuitem id="menu_stock_commission_report"
+              name="Commission Report"
+              parent="menu_stock_reports"
+              action="action_stock_commission_report"
+              sequence="20"
+              groups="group_stock_broker,group_stock_admin,base.group_system"/>
+    
+    <menuitem id="menu_stock_bank_report"
+              name="Banking Report"
+              parent="menu_stock_reports"
+              action="action_stock_bank_report"
+              sequence="30"
+              groups="group_stock_banker"/>
+    
+    <menuitem id="menu_stock_session_report"
+              name="Session Report"
+              parent="menu_stock_reports"
+              action="action_stock_session_report"
+              sequence="40"
+              groups="group_stock_admin"/>
+    -->
+    
+</odoo> 

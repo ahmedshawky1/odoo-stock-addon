@@ -1,0 +1,101 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    
+    <!-- Loan Form View -->
+    <record id="view_stock_loan_form" model="ir.ui.view">
+        <field name="name">stock.loan.form</field>
+        <field name="model">stock.loan</field>
+        <field name="arch" type="xml">
+            <form string="Bank Loan">
+                <header>
+                    <button name="action_approve" type="object" string="Approve Loan" 
+                            invisible="status != 'draft'" class="btn-primary" groups="stock_market_simulation.group_stock_banker"/>
+                    <button name="action_disburse" type="object" string="Disburse Loan" 
+                            invisible="status != 'approved'" class="btn-success" groups="stock_market_simulation.group_stock_banker"/>
+                    <button name="action_make_payment" type="object" string="Make Payment" 
+                            invisible="status != 'active'" class="btn-info"/>
+                    <field name="status" widget="statusbar" statusbar_visible="draft,approved,active,paid"/>
+                </header>
+                <sheet>
+                    <widget name="web_ribbon" title="Paid" bg_color="bg-success" invisible="status != 'paid'"/>
+                    <widget name="web_ribbon" title="Defaulted" bg_color="bg-danger" invisible="status != 'defaulted'"/>
+                    <div class="oe_title">
+                        <h1>
+                            <field name="name" readonly="1"/>
+                        </h1>
+                    </div>
+                    <group>
+                        <group string="Loan Details">
+                            <field name="user_id" options="{'no_create': True}"/>
+                            <field name="banker_id" options="{'no_create': True}"/>
+                            <field name="loan_type"/>
+                            <field name="amount"/>
+                            <field name="interest_rate" widget="percentage" options="{'factor': 1.0}"/>
+                            <field name="term_sessions"/>
+                            <field name="emi_amount"/>
+                        </group>
+                        <group string="Sessions">
+                            <field name="disbursement_session_id"/>
+                            <field name="maturity_session_id"/>
+                            <field name="next_payment_date" invisible="status != 'active'"/>
+                        </group>
+                    </group>
+                    <group invisible="loan_type not in ['margin', 'secured']">
+                        <group string="Collateral">
+                            <field name="collateral_security_id" options="{'no_create': True}"/>
+                            <field name="collateral_quantity"/>
+                            <field name="collateral_value"/>
+                            <field name="ltv_ratio" widget="percentage" options="{'factor': 1.0}"/>
+                            <field name="margin_call_price" invisible="loan_type != 'margin'"/>
+                        </group>
+                    </group>
+                    <group>
+                        <group string="Outstanding">
+                            <field name="principal_outstanding"/>
+                            <field name="interest_accrued"/>
+                            <field name="total_outstanding"/>
+                        </group>
+                        <group string="Risk Metrics">
+                            <field name="ltv_ratio" widget="percentage" options="{'factor': 1.0}"/>
+                            <field name="margin_call_triggered"/>
+                            <field name="penalty_amount"/>
+                        </group>
+                    </group>
+                </sheet>
+                <div class="oe_chatter">
+                    <field name="message_follower_ids"/>
+                    <field name="activity_ids"/>
+                    <field name="message_ids"/>
+                </div>
+            </form>
+        </field>
+    </record>
+
+    <!-- Loan List View -->
+    <record id="view_stock_loan_list" model="ir.ui.view">
+        <field name="name">stock.loan.list</field>
+        <field name="model">stock.loan</field>
+        <field name="arch" type="xml">
+            <list string="Bank Loans" default_order="create_date desc">
+                <field name="name"/>
+                <field name="user_id"/>
+                <field name="banker_id"/>
+                <field name="loan_type"/>
+                <field name="amount"/>
+                <field name="interest_rate" widget="percentage" options="{'factor': 1.0}"/>
+                <field name="disbursement_session_id"/>
+                <field name="maturity_session_id"/>
+                <field name="status" decoration-info="status == 'draft'" decoration-success="status == 'paid'" decoration-warning="status == 'active'" decoration-danger="status == 'defaulted'"/>
+            </list>
+        </field>
+    </record>
+
+    <!-- Loan Action -->
+    <record id="action_stock_loan" model="ir.actions.act_window">
+        <field name="name">Bank Loans</field>
+        <field name="res_model">stock.loan</field>
+        <field name="view_mode">list,form</field>
+        <field name="context">{'search_default_filter_active': 1}</field>
+    </record>
+
+</odoo>

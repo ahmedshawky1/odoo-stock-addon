@@ -1,0 +1,125 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    
+    <!-- Trade Form View -->
+    <record id="view_stock_trade_form" model="ir.ui.view">
+        <field name="name">stock.trade.form</field>
+        <field name="model">stock.trade</field>
+        <field name="arch" type="xml">
+            <form string="Trade" create="false" edit="false">
+                <sheet>
+                    <div class="oe_button_box" name="button_box">
+                        <button name="action_view_buy_order" type="object" class="oe_stat_button" icon="fa-shopping-cart">
+                            <span>Buy Order</span>
+                        </button>
+                        <button name="action_view_sell_order" type="object" class="oe_stat_button" icon="fa-shopping-cart" invisible="not sell_order_id">
+                            <span>Sell Order</span>
+                        </button>
+                    </div>
+                    <div class="oe_title">
+                        <h1>
+                            <field name="name" readonly="1"/>
+                        </h1>
+                    </div>
+                    <group>
+                        <group string="Trade Details">
+                            <field name="security_id"/>
+                            <field name="trade_date"/>
+                            <field name="session_id"/>
+                            <field name="trade_type"/>
+                        </group>
+                        <group string="Trade Value">
+                            <field name="quantity"/>
+                            <field name="price"/>
+                            <field name="value"/>
+                            <field name="total_commission"/>
+                        </group>
+                    </group>
+                    <group>
+                        <group string="Buyer">
+                            <field name="buyer_id"/>
+                            <field name="buy_commission"/>
+                            <field name="buyer_pnl"/>
+                        </group>
+                        <group string="Seller">
+                            <field name="seller_id"/>
+                            <field name="sell_commission"/>
+                            <field name="seller_pnl"/>
+                        </group>
+                    </group>
+                    <group string="Settlement">
+                        <field name="settlement_status"/>
+                        <field name="settlement_date"/>
+                    </group>
+                </sheet>
+                <chatter/>
+            </form>
+        </field>
+    </record>
+    
+    <!-- Trade Tree View -->
+    <record id="view_stock_trade_tree" model="ir.ui.view">
+        <field name="name">stock.trade.tree</field>
+        <field name="model">stock.trade</field>
+        <field name="arch" type="xml">
+            <list string="Trades" create="false" delete="false">
+                <field name="name"/>
+                <field name="trade_date"/>
+                <field name="security_id"/>
+                <field name="buyer_id"/>
+                <field name="seller_id"/>
+                <field name="quantity"/>
+                <field name="price"/>
+                <field name="value"/>
+                <field name="total_commission"/>
+                <field name="settlement_status"/>
+            </list>
+        </field>
+    </record>
+    
+    <!-- Trade Search View -->
+    <record id="view_stock_trade_search" model="ir.ui.view">
+        <field name="name">stock.trade.search</field>
+        <field name="model">stock.trade</field>
+        <field name="arch" type="xml">
+            <search string="Trades">
+                <field name="name"/>
+                <field name="security_id"/>
+                <field name="buyer_id"/>
+                <field name="seller_id"/>
+                <filter string="My Trades" name="filter_my_trades" domain="['|', ('buyer_id', '=', uid), ('seller_id', '=', uid)]"/>
+                <separator/>
+                <filter string="IPO Trades" name="filter_ipo" domain="[('trade_type', '=', 'ipo')]"/>
+                <group expand="0" string="Group By">
+                    <filter string="Security" name="group_by_security" context="{'group_by': 'security_id'}"/>
+                    <filter string="Buyer" name="group_by_buyer" context="{'group_by': 'buyer_id'}"/>
+                    <filter string="Seller" name="group_by_seller" context="{'group_by': 'seller_id'}"/>
+                    <filter string="Trade Date" name="group_by_trade_date" context="{'group_by': 'trade_date:day'}"/>
+                </group>
+            </search>
+        </field>
+    </record>
+    
+    <!-- Trade Action -->
+    <record id="action_stock_trade" model="ir.actions.act_window">
+        <field name="name">Trades</field>
+        <field name="res_model">stock.trade</field>
+        <field name="view_mode">list,form</field>
+        <field name="context">{'search_default_filter_my_trades': 1, 'search_default_filter_today': 1}</field>
+    </record>
+    
+    <!-- Commission Report Action -->
+    <record id="action_stock_commission_report" model="ir.actions.act_window">
+        <field name="name">Commission Report</field>
+        <field name="res_model">stock.trade</field>
+        <field name="view_mode">list</field>
+        <field name="domain">[('buy_commission', '>', 0), ('sell_commission', '>', 0)]</field>
+        <field name="context">{
+            'search_default_group_by_session': 1,
+            'group_by': ['session_id'], 
+            'default_view_type': 'commission_report'
+        }</field>
+        <field name="help">View broker commission earnings from all trades. Shows commission earned per session and per trade.</field>
+    </record>
+    
+</odoo> 

@@ -1,0 +1,38 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <data noupdate="0">
+        <!-- Disable user signup functionality -->
+        <record id="auth_signup_allow_uninvited_disabled" model="ir.config_parameter">
+            <field name="key">auth_signup.allow_uninvited</field>
+            <field name="value">False</field>
+        </record>
+        
+        <!-- Disable reset password functionality (optional) -->
+        <record id="auth_signup_reset_password_disabled" model="ir.config_parameter">
+            <field name="key">auth_signup.reset_password</field>
+            <field name="value">False</field>
+        </record>
+        
+        <!-- Portal redirect path configuration -->
+        <record id="portal_redirect_path_config" model="ir.config_parameter">
+            <field name="key">login_background.portal_redirect_path</field>
+            <field name="value">/unit-reservation</field>
+        </record>
+    </data>
+    
+    <!-- Function to ensure proper configuration on module install -->
+    <function model="ir.config_parameter" name="set_param">
+        <value eval="'auth_signup.allow_uninvited'"/>
+        <value eval="'False'"/>
+    </function>
+    
+    <function model="ir.config_parameter" name="set_param">
+        <value eval="'auth_signup.reset_password'"/>
+        <value eval="'False'"/>
+    </function>
+    
+    <function model="ir.config_parameter" name="set_param">
+        <value eval="'login_background.portal_redirect_path'"/>
+        <value eval="'/unit-reservation'"/>
+    </function>
+</odoo>

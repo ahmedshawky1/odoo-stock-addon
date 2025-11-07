@@ -1,0 +1,284 @@
+.container{
+    max-width: 100%;
+}
+.background{
+    height:100%;
+    display: block;
+	background-repeat: no-repeat;
+	background-position: center center;
+	background-attachment: fixed;
+	-webkit-background-size: cover;
+	-moz-background-size: cover;
+	-o-background-size: cover;
+	background-size: cover;
+	-webkit-filter: blur(0px);
+	filter: blur(0px);
+	z-index: -1;
+}
+.body_login {
+    display: inline-block;
+    text-align: center;
+    white-space: nowrap;
+    width: 100%;
+    position: relative;
+    margin: 0px;
+    padding: 0px;
+	/* background-color: red !important; */
+    /* opacity:0.7; */
+}
+
+
+#bcard{
+    padding: 3rem;
+	background: rgba(255, 255, 255, 0.15) !important;
+    backdrop-filter: blur(15px);
+    border-radius: 25px;
+    border: 1px solid rgba(255, 255, 255, 0.25);
+    box-shadow: 0 12px 40px rgba(0, 0, 0, 0.15);
+    height: auto;
+    max-width: 450px;
+    min-width: 400px;
+    margin: auto;
+}
+
+/* Responsive Design */
+@media only screen and (max-width: 768px) {
+    #bcard {
+        padding: 2rem;
+        max-width: 90vw !important;
+        min-width: 85vw !important;
+        margin: 1rem auto;
+    }
+    
+    .body_login input,
+    .body_login .form-control {
+        font-size: 16px;
+        padding: 14px 18px;
+        height: 48px;
+    }
+    
+    .body_login .btn-primary {
+        padding: 14px 28px;
+        height: 48px;
+        font-size: 15px;
+    }
+    
+    .body_login .oe_login_form {
+        padding: 1.5rem;
+    }
+}
+
+@media only screen and (max-width: 480px) {
+    #bcard {
+        padding: 1.5rem;
+        border-radius: 20px;
+    }
+    
+    .body_login input,
+    .body_login .form-control {
+        font-size: 15px;
+        padding: 12px 16px;
+        height: 45px;
+    }
+    
+    .body_login .form-group {
+        margin-bottom: 1.25rem;
+    }
+}
+
+/* Modern Login Form Styling */
+.body_login .form-group {
+    position: relative;
+    margin-bottom: 2rem;
+}
+
+.body_login .form-group.field-login,
+.body_login .form-group.field-password {
+    position: relative;
+    margin-bottom: 1.5rem;
+}
+
+.body_login input,
+.body_login select,
+.body_login .oe_login_form input,
+.body_login .oe_signup_form input,
+.body_login .oe_reset_password_form input,
+.body_login .form-control,
+.body_login input.form-control,
+.body_login input#login,
+.body_login input#password {
+	background-color: rgba(255, 255, 255, 0.95) !important;
+	border: 2px solid rgba(254, 215, 102, 0.3);
+	border-radius: 12px;
+	padding: 16px 20px;
+	color: #333 !important;
+	font-size: 16px;
+	font-weight: 400;
+	transition: all 0.3s ease;
+	box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+	text-align: left;
+	width: 100%;
+	height: 50px;
+}
+
+.body_login input:focus,
+.body_login select:focus,
+.body_login .oe_login_form input:focus,
+.body_login .oe_signup_form input:focus,
+.body_login .oe_reset_password_form input:focus,
+.body_login .form-control:focus,
+.body_login input.form-control:focus,
+.body_login input#login:focus,
+.body_login input#password:focus {
+	background-color: rgba(255, 255, 255, 1) !important;
+	border: 2px solid #FED766;
+	outline: none;
+	box-shadow: 0 6px 20px rgba(254, 215, 102, 0.3);
+	transform: translateY(-2px);
+}
+
+.body_login input::placeholder,
+.body_login .oe_login_form input::placeholder,
+.body_login .oe_signup_form input::placeholder,
+.body_login .oe_reset_password_form input::placeholder,
+.body_login .form-control::placeholder,
+.body_login input.form-control::placeholder,
+.body_login input#login::placeholder,
+.body_login input#password::placeholder {
+	color: rgba(51, 51, 51, 0.6) !important;
+	font-weight: 400;
+	opacity: 1;
+	transition: all 0.3s ease;
+}
+
+/* Input Icons */
+.body_login .form-group.field-login::before {
+    content: "📧";
+    position: absolute;
+    right: 15px;
+    top: 50%;
+    transform: translateY(-50%);
+    font-size: 18px;
+    z-index: 10;
+    pointer-events: none;
+    opacity: 0.6;
+}
+
+.body_login .form-group.field-password::before {
+    content: "🔒";
+    position: absolute;
+    right: 15px;
+    top: 50%;
+    transform: translateY(-50%);
+    font-size: 18px;
+    z-index: 10;
+    pointer-events: none;
+    opacity: 0.6;
+}
+
+/* Hover Effects */
+.body_login input:hover {
+    border-color: rgba(254, 215, 102, 0.6);
+    box-shadow: 0 5px 18px rgba(0, 0, 0, 0.15);
+}
+
+/* Input Animation Effect */
+.body_login .form-group.effect {
+    overflow: hidden;
+}
+
+.body_login .form-group.effect input {
+    position: relative;
+}
+
+.body_login .form-group.effect::after {
+    content: '';
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    width: 0;
+    height: 3px;
+    background: linear-gradient(90deg, #FED766, #ff9a56);
+    transition: width 0.3s ease;
+}
+
+.body_login .form-group.effect input:focus + ::after,
+.body_login .form-group.effect:focus-within::after {
+    width: 100%;
+}
+
+/* Modern Login Button */
+.body_login .btn-primary,
+.body_login button[type="submit"] {
+    background: linear-gradient(135deg, #FED766 0%, #ff9a56 100%);
+    border: none;
+    border-radius: 12px;
+    padding: 16px 32px;
+    font-size: 16px;
+    font-weight: 600;
+    color: #fff;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    box-shadow: 0 6px 20px rgba(254, 215, 102, 0.4);
+    transition: all 0.3s ease;
+    cursor: pointer;
+    width: 100%;
+    height: 50px;
+    margin-top: 1rem;
+}
+
+.body_login .btn-primary:hover,
+.body_login button[type="submit"]:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 8px 25px rgba(254, 215, 102, 0.6);
+    background: linear-gradient(135deg, #ff9a56 0%, #FED766 100%);
+}
+
+.body_login .btn-primary:active,
+.body_login button[type="submit"]:active {
+    transform: translateY(-1px);
+    box-shadow: 0 4px 15px rgba(254, 215, 102, 0.4);
+}
+
+/* Form Container Enhancement */
+.body_login .oe_login_form,
+.body_login .oe_signup_form,
+.body_login .oe_reset_password_form {
+    padding: 2rem;
+    border-radius: 20px;
+    backdrop-filter: blur(10px);
+    background: rgba(255, 255, 255, 0.1);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+}
+
+/* Error and Success Messages */
+.body_login .alert {
+    border-radius: 10px;
+    padding: 12px 16px;
+    margin: 1rem 0;
+    border: none;
+    font-weight: 500;
+}
+
+.body_login .alert-danger {
+    background-color: rgba(220, 53, 69, 0.1);
+    color: #dc3545;
+    border-left: 4px solid #dc3545;
+}
+
+.body_login .alert-success {
+    background-color: rgba(40, 167, 69, 0.1);
+    color: #28a745;
+    border-left: 4px solid #28a745;
+}
+
+/* Force override for login inputs - highest specificity */
+html body .body_login input[name="login"],
+html body .body_login input[name="password"],
+html body .body_login input[type="text"],
+html body .body_login input[type="password"] {
+	background-color: rgba(255, 255, 255, 0.9) !important;
+	color: #000 !important;
+}
+

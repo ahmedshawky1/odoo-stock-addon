@@ -1,0 +1,49 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    
+    <!-- Price History Tree View -->
+    <record id="view_stock_price_history_tree" model="ir.ui.view">
+        <field name="name">stock.price.history.tree</field>
+        <field name="model">stock.price.history</field>
+        <field name="arch" type="xml">
+            <list string="Price History" create="false" edit="false">
+                <field name="change_date"/>
+                <field name="security_id"/>
+                <field name="old_price"/>
+                <field name="new_price"/>
+                <field name="change_amount" decoration-success="change_amount > 0" decoration-danger="change_amount &lt; 0"/>
+                <field name="change_percentage" widget="percentage" options="{'factor': 1.0}" decoration-success="change_percentage > 0" decoration-danger="change_percentage &lt; 0"/>
+                <field name="change_reason"/>
+                <field name="session_id"/>
+            </list>
+        </field>
+    </record>
+    
+    <!-- Price History Search View -->
+    <record id="view_stock_price_history_search" model="ir.ui.view">
+        <field name="name">stock.price.history.search</field>
+        <field name="model">stock.price.history</field>
+        <field name="arch" type="xml">
+            <search string="Price History">
+                <field name="security_id"/>
+                <field name="session_id"/>
+                <filter string="Trade Triggered" name="filter_trade" domain="[('change_reason', '=', 'trade')]"/>
+                <filter string="Manual" name="filter_manual" domain="[('change_reason', '=', 'manual')]"/>
+                <group expand="0" string="Group By">
+                    <filter string="Security" name="group_by_security" context="{'group_by': 'security_id'}"/>
+                    <filter string="Date" name="group_by_date" context="{'group_by': 'change_date:day'}"/>
+                    <filter string="Reason" name="group_by_reason" context="{'group_by': 'change_reason'}"/>
+                </group>
+            </search>
+        </field>
+    </record>
+    
+    <!-- Price History Action -->
+    <record id="action_stock_price_history" model="ir.actions.act_window">
+        <field name="name">Price History</field>
+        <field name="res_model">stock.price.history</field>
+        <field name="view_mode">list,graph,pivot</field>
+        <field name="context">{'search_default_filter_today': 1}</field>
+    </record>
+    
+</odoo> 

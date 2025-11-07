@@ -1,0 +1,91 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    
+    <!-- Extend User Form View -->
+    <record id="view_users_form_stock" model="ir.ui.view">
+        <field name="name">res.users.form.stock</field>
+        <field name="model">res.users</field>
+        <field name="inherit_id" ref="base.view_users_form"/>
+        <field name="arch" type="xml">
+            <xpath expr="//page[@name='preferences']" position="after">
+                <page string="Stock Trading" name="stock_trading">
+                    <group>
+                        <group string="Trading Information">
+                            <field name="user_type"/>
+                            <field name="team_members" widget="text"/>
+                        </group>
+                        <group string="Financial Information">
+                            <field name="initial_capital"/>
+                            <field name="cash_balance"/>
+                            <field name="portfolio_value"/>
+                            <field name="total_deposits"/>
+                            <field name="total_loans"/>
+                            <field name="total_assets"/>
+                            <field name="profit_loss"/>
+                            <field name="profit_loss_percentage" widget="percentage" options="{'factor': 1.0}"/>
+                            <field name="total_commission" invisible="user_type != 'broker'"/>
+                        </group>
+                    </group>
+                </page>
+            </xpath>
+            <xpath expr="//div[@name='button_box']" position="inside">
+                <button name="action_view_portfolio" type="object" class="oe_stat_button" icon="fa-briefcase" invisible="user_type not in ['investor', 'banker']">
+                    <field name="portfolio_value" widget="statinfo" string="Portfolio"/>
+                </button>
+                <button name="action_view_orders" type="object" class="oe_stat_button" icon="fa-shopping-cart" invisible="user_type not in ['investor']">
+                    <field name="order_count" widget="statinfo" string="Orders"/>
+                </button>
+                <button name="action_seed_cash_from_initial" type="object" class="oe_stat_button" icon="fa-money" groups="base.group_system">
+                    <field name="cash_balance" widget="statinfo" string="Seed Cash"/>
+                </button>
+            </xpath>
+        </field>
+    </record>
+    
+    <!-- Market Users Tree View -->
+    <record id="view_stock_market_users_tree" model="ir.ui.view">
+        <field name="name">stock.market.users.tree</field>
+        <field name="model">res.users</field>
+        <field name="arch" type="xml">
+            <list string="Market Users">
+                <field name="name"/>
+                <field name="user_type"/>
+                <field name="cash_balance"/>
+                <field name="portfolio_value"/>
+                <field name="total_assets"/>
+                <field name="profit_loss" decoration-success="profit_loss &gt;= 0" decoration-danger="profit_loss &lt; 0"/>
+                <field name="profit_loss_percentage" widget="percentage" options="{'factor': 1.0}"/>
+            </list>
+        </field>
+    </record>
+    
+    <!-- Market Users Search View -->
+    <record id="view_stock_market_users_search" model="ir.ui.view">
+        <field name="name">stock.market.users.search</field>
+        <field name="model">res.users</field>
+                <field name="arch" type="xml">
+            <search string="Market Users Search">
+                <field name="name"/>
+                <field name="user_type"/>
+                <filter string="Investors" name="filter_investor" domain="[('user_type', '=', 'investor')]"/>
+                <filter string="Brokers" name="filter_broker" domain="[('user_type', '=', 'broker')]"/>
+                <filter string="Bankers" name="filter_banker" domain="[('user_type', '=', 'banker')]"/>
+                <group expand="0" string="Group By">
+                    <filter string="User Type" name="group_by_type" context="{'group_by': 'user_type'}"/>
+                </group>
+            </search>
+        </field>
+    </record>
+    
+    <!-- Market Users Action -->
+    <record id="action_stock_market_users" model="ir.actions.act_window">
+        <field name="name">Market Users</field>
+        <field name="res_model">res.users</field>
+        <field name="view_mode">list,form</field>
+        <field name="domain">[('user_type', '!=', False)]</field>
+        <field name="context">{'search_default_filter_investor': 1}</field>
+        <field name="view_id" ref="view_stock_market_users_tree"/>
+        <field name="search_view_id" ref="view_stock_market_users_search"/>
+    </record>
+    
+</odoo> 

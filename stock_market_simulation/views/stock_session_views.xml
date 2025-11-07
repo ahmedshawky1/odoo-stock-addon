@@ -1,0 +1,212 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    
+    <!-- Session Form View -->
+    <record id="view_stock_session_form" model="ir.ui.view">
+        <field name="name">stock.session.form</field>
+        <field name="model">stock.session</field>
+        <field name="arch" type="xml">
+            <form string="Trading Session">
+                <header>
+                    <button name="action_open_session" type="object" string="Open Session" 
+                            invisible="state != 'draft'" class="btn-primary"/>
+                    <button name="action_close_session" type="object" string="Close Session" 
+                            invisible="state != 'open'" class="btn-warning"/>
+                    <button name="action_settle_session" type="object" string="Settle Session" 
+                            invisible="state != 'closed'" class="btn-success"/>
+                    <field name="state" widget="statusbar" statusbar_visible="draft,open,closed,settled"/>
+                </header>
+                <sheet>
+                    <div class="oe_button_box" name="button_box">
+                        <button name="action_view_orders" type="object" class="oe_stat_button" icon="fa-shopping-cart">
+                            <field name="total_orders" widget="statinfo" string="Orders"/>
+                        </button>
+                        <button name="action_view_trades" type="object" class="oe_stat_button" icon="fa-exchange">
+                            <field name="total_trades" widget="statinfo" string="Trades"/>
+                        </button>
+                        <button name="%(action_stock_order)d" type="action" class="oe_stat_button" icon="fa-plus-circle" 
+                                invisible="state != 'open'"
+                                context="{'default_session_id': id}">
+                            <span>New Order</span>
+                        </button>
+                    </div>
+                    <div class="oe_title">
+                        <h1>
+                            <field name="name" readonly="1" placeholder="Auto-generated Session Name"/>
+                        </h1>
+                    </div>
+                    <group>
+                        <group string="Planned Schedule (Optional)">
+                            <field name="actual_start_date" invisible="1"/>
+                            <field name="actual_end_date" invisible="1"/>
+                            <field name="planned_start_date" readonly="actual_start_date"/>
+                            <field name="planned_end_date" readonly="actual_end_date"/>
+                            <field name="planned_duration" string="Planned Duration (hours)" readonly="1"/>
+                        </group>
+                        <group string="Actual Timing">
+                            <field name="actual_start_date" readonly="1"/>
+                            <field name="actual_end_date" readonly="1"/>
+                            <field name="actual_duration" string="Actual Duration (hours)" readonly="1"/>
+                        </group>
+                        <group string="Statistics">
+                            <field name="total_volume"/>
+                            <field name="total_value"/>
+                        </group>
+                    </group>
+                    <notebook>
+                        <page string="Configuration" name="configuration">
+                            <group>
+                                <group string="Trading Parameters">
+                                    <field name="price_change_threshold"/>
+                                    <field name="broker_commission_rate"/>
+                                    <field name="tick_size"/>
+                                </group>
+                                <group string="Circuit Breakers">
+                                    <field name="circuit_breaker_upper"/>
+                                    <field name="circuit_breaker_lower"/>
+                                </group>
+                            </group>
+                        </page>
+                        <page string="Orders" name="orders">
+                            <field name="order_ids" readonly="1">
+                                <list decoration-success="status == 'filled'" decoration-warning="status == 'partial'" decoration-danger="status in ['cancelled', 'rejected']">
+                                    <field name="name"/>
+                                    <field name="user_id"/>
+                                    <field name="security_id"/>
+                                    <field name="side"/>
+                                    <field name="quantity"/>
+                                    <field name="price"/>
+                                    <field name="filled_quantity"/>
+                                    <field name="status"/>
+                                </list>
+                            </field>
+                        </page>
+                        <page string="Trades" name="trades">
+                            <field name="trade_ids" readonly="1">
+                                <list>
+                                    <field name="name"/>
+                                    <field name="security_id"/>
+                                    <field name="buyer_id"/>
+                                    <field name="seller_id"/>
+                                    <field name="quantity"/>
+                                    <field name="price"/>
+                                    <field name="value"/>
+                                    <field name="trade_date"/>
+                                </list>
+                            </field>
+                        </page>
+                    </notebook>
+                </sheet>
+                <chatter/>
+            </form>
+        </field>
+    </record>
+    
+    <!-- Session Tree View -->
+    <record id="view_stock_session_tree" model="ir.ui.view">
+        <field name="name">stock.session.tree</field>
+        <field name="model">stock.session</field>
+        <field name="arch" type="xml">
+            <list string="Trading Sessions" decoration-success="state == 'open'" decoration-muted="state == 'settled'">
+                <field name="name"/>
+                <field name="planned_start_date" optional="hide"/>
+                <field name="planned_end_date" optional="hide"/>
+                <field name="actual_start_date" optional="show"/>
+                <field name="actual_end_date" optional="show"/>
+                <field name="actual_duration" string="Duration (hrs)" optional="show"/>
+                <field name="state"/>
+                <field name="total_orders"/>
+                <field name="total_trades"/>
+                <field name="total_volume"/>
+                <field name="total_value"/>
+            </list>
+        </field>
+    </record>
+    
+    <!-- Session Kanban View -->
+    <record id="view_stock_session_kanban" model="ir.ui.view">
+        <field name="name">stock.session.kanban</field>
+        <field name="model">stock.session</field>
+        <field name="arch" type="xml">
+            <kanban>
+                <field name="name"/>
+                <field name="state"/>
+                <field name="planned_start_date"/>
+                <field name="actual_start_date"/>
+                <field name="actual_end_date"/>
+                <field name="total_value"/>
+                <templates>
+                    <t t-name="kanban-box">
+                        <div class="oe_kanban_global_click">
+                            <div class="oe_kanban_details">
+                                <strong class="o_kanban_record_title">
+                                    <field name="name"/>
+                                </strong>
+                                <div class="text-muted">
+                                    <t t-if="record.actual_start_date.raw_value">
+                                        <field name="actual_start_date" widget="date"/> - <field name="actual_end_date" widget="date"/>
+                                    </t>
+                                    <t t-else="">
+                                        Planned: <field name="planned_start_date" widget="date"/>
+                                    </t>
+                                </div>
+                                <div>
+                                    <span class="badge badge-pill" t-attf-class="#{record.state.raw_value == 'open' ? 'badge-success' : (record.state.raw_value == 'draft' ? 'badge-info' : 'badge-secondary')}">
+                                        <field name="state"/>
+                                    </span>
+                                </div>
+                                <div class="mt-2">
+                                    <strong>Total Value: </strong>
+                                    <field name="total_value"/>
+                                </div>
+                            </div>
+                        </div>
+                    </t>
+                </templates>
+            </kanban>
+        </field>
+    </record>
+    
+    <!-- Session Search View -->
+    <record id="view_stock_session_search" model="ir.ui.view">
+        <field name="name">stock.session.search</field>
+        <field name="model">stock.session</field>
+        <field name="arch" type="xml">
+            <search string="Trading Sessions">
+                <field name="name"/>
+                <filter string="Draft" name="filter_draft" domain="[('state', '=', 'draft')]"/>
+                <filter string="Open" name="filter_open" domain="[('state', '=', 'open')]"/>
+                <filter string="Closed" name="filter_closed" domain="[('state', '=', 'closed')]"/>
+                <filter string="Settled" name="filter_settled" domain="[('state', '=', 'settled')]"/>
+                <separator/>
+                <filter string="Draft or Open" name="filter_draft_open" domain="[('state', 'in', ['draft', 'open'])]"/>
+                <filter string="Active Sessions" name="filter_active" domain="[('state', '=', 'open')]"/>
+                <separator/>
+                <group expand="0" string="Group By">
+                    <filter string="State" name="group_by_state" context="{'group_by': 'state'}"/>
+                    <filter string="Planned Start Date" name="group_by_planned_start" context="{'group_by': 'planned_start_date:month'}"/>
+                    <filter string="Actual Start Date" name="group_by_actual_start" context="{'group_by': 'actual_start_date:month'}"/>
+                </group>
+            </search>
+        </field>
+    </record>
+    
+    <!-- Session Action -->
+    <record id="action_stock_session" model="ir.actions.act_window">
+        <field name="name">Trading Sessions</field>
+        <field name="res_model">stock.session</field>
+        <field name="view_mode">list,kanban,form</field>
+        <field name="context">{'search_default_filter_draft_open': 1, 'create': False}</field>
+        <field name="help" type="html">
+            <p class="o_view_nocontent_smiling_face">
+                Sessions are created automatically
+            </p>
+            <p>
+                Trading sessions are automatically created when the previous session is closed. 
+                The first session "Session 01" is created when the module is installed.
+                Simply open a session to start trading.
+            </p>
+        </field>
+    </record>
+    
+</odoo> 

@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+	<!-- Assets -->
+	<record id="assets_login_css" model="ir.asset">
+		<field name="name">Custom Login CSS</field>
+		<field name="bundle">web.assets_frontend</field>
+		<field name="path">odoo_custom_login_inf/static/src/css/web_login_style.css</field>
+	</record>
+	<record id="assets_login_scss" model="ir.asset">
+		<field name="name">Custom Login SCSS</field>
+		<field name="bundle">web.assets_frontend</field>
+		<field name="path">odoo_custom_login_inf/static/src/css/style.scss</field>
+	</record>
+	<record id="assets_login_override" model="ir.asset">
+		<field name="name">Login Override CSS</field>
+		<field name="bundle">web.assets_frontend</field>
+		<field name="path">odoo_custom_login_inf/static/src/css/login_override.css</field>
+	</record>
+</odoo>

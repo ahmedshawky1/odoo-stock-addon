@@ -1,0 +1,288 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!-- 404 Error Page -->
+    <template id="404" inherit_id="http_routing.404">
+        <xpath expr="//t[@t-call='web.frontend_layout']" position="replace">
+            <t t-set="lang" t-value="request.env.context.get('lang', 'en')"/>
+            <html>
+                <head>
+                    <meta charset="utf-8"/>
+                    <meta name="viewport" content="width=device-width, initial-scale=1"/>
+                    <title>404 - Page Not Found</title>
+                    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet"/>
+                    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css" rel="stylesheet"/>
+                    <link rel="stylesheet" type="text/css" href="/skan/static/src/css/portal_test.css"/>
+                </head>
+                <body>
+                    <div class="portal-wrapper">
+                        <nav class="navbar navbar-expand-lg navbar-light bg-white shadow-sm border-bottom sticky-top">
+                            <div class="container">
+                                <a class="navbar-brand d-flex align-items-center" href="/unit-reservation">
+                                    <img src="/skan/static/image/black-logo.webp" alt="Logo" height="45" class="me-2"/>
+                                    <span class="fw-bold text-dark">Stock Market Simulation Platform</span>
+                                </a>
+                            </div>
+                        </nav>
+                        <main class="main-content py-5">
+                            <div class="container text-center">
+                                <div class="error-icon mb-4">
+                                    <i class="fa fa-exclamation-circle" style="font-size: 6rem; color: #dc3545;"></i>
+                                </div>
+                                <h1 class="display-1 fw-bold mb-3">404</h1>
+                                <h2 class="mb-4">Page Not Found</h2>
+                                <p class="lead mb-5">Sorry, the page you are looking for could not be found or has been moved.</p>
+                                <div>
+                                    <a href="/unit-reservation" class="btn btn-primary btn-lg me-2">
+                                        <i class="fa fa-home"></i> Go Home
+                                    </a>
+                                    <button onclick="window.history.back()" class="btn btn-secondary btn-lg">
+                                        <i class="fa fa-arrow-left"></i> Go Back
+                                    </button>
+                                </div>
+                            </div>
+                        </main>
+                        <footer class="custom-footer mt-5">
+                            <div class="container text-center py-3">
+                                <p class="mb-0">© 2025 Unit Reservation Portal. All rights reserved.</p>
+                            </div>
+                        </footer>
+                    </div>
+                    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
+                </body>
+            </html>
+        </xpath>
+    </template>
+
+    <!-- 403 Error Page -->
+    <template id="403" inherit_id="http_routing.403">
+        <xpath expr="//t[@t-call='web.frontend_layout']" position="replace">
+            <html>
+                <head>
+                    <meta charset="utf-8"/>
+                    <meta name="viewport" content="width=device-width, initial-scale=1"/>
+                    <title>403 - Access Forbidden</title>
+                    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet"/>
+                    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css" rel="stylesheet"/>
+                    <link rel="stylesheet" type="text/css" href="/skan/static/src/css/portal_test.css"/>
+                </head>
+                <body>
+                    <div class="portal-wrapper">
+                        <nav class="navbar navbar-expand-lg navbar-light bg-white shadow-sm border-bottom sticky-top">
+                            <div class="container">
+                                <a class="navbar-brand d-flex align-items-center" href="/unit-reservation">
+                                    <img src="/skan/static/image/black-logo.webp" alt="Logo" height="45" class="me-2"/>
+                                    <span class="fw-bold text-dark">Stock Market Simulation Platform</span>
+                                </a>
+                            </div>
+                        </nav>
+                        <main class="main-content py-5">
+                            <div class="container text-center">
+                                <div class="error-icon mb-4">
+                                    <i class="fa fa-ban" style="font-size: 6rem; color: #ffc107;"></i>
+                                </div>
+                                <h1 class="display-1 fw-bold mb-3">403</h1>
+                                <h2 class="mb-4">Access Forbidden</h2>
+                                <p class="lead mb-5">Sorry, you do not have permission to access this page.</p>
+                                <div>
+                                    <a href="/unit-reservation" class="btn btn-primary btn-lg me-2">
+                                        <i class="fa fa-home"></i> Go Home
+                                    </a>
+                                    <a href="/web/login" class="btn btn-secondary btn-lg">
+                                        <i class="fa fa-sign-in"></i> Login
+                                    </a>
+                                </div>
+                            </div>
+                        </main>
+                        <footer class="custom-footer mt-5">
+                            <div class="container text-center py-3">
+                                <p class="mb-0">© 2025 Unit Reservation Portal. All rights reserved.</p>
+                            </div>
+                        </footer>
+                    </div>
+                    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
+                </body>
+            </html>
+        </xpath>
+    </template>
+
+    <!-- 500 Error Page -->
+    <template id="500" inherit_id="http_routing.500">
+        <xpath expr="//html" position="replace">
+            <html>
+                <head>
+                    <meta charset="utf-8"/>
+                    <meta name="viewport" content="width=device-width, initial-scale=1"/>
+                    <title>500 - Internal Server Error</title>
+                    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet"/>
+                    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css" rel="stylesheet"/>
+                    <link rel="stylesheet" type="text/css" href="/skan/static/src/css/portal_test.css"/>
+                </head>
+                <body>
+                    <div class="portal-wrapper">
+                        <nav class="navbar navbar-expand-lg navbar-light bg-white shadow-sm border-bottom sticky-top">
+                            <div class="container">
+                                <a class="navbar-brand d-flex align-items-center" href="/unit-reservation">
+                                    <img src="/skan/static/image/black-logo.webp" alt="Logo" height="45" class="me-2"/>
+                                    <span class="fw-bold text-dark">Stock Market Simulation Platform</span>
+                                </a>
+                            </div>
+                        </nav>
+                        <main class="main-content py-5">
+                            <div class="container text-center">
+                                <div class="error-icon mb-4">
+                                    <i class="fa fa-exclamation-triangle" style="font-size: 6rem; color: #dc3545;"></i>
+                                </div>
+                                <h1 class="display-1 fw-bold mb-3">500</h1>
+                                <h2 class="mb-4">Internal Server Error</h2>
+                                <p class="lead mb-5">Oops! An internal server error occurred. Please try again later or contact technical support.</p>
+                                <div>
+                                    <a href="/unit-reservation" class="btn btn-primary btn-lg me-2">
+                                        <i class="fa fa-home"></i> Go Home
+                                    </a>
+                                    <button onclick="window.location.reload()" class="btn btn-secondary btn-lg">
+                                        <i class="fa fa-refresh"></i> Try Again
+                                    </button>
+                                </div>
+                            </div>
+                        </main>
+                        <footer class="custom-footer mt-5">
+                            <div class="container text-center py-3">
+                                <p class="mb-0">© 2025 Unit Reservation Portal. All rights reserved.</p>
+                            </div>
+                        </footer>
+                    </div>
+                    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
+                    <div id="wrap" style="display:none;">
+                        <div class="oe_structure">
+                            <h1 class="container mt32"><t t-esc="status_code"/>: <t t-esc="status_message"/></h1>
+                        </div>
+                        <t t-if="editable or debug">
+                            <t t-call="http_routing.http_error_debug"/>
+                        </t>
+                    </div>
+                </body>
+            </html>
+        </xpath>
+    </template>
+
+    <!-- 400 Error Page -->
+    <template id="400" inherit_id="http_routing.400">
+        <xpath expr="//t[@t-call='web.frontend_layout']" position="replace">
+            <html>
+                <head>
+                    <meta charset="utf-8"/>
+                    <meta name="viewport" content="width=device-width, initial-scale=1"/>
+                    <title>400 - Bad Request</title>
+                    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet"/>
+                    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css" rel="stylesheet"/>
+                    <link rel="stylesheet" type="text/css" href="/skan/static/src/css/portal_test.css"/>
+                </head>
+                <body>
+                    <div class="portal-wrapper">
+                        <nav class="navbar navbar-expand-lg navbar-light bg-white shadow-sm border-bottom sticky-top">
+                            <div class="container">
+                                <a class="navbar-brand d-flex align-items-center" href="/unit-reservation">
+                                    <img src="/skan/static/image/black-logo.webp" alt="Logo" height="45" class="me-2"/>
+                                    <span class="fw-bold text-dark">Stock Market Simulation Platform</span>
+                                </a>
+                            </div>
+                        </nav>
+                        <main class="main-content py-5">
+                            <div class="container text-center">
+                                <div class="error-icon mb-4">
+                                    <i class="fa fa-times-circle" style="font-size: 6rem; color: #dc3545;"></i>
+                                </div>
+                                <h1 class="display-1 fw-bold mb-3">400</h1>
+                                <h2 class="mb-4">Bad Request</h2>
+                                <p class="lead mb-5">Sorry, the request you sent is invalid. Please check your data and try again.</p>
+                                <div>
+                                    <a href="/unit-reservation" class="btn btn-primary btn-lg me-2">
+                                        <i class="fa fa-home"></i> Go Home
+                                    </a>
+                                    <button onclick="window.history.back()" class="btn btn-secondary btn-lg">
+                                        <i class="fa fa-arrow-left"></i> Go Back
+                                    </button>
+                                </div>
+                            </div>
+                        </main>
+                        <footer class="custom-footer mt-5">
+                            <div class="container text-center py-3">
+                                <p class="mb-0">© 2025 Unit Reservation Portal. All rights reserved.</p>
+                            </div>
+                        </footer>
+                    </div>
+                    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
+                    <div id="wrap" style="display:none;">
+                        <div class="oe_structure">
+                            <h1 class="container mt32"><t t-esc="status_code"/>: <t t-esc="status_message"/></h1>
+                        </div>
+                        <t t-if="editable or debug">
+                            <t t-call="http_routing.http_error_debug"/>
+                        </t>
+                    </div>
+                </body>
+            </html>
+        </xpath>
+    </template>
+
+    <!-- General HTTP Error Handler -->
+    <template id="http_routing_extend" inherit_id="http_routing.http_error" name="Http Error">
+        <xpath expr="//t[@t-call='web.frontend_layout']" position="replace">
+            <html>
+                <head>
+                    <meta charset="utf-8"/>
+                    <meta name="viewport" content="width=device-width, initial-scale=1"/>
+                    <title>Error</title>
+                    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet"/>
+                    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css" rel="stylesheet"/>
+                    <link rel="stylesheet" type="text/css" href="/skan/static/src/css/portal_test.css"/>
+                </head>
+                <body>
+                    <div class="portal-wrapper">
+                        <nav class="navbar navbar-expand-lg navbar-light bg-white shadow-sm border-bottom sticky-top">
+                            <div class="container">
+                                <a class="navbar-brand d-flex align-items-center" href="/unit-reservation">
+                                    <img src="/skan/static/image/black-logo.webp" alt="Logo" height="45" class="me-2"/>
+                                    <span class="fw-bold text-dark">Stock Market Simulation Platform</span>
+                                </a>
+                            </div>
+                        </nav>
+                        <main class="main-content py-5">
+                            <div class="container text-center">
+                                <div class="error-icon mb-4">
+                                    <i class="fa fa-exclamation-triangle" style="font-size: 6rem; color: #dc3545;"></i>
+                                </div>
+                                <h1 class="display-1 fw-bold mb-3"><t t-esc="status_code or 'Error'"/></h1>
+                                <h2 class="mb-4"><t t-esc="status_message or 'An Error Occurred'"/></h2>
+                                <p class="lead mb-5">Sorry, an error occurred while processing your request. Please try again or contact technical support.</p>
+                                <div>
+                                    <a href="/unit-reservation" class="btn btn-primary btn-lg me-2">
+                                        <i class="fa fa-home"></i> Go Home
+                                    </a>
+                                    <button onclick="window.history.back()" class="btn btn-secondary btn-lg">
+                                        <i class="fa fa-arrow-left"></i> Go Back
+                                    </button>
+                                </div>
+                            </div>
+                        </main>
+                        <footer class="custom-footer mt-5">
+                            <div class="container text-center py-3">
+                                <p class="mb-0">© 2025 Unit Reservation Portal. All rights reserved.</p>
+                            </div>
+                        </footer>
+                    </div>
+                    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
+                    <div id="wrap" style="display:none;">
+                        <div class="oe_structure">
+                            <h1 class="container mt32"><t t-esc="status_code"/>: <t t-esc="status_message"/></h1>
+                        </div>
+                        <t t-if="editable or debug">
+                            <t t-call="http_routing.http_error_debug"/>
+                        </t>
+                    </div>
+                </body>
+            </html>
+        </xpath>
+    </template>
+
+</odoo>

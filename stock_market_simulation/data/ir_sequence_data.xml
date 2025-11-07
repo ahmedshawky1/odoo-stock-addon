@@ -1,0 +1,78 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <data noupdate="1">
+        
+        <!-- Stock Order Sequence -->
+        <record id="seq_stock_order" model="ir.sequence">
+            <field name="name">Stock Order</field>
+            <field name="code">stock.order</field>
+            <field name="prefix">ORD/%(year)s/</field>
+            <field name="padding">6</field>
+            <field name="company_id" eval="False"/>
+        </record>
+        
+        <!-- Stock Trade Sequence -->
+        <record id="seq_stock_trade" model="ir.sequence">
+            <field name="name">Stock Trade</field>
+            <field name="code">stock.trade</field>
+            <field name="prefix">TRD/%(year)s/</field>
+            <field name="padding">6</field>
+            <field name="company_id" eval="False"/>
+        </record>
+        
+        <!-- Stock Deposit Sequence -->
+        <record id="seq_stock_deposit" model="ir.sequence">
+            <field name="name">Stock Deposit</field>
+            <field name="code">stock.deposit</field>
+            <field name="prefix">DEP/%(year)s/</field>
+            <field name="padding">5</field>
+            <field name="company_id" eval="False"/>
+        </record>
+        
+        <!-- Stock Loan Sequence -->
+        <record id="seq_stock_loan" model="ir.sequence">
+            <field name="name">Stock Loan</field>
+            <field name="code">stock.loan</field>
+            <field name="prefix">LOAN/%(year)s/</field>
+            <field name="padding">5</field>
+            <field name="company_id" eval="False"/>
+        </record>
+        
+        <!-- Stock User Block Sequence -->
+        <record id="seq_stock_user_block" model="ir.sequence">
+            <field name="name">Stock User Block</field>
+            <field name="code">stock.user.block</field>
+            <field name="prefix">BLOCK/%(year)s/</field>
+            <field name="padding">4</field>
+            <field name="company_id" eval="False"/>
+        </record>
+        
+        <!-- Stock News Sequence -->
+        <record id="seq_stock_news" model="ir.sequence">
+            <field name="name">Stock News</field>
+            <field name="code">stock.news</field>
+            <field name="prefix">NEWS/%(year)s/</field>
+            <field name="padding">5</field>
+            <field name="company_id" eval="False"/>
+        </record>
+        
+        <!-- Stock Bond Order Sequence -->
+        <record id="seq_stock_bond_order" model="ir.sequence">
+            <field name="name">Stock Bond Order</field>
+            <field name="code">stock.bond.order</field>
+            <field name="prefix">BOND-ORD/%(year)s/</field>
+            <field name="padding">6</field>
+            <field name="company_id" eval="False"/>
+        </record>
+        
+        <!-- Stock Bond Trade Sequence -->
+        <record id="seq_stock_bond_trade" model="ir.sequence">
+            <field name="name">Stock Bond Trade</field>
+            <field name="code">stock.bond.trade</field>
+            <field name="prefix">BOND-TRD/%(year)s/</field>
+            <field name="padding">6</field>
+            <field name="company_id" eval="False"/>
+        </record>
+        
+    </data>
+</odoo> 

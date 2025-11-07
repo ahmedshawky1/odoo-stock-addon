@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <data>
+        <!-- Fix all partner emails on module update -->
+        <function model="res.partner" name="ensure_all_emails_set"/>
+    </data>
+</odoo>

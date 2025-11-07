@@ -1,0 +1,349 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <data>
+        <delete model="stock.order" id="demo_order_1"/>
+        <delete model="stock.order" id="demo_order_2"/>
+        <delete model="stock.order" id="demo_order_3"/>
+        <delete model="stock.order" id="demo_order_4"/>
+        
+        <!-- Demo Users -->
+        <record id="demo_investor_1" model="res.users">
+            <field name="name">John Investor</field>
+            <field name="login">investor1@demo.com</field>
+            <field name="email">investor1@demo.com</field>
+            <field name="user_type">investor</field>
+            <field name="cash_balance">100000.00</field>
+            <field name="initial_capital">100000.00</field>
+            <field name="groups_id" eval="[(6, 0, [ref('group_stock_investor')])]"/>
+        </record>
+        
+        <record id="demo_investor_2" model="res.users">
+            <field name="name">Sarah Trader</field>
+            <field name="login">investor2@demo.com</field>
+            <field name="email">investor2@demo.com</field>
+            <field name="user_type">investor</field>
+            <field name="cash_balance">250000.00</field>
+            <field name="initial_capital">250000.00</field>
+            <field name="groups_id" eval="[(6, 0, [ref('group_stock_investor')])]"/>
+        </record>
+        
+        <record id="demo_broker_1" model="res.users">
+            <field name="name">Mike Broker</field>
+            <field name="login">broker1@demo.com</field>
+            <field name="email">broker1@demo.com</field>
+            <field name="user_type">broker</field>
+            <field name="cash_balance">50000.00</field>
+            <field name="initial_capital">50000.00</field>
+            <field name="groups_id" eval="[(6, 0, [ref('group_stock_broker')])]"/>
+        </record>
+        
+        <record id="demo_banker_1" model="res.users">
+            <field name="name">Alice Banker</field>
+            <field name="login">banker1@demo.com</field>
+            <field name="email">banker1@demo.com</field>
+            <field name="user_type">banker</field>
+            <field name="cash_balance">25000.00</field>
+            <field name="initial_capital">25000.00</field>
+            <field name="groups_id" eval="[(6, 0, [ref('group_stock_banker')])]"/>
+        </record>
+        
+        <record id="demo_investor_3" model="res.users">
+            <field name="name">David Chen</field>
+            <field name="login">investor3@demo.com</field>
+            <field name="email">investor3@demo.com</field>
+            <field name="user_type">investor</field>
+            <field name="cash_balance">150000.00</field>
+            <field name="initial_capital">150000.00</field>
+            <field name="groups_id" eval="[(6, 0, [ref('group_stock_investor')])]"/>
+        </record>
+        
+        <record id="demo_investor_4" model="res.users">
+            <field name="name">Emma Wilson</field>
+            <field name="login">investor4@demo.com</field>
+            <field name="email">investor4@demo.com</field>
+            <field name="user_type">investor</field>
+            <field name="cash_balance">200000.00</field>
+            <field name="initial_capital">200000.00</field>
+            <field name="groups_id" eval="[(6, 0, [ref('group_stock_investor')])]"/>
+        </record>
+        
+        <record id="demo_broker_2" model="res.users">
+            <field name="name">Lisa Martinez</field>
+            <field name="login">broker2@demo.com</field>
+            <field name="email">broker2@demo.com</field>
+            <field name="user_type">broker</field>
+            <field name="cash_balance">40000.00</field>
+            <field name="initial_capital">40000.00</field>
+            <field name="groups_id" eval="[(6, 0, [ref('group_stock_broker')])]"/>
+        </record>
+        
+        <!-- Demo Securities -->
+        <record id="demo_security_aapl" model="stock.security">
+            <field name="symbol">AAPL</field>
+            <field name="name">Apple Inc.</field>
+            <field name="sector">information_technology</field>
+            <field name="security_type">stock</field>
+            <field name="current_price">175.00</field>
+            <field name="session_start_price">175.00</field>
+            <field name="tick_size">0.01</field>
+            <field name="lot_size">1</field>
+            <field name="active">True</field>
+        </record>
+        
+        <record id="demo_security_googl" model="stock.security">
+            <field name="symbol">GOOGL</field>
+            <field name="name">Alphabet Inc.</field>
+            <field name="sector">information_technology</field>
+            <field name="security_type">stock</field>
+            <field name="current_price">145.00</field>
+            <field name="session_start_price">145.00</field>
+            <field name="tick_size">0.01</field>
+            <field name="lot_size">1</field>
+            <field name="active">True</field>
+        </record>
+        
+        <record id="demo_security_msft" model="stock.security">
+            <field name="symbol">MSFT</field>
+            <field name="name">Microsoft Corporation</field>
+            <field name="sector">information_technology</field>
+            <field name="security_type">stock</field>
+            <field name="current_price">416.00</field>
+            <field name="session_start_price">416.00</field>
+            <field name="tick_size">0.01</field>
+            <field name="lot_size">1</field>
+            <field name="active">True</field>
+        </record>
+        
+        <record id="demo_security_tsla" model="stock.security">
+            <field name="symbol">TSLA</field>
+            <field name="name">Tesla Inc.</field>
+            <field name="sector">industrials</field>
+            <field name="security_type">stock</field>
+            <field name="current_price">250.00</field>
+            <field name="session_start_price">250.00</field>
+            <field name="tick_size">0.01</field>
+            <field name="lot_size">1</field>
+            <field name="active">True</field>
+        </record>
+        
+        <record id="demo_security_bond_1" model="stock.security">
+            <field name="symbol">BOND001</field>
+            <field name="name">US Treasury Bond 10Y</field>
+            <field name="sector">financials</field>
+            <field name="security_type">bond</field>
+            <field name="current_price">98.00</field>
+            <field name="session_start_price">98.00</field>
+            <field name="tick_size">0.01</field>
+            <field name="lot_size">10</field>
+            <field name="active">True</field>
+        </record>
+        
+        <record id="demo_security_amzn" model="stock.security">
+            <field name="symbol">AMZN</field>
+            <field name="name">Amazon.com Inc.</field>
+            <field name="sector">information_technology</field>
+            <field name="security_type">stock</field>
+            <field name="current_price">178.00</field>
+            <field name="session_start_price">178.00</field>
+            <field name="tick_size">0.01</field>
+            <field name="lot_size">1</field>
+            <field name="active">True</field>
+        </record>
+        
+        <record id="demo_security_nvda" model="stock.security">
+            <field name="symbol">NVDA</field>
+            <field name="name">NVIDIA Corporation</field>
+            <field name="sector">information_technology</field>
+            <field name="security_type">stock</field>
+            <field name="current_price">875.00</field>
+            <field name="session_start_price">875.00</field>
+            <field name="tick_size">0.01</field>
+            <field name="lot_size">1</field>
+            <field name="active">True</field>
+        </record>
+        
+        <!-- Demo Trading Session - Removed (using seed data instead) -->
+        <!-- Session 01 is created from data/data.xml -->
+        
+        <!-- Demo Positions - Investors start with some holdings -->
+        <record id="demo_position_1" model="stock.position">
+            <field name="user_id" ref="demo_investor_1"/>
+            <field name="security_id" ref="demo_security_aapl"/>
+            <field name="quantity">50</field>
+            <field name="average_cost">170.00</field>
+        </record>
+        
+        <record id="demo_position_2" model="stock.position">
+            <field name="user_id" ref="demo_investor_1"/>
+            <field name="security_id" ref="demo_security_msft"/>
+            <field name="quantity">20</field>
+            <field name="average_cost">400.00</field>
+        </record>
+        
+        <record id="demo_position_3" model="stock.position">
+            <field name="user_id" ref="demo_investor_2"/>
+            <field name="security_id" ref="demo_security_googl"/>
+            <field name="quantity">100</field>
+            <field name="average_cost">140.00</field>
+        </record>
+        
+        <record id="demo_position_4" model="stock.position">
+            <field name="user_id" ref="demo_investor_2"/>
+            <field name="security_id" ref="demo_security_tsla"/>
+            <field name="quantity">30</field>
+            <field name="average_cost">245.00</field>
+        </record>
+        
+        <record id="demo_position_5" model="stock.position">
+            <field name="user_id" ref="demo_investor_3"/>
+            <field name="security_id" ref="demo_security_amzn"/>
+            <field name="quantity">40</field>
+            <field name="average_cost">175.00</field>
+        </record>
+        
+        <record id="demo_position_6" model="stock.position">
+            <field name="user_id" ref="demo_investor_3"/>
+            <field name="security_id" ref="demo_security_nvda"/>
+            <field name="quantity">10</field>
+            <field name="average_cost">850.00</field>
+        </record>
+        
+        <record id="demo_position_7" model="stock.position">
+            <field name="user_id" ref="demo_investor_4"/>
+            <field name="security_id" ref="demo_security_aapl"/>
+            <field name="quantity">75</field>
+            <field name="average_cost">172.00</field>
+        </record>
+        
+        <record id="demo_position_8" model="stock.position">
+            <field name="user_id" ref="demo_investor_4"/>
+            <field name="security_id" ref="demo_security_msft"/>
+            <field name="quantity">25</field>
+            <field name="average_cost">410.00</field>
+        </record>
+        
+        <!-- Demo Orders: Temporarily commented out to resolve upgrade dependency issue -->
+        <!--
+        <record id="demo_order_1" model="stock.order">
+            <field name="user_id" ref="demo_investor_1"/>
+            <field name="session_id" ref="stock_market_simulation.session_01"/>
+            <field name="security_id" ref="demo_security_aapl"/>
+            <field name="order_type">limit</field>
+            <field name="side">buy</field>
+            <field name="price">174.00</field>
+            <field name="quantity">100</field>
+            <field name="time_in_force">day</field>
+            <field name="status">open</field>
+        </record>
+        
+        <record id="demo_order_2" model="stock.order">
+            <field name="user_id" ref="demo_investor_2"/>
+            <field name="session_id" ref="stock_market_simulation.session_01"/>
+            <field name="security_id" ref="demo_security_aapl"/>
+            <field name="order_type">limit</field>
+            <field name="side">sell</field>
+            <field name="price">176.00</field>
+            <field name="quantity">50</field>
+            <field name="time_in_force">day</field>
+            <field name="status">open</field>
+        </record>
+        
+        <record id="demo_order_3" model="stock.order">
+            <field name="user_id" ref="demo_investor_1"/>
+            <field name="session_id" ref="stock_market_simulation.session_01"/>
+            <field name="security_id" ref="demo_security_googl"/>
+            <field name="order_type">limit</field>
+            <field name="side">buy</field>
+            <field name="price">145.00</field>
+            <field name="quantity">25</field>
+            <field name="time_in_force">day</field>
+            <field name="status">open</field>
+        </record>
+        
+        <record id="demo_order_4" model="stock.order">
+            <field name="user_id" ref="demo_investor_2"/>
+            <field name="session_id" ref="stock_market_simulation.session_01"/>
+            <field name="security_id" ref="demo_security_tsla"/>
+            <field name="order_type">limit</field>
+            <field name="side">sell</field>
+            <field name="price">252.00</field>
+            <field name="quantity">10</field>
+            <field name="time_in_force">day</field>
+            <field name="status">open</field>
+        </record>
+        -->
+        
+        <!-- Note: Trades are created automatically when orders are matched by the matching engine -->
+        
+        <!-- Demo Deposits -->
+        <record id="demo_deposit_1" model="stock.deposit">
+            <field name="user_id" ref="demo_investor_1"/>
+            <field name="banker_id" ref="demo_banker_1"/>
+            <field name="deposit_type">savings</field>
+            <field name="amount">50000.00</field>
+            <field name="interest_rate">3.5</field>
+            <field name="maturity_date" eval="(datetime.now() + timedelta(days=365)).strftime('%Y-%m-%d')"/>
+            <field name="status">active</field>
+        </record>
+        
+        <record id="demo_deposit_2" model="stock.deposit">
+            <field name="user_id" ref="demo_investor_2"/>
+            <field name="banker_id" ref="demo_banker_1"/>
+            <field name="deposit_type">fixed</field>
+            <field name="amount">75000.00</field>
+            <field name="interest_rate">4.5</field>
+            <field name="maturity_date" eval="(datetime.now() + timedelta(days=180)).strftime('%Y-%m-%d')"/>
+            <field name="status">active</field>
+        </record>
+        
+        <!-- Demo Loans -->
+        <record id="demo_loan_1" model="stock.loan">
+            <field name="user_id" ref="demo_investor_1"/>
+            <field name="banker_id" ref="demo_banker_1"/>
+            <field name="loan_type">margin</field>
+            <field name="amount">25000.00</field>
+            <field name="interest_rate">6.5</field>
+            <field name="term_months">12</field>
+            <field name="collateral_security_id" ref="demo_security_aapl"/>
+            <field name="collateral_quantity">150</field>
+            <field name="status">active</field>
+        </record>
+        
+        <record id="demo_loan_2" model="stock.loan">
+            <field name="user_id" ref="demo_investor_2"/>
+            <field name="banker_id" ref="demo_banker_1"/>
+            <field name="loan_type">personal</field>
+            <field name="amount">30000.00</field>
+            <field name="interest_rate">7.0</field>
+            <field name="term_months">24</field>
+            <field name="collateral_security_id" ref="demo_security_googl"/>
+            <field name="collateral_quantity">200</field>
+            <field name="status">active</field>
+        </record>
+        
+        <record id="demo_loan_3" model="stock.loan">
+            <field name="user_id" ref="demo_investor_3"/>
+            <field name="banker_id" ref="demo_banker_1"/>
+            <field name="loan_type">margin</field>
+            <field name="amount">35000.00</field>
+            <field name="interest_rate">6.0</field>
+            <field name="term_months">12</field>
+            <field name="collateral_security_id" ref="demo_security_amzn"/>
+            <field name="collateral_quantity">100</field>
+            <field name="status">active</field>
+        </record>
+        
+        <record id="demo_loan_4" model="stock.loan">
+            <field name="user_id" ref="demo_investor_4"/>
+            <field name="banker_id" ref="demo_banker_1"/>
+            <field name="loan_type">home</field>
+            <field name="amount">75000.00</field>
+            <field name="interest_rate">5.5</field>
+            <field name="term_months">60</field>
+            <field name="collateral_security_id" ref="demo_security_tsla"/>
+            <field name="collateral_quantity">300</field>
+            <field name="status">active</field>
+        </record>
+        
+    </data>
+</odoo>

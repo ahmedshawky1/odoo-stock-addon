@@ -1,0 +1,35 @@
+<odoo>
+  <data>
+    <record model="ir.ui.view" id="view_login_tree">
+        <field name="name">login.image</field>
+        <field name="model">login.image</field>
+        <field name="priority" eval="16"/>
+        <field name="arch" type="xml">
+            <list string="Login Background Images">
+                <field name="name"/>
+            </list>
+        </field>
+    </record>
+    <record model="ir.ui.view" id="view_login_form">
+        <field name="name">login.image</field>
+        <field name="model">login.image</field>
+        <field name="priority" eval="16"/>
+        <field name="arch" type="xml">
+            <form string="Login Background Image">
+                <group>
+                    <field name="name"/>
+                    <field name="image" widget="image" class="oe_avatar"/>
+                </group>
+            </form>
+        </field>
+    </record>
+
+    <record model="ir.actions.act_window" id="action_image_data">
+        <field name="name">Login Background Images</field>
+        <field name="res_model">login.image</field>
+        <field name="view_mode">tree,form</field>
+    </record>
+      <menuitem id="menu_image" name="Login Background Images" parent="base.menu_users" 
+      action="odoo_custom_login_inf.action_image_data"/>
+  </data>
+</odoo>
