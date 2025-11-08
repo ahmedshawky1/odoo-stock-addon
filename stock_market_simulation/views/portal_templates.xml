@@ -1352,13 +1352,13 @@
                 <div class="stock-sidebar-header">
                     <a href="/market" class="sidebar-brand">
                         <div class="sidebar-brand-icon">
-                            <i class="fa fa-line-chart"></i>
+                            <i class="fas fa-chart-line"></i>
                         </div>
                         <span class="sidebar-brand-text">Stock Market</span>
                     </a>
                     <button type="button" class="stock-sidebar-toggle-icon" aria-label="Toggle sidebar" tabindex="0">
-                        <i class="fa fa-angle-left sidebar-toggle-collapse"></i>
-                        <i class="fa fa-angle-right sidebar-toggle-expand"></i>
+                        <i class="fas fa-angle-left sidebar-toggle-collapse"></i>
+                        <i class="fas fa-angle-right sidebar-toggle-expand"></i>
                     </button>
                 </div>
                 
@@ -1368,18 +1368,18 @@
                     <div class="sidebar-section">
                         <div class="sidebar-section-title">Trading</div>
                         <a href="/market" class="nav-link" data-page="dashboard" data-tooltip="Dashboard">
-                            <i class="fa fa-tachometer"></i>
+                            <i class="fas fa-tachometer-alt"></i>
                             <span class="nav-text">Dashboard</span>
                         </a>
                         <t t-if="request.env.user.user_type in ['broker', 'investor', 'admin'] or request.env.user.has_group('base.group_system')">
                             <a href="/market/trading" class="nav-link" data-page="trading" data-tooltip="Trading">
-                                <i class="fa fa-exchange"></i>
+                                <i class="fas fa-exchange-alt"></i>
                                 <span class="nav-text">Trading</span>
                             </a>
                         </t>
                         <t t-if="request.env.user.user_type in ['investor', 'broker', 'admin']">
                             <a href="/market/orders" class="nav-link" data-page="orders" data-tooltip="Orders">
-                                <i class="fa fa-list"></i>
+                                <i class="fas fa-list"></i>
                                 <span class="nav-text">Orders</span>
                                 <span class="nav-badge" t-if="order_count"><t t-esc="order_count"/></span>
                             </a>
@@ -1391,16 +1391,16 @@
                         <div class="sidebar-section">
                             <div class="sidebar-section-title">Portfolio</div>
                             <a href="/market/portfolio" class="nav-link" data-page="portfolio" data-tooltip="Positions">
-                                <i class="fa fa-briefcase"></i>
+                                <i class="fas fa-briefcase"></i>
                                 <span class="nav-text">Positions</span>
                                 <span class="nav-badge" t-if="position_count"><t t-esc="position_count"/></span>
                             </a>
                             <a href="/market/trades" class="nav-link" data-page="trades" data-tooltip="Trade History">
-                                <i class="fa fa-history"></i>
+                                <i class="fas fa-history"></i>
                                 <span class="nav-text">Trade History</span>
                             </a>
                             <a href="/market/performance" class="nav-link" data-page="performance" data-tooltip="Performance">
-                                <i class="fa fa-area-chart"></i>
+                                <i class="fas fa-chart-area"></i>
                                 <span class="nav-text">Performance</span>
                             </a>
                         </div>
@@ -1411,12 +1411,12 @@
                         <div class="sidebar-section">
                             <div class="sidebar-section-title">Banking</div>
                             <a href="/market/deposits" class="nav-link" data-page="deposits" data-tooltip="Deposits">
-                                <i class="fa fa-bank"></i>
+                                <i class="fas fa-university"></i>
                                 <span class="nav-text">Deposits</span>
                                 <span class="nav-badge" t-if="deposit_count"><t t-esc="deposit_count"/></span>
                             </a>
                             <a href="/market/loans" class="nav-link" data-page="loans" data-tooltip="Loans">
-                                <i class="fa fa-money"></i>
+                                <i class="fas fa-money-bill"></i>
                                 <span class="nav-text">Loans</span>
                                 <span class="nav-badge" t-if="loan_count"><t t-esc="loan_count"/></span>
                             </a>
@@ -1428,11 +1428,11 @@
                         <div class="sidebar-section">
                             <div class="sidebar-section-title">Broker Tools</div>
                             <a href="/market/commissions" class="nav-link" data-page="commissions" data-tooltip="Commissions">
-                                <i class="fa fa-percentage"></i>
+                                <i class="fas fa-percentage"></i>
                                 <span class="nav-text">Commissions</span>
                             </a>
                             <a href="/market/clients" class="nav-link" data-page="clients" data-tooltip="Clients">
-                                <i class="fa fa-users"></i>
+                                <i class="fas fa-users"></i>
                                 <span class="nav-text">Clients</span>
                             </a>
                         </div>
@@ -1442,20 +1442,20 @@
                     <div class="sidebar-section">
                         <div class="sidebar-section-title">Market</div>
                         <a href="/market/securities" class="nav-link" data-page="securities" data-tooltip="Securities">
-                            <i class="fa fa-bar-chart"></i>
+                            <i class="fas fa-chart-bar"></i>
                             <span class="nav-text">Securities</span>
                         </a>
                         <a href="/market/session" class="nav-link" data-page="session" data-tooltip="Session Info">
-                            <i class="fa fa-clock-o"></i>
+                            <i class="fas fa-clock"></i>
                             <span class="nav-text">Session Info</span>
                         </a>
                         <a href="/market/reports" class="nav-link" data-page="reports" data-tooltip="Reports">
-                            <i class="fa fa-file-text"></i>
+                            <i class="fas fa-file-alt"></i>
                             <span class="nav-text">Reports</span>
                         </a>
                         <t t-if="request.env.user.user_type in ['admin', 'superadmin', 'broker']">
                             <a href="/market/ipo" class="nav-link" data-page="ipo" data-tooltip="IPO &amp; Allocation">
-                                <i class="fa fa-rocket"></i>
+                                <i class="fas fa-rocket"></i>
                                 <span class="nav-text">IPO &amp; Allocation</span>
                             </a>
                         </t>
@@ -1465,14 +1465,14 @@
                     <t t-if="request.env.user.user_type in ['admin', 'superadmin'] or request.env.user.has_group('base.group_system')">
                         <div class="sidebar-section">
                             <div class="sidebar-section-title">
-                                <i class="fa fa-lock"></i> Administration
+                                <i class="fas fa-lock"></i> Administration
                             </div>
                             <a href="/market/admin/users" class="nav-link" data-page="admin-users" data-tooltip="Manage Users">
-                                <i class="fa fa-users"></i>
+                                <i class="fas fa-users"></i>
                                 <span class="nav-text">Users Management</span>
                             </a>
                             <a href="/market/admin/users" class="nav-link" data-page="admin-analytics" data-tooltip="User Analytics">
-                                <i class="fa fa-bar-chart"></i>
+                                <i class="fas fa-chart-bar"></i>
                                 <span class="nav-text">User Analytics</span>
                             </a>
                         </div>
@@ -1482,11 +1482,11 @@
                     <div class="sidebar-section">
                         <div class="sidebar-section-title">Account</div>
                         <a href="/my/account" class="nav-link" data-page="account" data-tooltip="Settings">
-                            <i class="fa fa-cog"></i>
+                            <i class="fas fa-cog"></i>
                             <span class="nav-text">Settings</span>
                         </a>
                         <a href="/web/session/logout" class="nav-link" data-tooltip="Logout">
-                            <i class="fa fa-sign-out"></i>
+                            <i class="fas fa-sign-out-alt"></i>
                             <span class="nav-text">Logout</span>
                         </a>
                     </div>
@@ -1498,7 +1498,7 @@
                 <!-- Top Navigation Bar -->
                 <header class="stock-navbar">
                     <div class="navbar-title">
-                        <i class="fa fa-line-chart title-icon"></i>
+                        <i class="fas fa-chart-line title-icon"></i>
                         <span t-esc="page_title or 'Stock Market Portal'"/>
                     </div>
                     
@@ -1507,7 +1507,7 @@
                         <t t-if="active_session">
                             <div class="alert alert-success mb-0 py-1 px-3">
                                 <small>
-                                    <i class="fa fa-clock text-success me-1"></i>
+                                    <i class="fas fa-clock text-success me-1"></i>
                                     Active: <strong t-esc="active_session.name"/>
                                     <t t-if="active_session.planned_end_date">
                                         (ends <t t-esc="active_session.planned_end_date.strftime('%H:%M')"/>)
@@ -1517,7 +1517,7 @@
                         </t>
                         <t t-if="not active_session">
                             <div class="alert alert-warning mb-0 py-1 px-3">
-                                <small><i class="fa fa-clock text-warning me-1"></i>No active session</small>
+                                <small><i class="fas fa-clock text-warning me-1"></i>No active session</small>
                             </div>
                         </t>
                         
@@ -1531,19 +1531,19 @@
                                     <div class="user-name" t-esc="request.env.user.name"/>
                                     <div class="user-role" t-esc="request.env.user.user_type"/>
                                 </div>
-                                <i class="fa fa-chevron-down ms-2"></i>
+                                <i class="fas fa-chevron-down ms-2"></i>
                             </a>
                             <ul class="dropdown-menu dropdown-menu-end">
-                                <li><a class="dropdown-item" href="/my/home"><i class="fa fa-user me-2"></i>My Account</a></li>
+                                <li><a class="dropdown-item" href="/my/home"><i class="fas fa-user me-2"></i>My Account</a></li>
                                 <t t-if="request.env.user.user_type in ['admin', 'superadmin'] or request.env.user.has_group('base.group_system')">
                                     <li><hr class="dropdown-divider"/></li>
-                                    <li><a class="dropdown-item" href="/market/admin/users"><i class="fa fa-users me-2"></i>Admin: Users</a></li>
-                                    <li><a class="dropdown-item" href="/market/admin/users"><i class="fa fa-bar-chart me-2"></i>Admin: Analytics</a></li>
+                                    <li><a class="dropdown-item" href="/market/admin/users"><i class="fas fa-users me-2"></i>Admin: Users</a></li>
+                                    <li><a class="dropdown-item" href="/market/admin/users"><i class="fas fa-chart-bar me-2"></i>Admin: Analytics</a></li>
                                     <li><hr class="dropdown-divider"/></li>
                                 </t>
-                                <li><a class="dropdown-item" href="/odoo"><i class="fa fa-th me-2"></i>Backend</a></li>
+                                <li><a class="dropdown-item" href="/odoo"><i class="fas fa-th me-2"></i>Backend</a></li>
                                 <li><hr class="dropdown-divider"/></li>
-                                <li><a class="dropdown-item" href="/web/session/logout?redirect=/"><i class="fa fa-sign-out me-2"></i>Logout</a></li>
+                                <li><a class="dropdown-item" href="/web/session/logout?redirect=/"><i class="fas fa-sign-out-alt me-2"></i>Logout</a></li>
                             </ul>
                         </div>
                     </div>
