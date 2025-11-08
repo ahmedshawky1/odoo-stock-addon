@@ -396,23 +396,41 @@ class PortalRedirectController(http.Controller):
 
 class RootRedirectController(http.Controller):
     """
-    Controller to redirect root path (/) to /market, similar to /my behavior.
+    Controller to redirect root path (/) to configured portal path, similar to /my behavior.
     """
     
     @http.route(['/'], type='http', auth="public", website=True)
     def root_redirect(self, **kw):
-        """Redirect root path to /market."""
-        _logger.info("Root path (/) accessed - redirecting to /market")
+        """Redirect root path to configured portal redirect path."""
+        _logger.info("Root path (/) accessed - reading portal redirect path")
         
-        # Check if user is logged in
-        if request.session.uid:
-            user = request.env.user
-            _logger.info("Logged in user %s accessing root - redirecting to /market", user.login)
-            return werkzeug.utils.redirect('/market')
-        else:
-            # Not logged in - redirect to login page
-            _logger.info("Anonymous user accessing root - redirecting to /web/login")
-            return werkzeug.utils.redirect('/web/login?redirect=/market')
+        try:
+            # Read configured path from system parameter
+            param_obj = request.env['ir.config_parameter'].sudo()
+            portal_redirect_path = (param_obj.get_param('login_background.portal_redirect_path') or '/market').strip()
+            
+            # Basic sanitation: ensure it starts with a slash
+            if portal_redirect_path and not portal_redirect_path.startswith('/') and '://' not in portal_redirect_path:
+                portal_redirect_path = '/' + portal_redirect_path
+            
+            _logger.info("Root path redirect target: %s", portal_redirect_path)
+            
+            # Check if user is logged in
+            if request.session.uid:
+                user = request.env.user
+                _logger.info("Logged in user %s accessing root - redirecting to %s", user.login, portal_redirect_path)
+                return werkzeug.utils.redirect(portal_redirect_path)
+            else:
+                # Not logged in - redirect to login page with redirect parameter
+                _logger.info("Anonymous user accessing root - redirecting to /web/login")
+                return werkzeug.utils.redirect(f'/web/login?redirect={portal_redirect_path}')
+        except Exception as e:
+            _logger.error("Error getting portal redirect path: %s", e)
+            # Fallback to /market
+            if request.session.uid:
+                return werkzeug.utils.redirect('/market')
+            else:
+                return werkzeug.utils.redirect('/web/login?redirect=/market')
 
 
 class TestController(http.Controller):
