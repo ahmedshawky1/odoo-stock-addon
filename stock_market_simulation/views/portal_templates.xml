@@ -1,198 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <odoo>
     
-    <!-- Extend portal home page -->
-    <template id="portal_my_home" name="Show Stock Market Data" inherit_id="portal.portal_my_home" priority="40">
-        <xpath expr="//div[hasclass('o_portal_docs')]" position="inside">
-            <t t-if="request.env.user.user_type in ['investor', 'broker', 'banker']">
-                <h3 class="mt-4">Stock Market Dashboard</h3>
-                
-                <!-- Financial Summary -->
-                <div class="row mt-3">
-                    <div class="col-md-3">
-                        <div class="card">
-                            <div class="card-body text-center">
-                                <h5 class="card-title">Cash Balance</h5>
-                                <p class="card-text h4">$<t t-esc="'{:,.2f}'.format(cash_balance or 0.0)"/></p>
-                            </div>
-                        </div>
-                    </div>
-                    <div class="col-md-3">
-                        <div class="card">
-                            <div class="card-body text-center">
-                                <h5 class="card-title">Portfolio Value</h5>
-                                <p class="card-text h4">$<t t-esc="'{:,.2f}'.format(portfolio_value or 0.0)"/></p>
-                            </div>
-                        </div>
-                    </div>
-                    <div class="col-md-3">
-                        <div class="card">
-                            <div class="card-body text-center">
-                                <h5 class="card-title">Total Assets</h5>
-                                <p class="card-text h4">$<t t-esc="'{:,.2f}'.format(total_assets or 0.0)"/></p>
-                            </div>
-                        </div>
-                    </div>
-                    <div class="col-md-3">
-                        <div class="card">
-                            <div class="card-body text-center">
-                                <h5 class="card-title">P&amp;L</h5>
-                                <p class="card-text h4">
-                                    <span t-attf-class="#{(profit_loss or 0.0) >= 0 and 'text-success' or 'text-danger'}">
-                                        $<t t-esc="'{:,.2f}'.format(profit_loss or 0.0)"/>
-                                        (<t t-esc="profit_loss_percentage or 0.0"/>%)
-                                    </span>
-                                </p>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-                
-                <!-- Quick Actions -->
-                <div class="row mt-4">
-                    <div class="col-12">
-                        <t t-if="user_type == 'investor'">
-                            <a href="/my/order/new" class="btn btn-primary">Place New Order</a>
-                            <a href="/my/portfolio" class="btn btn-secondary">View Portfolio</a>
-                            <a href="/my/orders" class="btn btn-secondary">My Orders</a>
-                        </t>
-                        <t t-if="user_type in ['broker', 'admin', 'superadmin'] or request.env.user.has_group('base.group_system')">
-                            <a href="/my/commissions" class="btn btn-primary">Commission Report</a>
-                        </t>
-                        <t t-if="user_type == 'banker'">
-                            <a href="/my/banking" class="btn btn-primary">Banking Dashboard</a>
-                        </t>
-                        <a href="/my/market" class="btn btn-info">Market Data</a>
-                    </div>
-                </div>
-                
-                <!-- Admin Section -->
-                <t t-if="request.env.user.user_type in ['admin', 'superadmin'] or request.env.user.has_group('base.group_system')">
-                    <div class="row mt-5">
-                        <div class="col-12">
-                            <h3 class="mb-3">
-                                <i class="fa fa-lock"/> Administration
-                            </h3>
-                            <div class="alert alert-info">
-                                <i class="fa fa-shield"/> You have administrator privileges
-                            </div>
-                        </div>
-                    </div>
-                    
-                    <!-- Admin Actions -->
-                    <div class="row">
-                        <div class="col-md-6 mb-3">
-                            <div class="card border-primary">
-                                <div class="card-body">
-                                    <h5 class="card-title"><i class="fa fa-users"/> User Management</h5>
-                                    <p class="card-text">View all users, manage accounts, and access 360-degree user views</p>
-                                    <a href="/market/admin/users" class="btn btn-primary btn-block">
-                                        <i class="fa fa-users"/> Manage Users
-                                    </a>
-                                </div>
-                            </div>
-                        </div>
-                        <div class="col-md-6 mb-3">
-                            <div class="card border-info">
-                                <div class="card-body">
-                                    <h5 class="card-title"><i class="fa fa-chart-bar"/> Analytics</h5>
-                                    <p class="card-text">View system analytics and reports</p>
-                                    <a href="/my/market" class="btn btn-info btn-block">
-                                        <i class="fa fa-chart-bar"/> View Market
-                                    </a>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </t>
-                
-                <!-- Market Movers -->
-                <div class="row mt-4">
-                    <div class="col-md-6">
-                        <h4>Top Gainers</h4>
-                        <table class="table table-sm">
-                            <thead>
-                                <tr>
-                                    <th>Symbol</th>
-                                    <th>Price</th>
-                                    <th>Change</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                <t t-foreach="top_gainers" t-as="security">
-                                    <tr>
-                                        <td><t t-esc="security.symbol"/></td>
-                                        <td><t t-esc="security.current_price" t-options='{"widget": "float", "precision": 2}'/></td>
-                                        <td class="text-success">+<t t-esc="security.change_percentage"/>%</td>
-                                    </tr>
-                                </t>
-                            </tbody>
-                        </table>
-                    </div>
-                    <div class="col-md-6">
-                        <h4>Top Losers</h4>
-                        <table class="table table-sm">
-                            <thead>
-                                <tr>
-                                    <th>Symbol</th>
-                                    <th>Price</th>
-                                    <th>Change</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                <t t-foreach="top_losers" t-as="security">
-                                    <tr>
-                                        <td><t t-esc="security.symbol"/></td>
-                                        <td><t t-esc="security.current_price" t-options='{"widget": "float", "precision": 2}'/></td>
-                                        <td class="text-danger"><t t-esc="security.change_percentage"/>%</td>
-                                    </tr>
-                                </t>
-                            </tbody>
-                        </table>
-                    </div>
-                </div>
-            </t>
-        </xpath>
-        
-        <!-- Add counts to portal docs section -->
-        <xpath expr="//div[hasclass('o_portal_docs')]" position="inside">
-            <t t-if="request.env.user.user_type == 'investor' and order_count">
-                <t t-call="portal.portal_docs_entry">
-                    <t t-set="title">Orders</t>
-                    <t t-set="url" t-value="'/my/orders'"/>
-                    <t t-set="count" t-value="order_count"/>
-                </t>
-            </t>
-            <t t-if="request.env.user.user_type == 'investor' and position_count">
-                <t t-call="portal.portal_docs_entry">
-                    <t t-set="title">Positions</t>
-                    <t t-set="url" t-value="'/my/portfolio'"/>
-                    <t t-set="count" t-value="position_count"/>
-                </t>
-            </t>
-            <t t-if="request.env.user.user_type == 'investor' and trade_count">
-                <t t-call="portal.portal_docs_entry">
-                    <t t-set="title">Trades</t>
-                    <t t-set="url" t-value="'/my/trades'"/>
-                    <t t-set="count" t-value="trade_count"/>
-                </t>
-            </t>
-            <t t-if="deposit_count">
-                <t t-call="portal.portal_docs_entry">
-                    <t t-set="title">Deposits</t>
-                    <t t-set="url" t-value="'/my/deposits'"/>
-                    <t t-set="count" t-value="deposit_count"/>
-                </t>
-            </t>
-            <t t-if="loan_count">
-                <t t-call="portal.portal_docs_entry">
-                    <t t-set="title">Loans</t>
-                    <t t-set="url" t-value="'/my/loans'"/>
-                    <t t-set="count" t-value="loan_count"/>
-                </t>
-            </t>
-        </xpath>
-    </template>
+    <!-- Removed portal home inheritance to avoid pulling default portal layout -->
     
     <!-- Portfolio Page -->
     <template id="portal_my_portfolio" name="My Portfolio">
@@ -1101,558 +910,803 @@
         //]]></script>
     </template>
     
-    <!-- Custom Market Portal Layout -->
-    <!-- Enhanced Portal Layout with Sidebar -->
+    <!-- Completely Standalone Stock Market Layout - No Inheritance -->
+    <template id="stock_standalone_layout" name="Stock Market Standalone Layout">
+    <!-- Standalone HTML skeleton; DOCTYPE removed for XML validity -->
+    <html lang="en">
+            <head>
+                <meta charset="utf-8"/>
+                <meta name="viewport" content="width=device-width, initial-scale=1"/>
+                <title><t t-esc="page_title or 'Stock Market Portal'"/></title>
+                <!-- Mark document as stock portal ASAP to allow CSS to hide Odoo chrome before paint -->
+                <script>
+                //<![CDATA[
+                (function(){
+                    try { document.documentElement.classList.add('stock-portal'); } catch(e) {}
+                })();
+                //]]>
+                </script>
+                
+                <!-- Bootstrap CSS -->
+                <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet"/>
+                <!-- Font Awesome -->
+                <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css"/>
+                
+                <!-- Custom Stock Market CSS -->
+                <style>
+                    /* Hide Odoo's website/backoffice chrome on these standalone pages.
+                       We avoid relying on a class on the html element so this works even if CSP blocks inline JS.
+                       This CSS is only loaded on our pages, so it won't affect other routes. */
+                    .o_main_navbar,
+                    header.o_main_navbar,
+                    /* Website header variants */
+                    #wrapwrap > header,
+                    header#top,
+                    .o_header_standard,
+                    .o_header_affixed,
+                    .o_header_mobile,
+                    .o_website_preview_header,
+                    /* Website footer variants */
+                    .o_footer,
+                    footer#footer,
+                    #wrapwrap > footer {
+                        display: none !important;
+                    }
+                    body {
+                        padding-top: 0 !important;
+                        margin-top: 0 !important;
+                    }
+                    :root {
+                        --stock-primary: #2563eb;
+                        --stock-primary-light: rgba(37, 99, 235, 0.1);
+                        --stock-success: #10b981;
+                        --stock-success-light: rgba(16, 185, 129, 0.1);
+                        --stock-danger: #ef4444;
+                        --stock-danger-light: rgba(239, 68, 68, 0.1);
+                        --stock-warning: #f59e0b;
+                        --stock-warning-light: rgba(245, 158, 11, 0.1);
+                        --stock-info: #06b6d4;
+                        --stock-info-light: rgba(6, 182, 212, 0.1);
+                        --stock-sidebar-width: 280px;
+                        --stock-sidebar-width-collapsed: 60px;
+                        --stock-navbar-height: 70px;
+                    }
+                    
+                    * {
+                        box-sizing: border-box;
+                    }
+                    
+                    body {
+                        margin: 0;
+                        padding: 0;
+                        font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+                        background-color: #f8fafc;
+                        color: #1e293b;
+                        overflow-x: hidden;
+                    }
+                    
+                    /* Stock Portal Layout */
+                    .stock-portal-layout {
+                        min-height: 100vh;
+                        display: flex;
+                    }
+                    
+                    /* Sidebar Styles */
+                    .stock-sidebar {
+                        width: var(--stock-sidebar-width);
+                        background: linear-gradient(135deg, #1e293b 0%, #334155 100%);
+                        color: white;
+                        position: fixed;
+                        left: 0;
+                        top: 0;
+                        height: 100vh;
+                        z-index: 1000;
+                        transition: width 0.3s ease;
+                        overflow-y: auto;
+                        overflow-x: hidden;
+                    }
+                    
+                    .stock-sidebar.collapsed {
+                        width: var(--stock-sidebar-width-collapsed);
+                    }
+                    
+                    .stock-sidebar-header {
+                        padding: 1rem;
+                        border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+                        display: flex;
+                        align-items: center;
+                        justify-content: space-between;
+                        min-height: 70px;
+                    }
+                    
+                    .sidebar-brand {
+                        display: flex;
+                        align-items: center;
+                        color: white;
+                        text-decoration: none;
+                        font-weight: 600;
+                        font-size: 1.1rem;
+                        white-space: nowrap;
+                        overflow: hidden;
+                    }
+                    
+                    .sidebar-brand:hover {
+                        color: white;
+                        text-decoration: none;
+                    }
+                    
+                    .sidebar-brand-icon {
+                        width: 32px;
+                        height: 32px;
+                        background: var(--stock-primary);
+                        border-radius: 8px;
+                        display: flex;
+                        align-items: center;
+                        justify-content: center;
+                        margin-right: 0.75rem;
+                        flex-shrink: 0;
+                    }
+                    
+                    .sidebar-brand-text {
+                        transition: opacity 0.3s ease;
+                    }
+                    
+                    .stock-sidebar.collapsed .sidebar-brand-text {
+                        opacity: 0;
+                        width: 0;
+                    }
+                    
+                    .stock-sidebar-toggle-icon {
+                        background: none;
+                        border: none;
+                        color: white;
+                        cursor: pointer;
+                        padding: 0.5rem;
+                        border-radius: 4px;
+                        transition: background-color 0.2s ease;
+                        display: flex;
+                        align-items: center;
+                        justify-content: center;
+                    }
+                    
+                    .stock-sidebar-toggle-icon:hover {
+                        background-color: rgba(255, 255, 255, 0.1);
+                    }
+                    
+                    .stock-sidebar-nav {
+                        padding: 1rem 0;
+                    }
+                    
+                    .sidebar-section {
+                        margin-bottom: 2rem;
+                    }
+                    
+                    .sidebar-section-title {
+                        padding: 0 1rem 0.5rem;
+                        font-size: 0.75rem;
+                        font-weight: 600;
+                        text-transform: uppercase;
+                        letter-spacing: 0.05em;
+                        color: rgba(255, 255, 255, 0.6);
+                        white-space: nowrap;
+                        overflow: hidden;
+                        transition: opacity 0.3s ease;
+                    }
+                    
+                    .stock-sidebar.collapsed .sidebar-section-title {
+                        opacity: 0;
+                    }
+                    
+                    .nav-link {
+                        display: flex;
+                        align-items: center;
+                        padding: 0.75rem 1rem;
+                        color: rgba(255, 255, 255, 0.8);
+                        text-decoration: none;
+                        transition: all 0.2s ease;
+                        position: relative;
+                        margin: 0 0.5rem;
+                        border-radius: 8px;
+                    }
+                    
+                    .nav-link:hover {
+                        background-color: rgba(255, 255, 255, 0.1);
+                        color: white;
+                        text-decoration: none;
+                    }
+                    
+                    .nav-link.active {
+                        background-color: var(--stock-primary);
+                        color: white;
+                    }
+                    
+                    .nav-link i {
+                        width: 20px;
+                        margin-right: 0.75rem;
+                        flex-shrink: 0;
+                        text-align: center;
+                    }
+                    
+                    .nav-text {
+                        white-space: nowrap;
+                        overflow: hidden;
+                        transition: opacity 0.3s ease;
+                    }
+                    
+                    .stock-sidebar.collapsed .nav-text {
+                        opacity: 0;
+                        width: 0;
+                    }
+                    
+                    /* Main Content */
+                    .stock-main-content {
+                        flex: 1;
+                        margin-left: var(--stock-sidebar-width);
+                        transition: margin-left 0.3s ease;
+                        min-height: 100vh;
+                        display: flex;
+                        flex-direction: column;
+                    }
+                    
+                    .stock-sidebar.collapsed + .stock-main-content {
+                        margin-left: var(--stock-sidebar-width-collapsed);
+                    }
+                    
+                    /* Top Navbar */
+                    .stock-navbar {
+                        background: white;
+                        border-bottom: 1px solid #e2e8f0;
+                        padding: 1rem 1.5rem;
+                        display: flex;
+                        align-items: center;
+                        justify-content: space-between;
+                        min-height: var(--stock-navbar-height);
+                        box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+                    }
+                    
+                    .navbar-title {
+                        font-size: 1.5rem;
+                        font-weight: 600;
+                        color: #1e293b;
+                        display: flex;
+                        align-items: center;
+                    }
+                    
+                    .title-icon {
+                        margin-right: 0.75rem;
+                        color: var(--stock-primary);
+                    }
+                    
+                    .navbar-actions {
+                        display: flex;
+                        align-items: center;
+                        gap: 1rem;
+                    }
+                    
+                    /* User dropdown */
+                    .navbar-user {
+                        position: relative;
+                    }
+                    
+                    .user-dropdown-toggle {
+                        display: flex;
+                        align-items: center;
+                        text-decoration: none;
+                        color: #64748b;
+                        padding: 0.5rem;
+                        border-radius: 8px;
+                        transition: background-color 0.2s ease;
+                    }
+                    
+                    .user-dropdown-toggle:hover {
+                        background-color: #f1f5f9;
+                        color: #1e293b;
+                        text-decoration: none;
+                    }
+                    
+                    .user-avatar {
+                        width: 32px;
+                        height: 32px;
+                        background: var(--stock-primary);
+                        border-radius: 50%;
+                        display: flex;
+                        align-items: center;
+                        justify-content: center;
+                        color: white;
+                        font-weight: 600;
+                        margin-right: 0.75rem;
+                        font-size: 0.875rem;
+                    }
+                    
+                    .user-info {
+                        text-align: left;
+                    }
+                    
+                    .user-name {
+                        font-weight: 600;
+                        line-height: 1.2;
+                        font-size: 0.875rem;
+                    }
+                    
+                    .user-role {
+                        font-size: 0.75rem;
+                        color: #64748b;
+                        text-transform: capitalize;
+                        line-height: 1.2;
+                    }
+                    
+                    /* Dashboard Stats */
+                    .stock-dashboard-stats {
+                        display: grid;
+                        grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+                        gap: 1.5rem;
+                        margin-bottom: 2rem;
+                    }
+                    
+                    .stock-stat-card {
+                        background: white;
+                        border-radius: 12px;
+                        padding: 1.5rem;
+                        box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+                        border: 1px solid #e2e8f0;
+                        transition: transform 0.2s ease, box-shadow 0.2s ease;
+                    }
+                    
+                    .stock-stat-card:hover {
+                        transform: translateY(-2px);
+                        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+                    }
+                    
+                    .stat-header {
+                        display: flex;
+                        align-items: center;
+                        justify-content: space-between;
+                        margin-bottom: 1rem;
+                    }
+                    
+                    .stat-title {
+                        font-size: 0.875rem;
+                        font-weight: 500;
+                        color: #64748b;
+                        margin: 0;
+                    }
+                    
+                    .stat-icon {
+                        width: 40px;
+                        height: 40px;
+                        border-radius: 8px;
+                        display: flex;
+                        align-items: center;
+                        justify-content: center;
+                        background: var(--icon-bg);
+                        color: var(--icon-color);
+                    }
+                    
+                    .stat-value {
+                        font-size: 2rem;
+                        font-weight: 700;
+                        color: #1e293b;
+                        line-height: 1;
+                        margin-bottom: 0.5rem;
+                    }
+                    
+                    .stat-change {
+                        font-size: 0.75rem;
+                        color: #64748b;
+                    }
+                    
+                    .stat-change.positive {
+                        color: var(--stock-success);
+                    }
+                    
+                    .stat-change.negative {
+                        color: var(--stock-danger);
+                    }
+                    
+                    /* Responsive Design */
+                    @media (max-width: 768px) {
+                        .stock-sidebar {
+                            transform: translateX(-100%);
+                            width: var(--stock-sidebar-width);
+                        }
+                        
+                        .stock-sidebar.collapsed {
+                            transform: translateX(0);
+                            width: var(--stock-sidebar-width-collapsed);
+                        }
+                        
+                        .stock-main-content {
+                            margin-left: 0;
+                        }
+                        
+                        .stock-dashboard-stats {
+                            grid-template-columns: 1fr;
+                        }
+                    }
+                </style>
+                
+                <!-- Bootstrap JS -->
+                <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
+            </head>
+            <body>
+                <div class="stock-portal-layout">
+                    <t t-raw="0"/>
+                </div>
+            </body>
+        </html>
+    </template>
+    
+    <!-- Market Portal Layout - Uses the standalone layout -->
     <template id="market_portal_layout" name="Stock Market Portal Layout">
-        <t t-call="web.frontend_layout">
-            <t t-set="pageName" t-value="'stock_market'"/>
-            <t t-set="no_breadcrumbs" t-value="True"/>
+        <t t-call="stock_market_simulation.stock_standalone_layout">
+            <t t-set="page_title" t-value="page_title or 'Stock Market Portal'"/>
             
             <!-- Auto-fetch active session if not provided -->
             <t t-if="not active_session">
                 <t t-set="active_session" t-value="request.env['stock.session'].sudo().search([('state', '=', 'open')], limit=1)"/>
             </t>
             
-            <!-- Hide Default Navbar -->
-            <style>
-                /* Hide Odoo's default navbar to prevent duplication */
-                .o_main_navbar,
-                .navbar.navbar-expand.navbar-light.bg-light,
-                header.o_main_navbar {
-                    display: none !important;
-                }
+            <!-- Sidebar Navigation -->
+            <nav class="stock-sidebar" id="stockSidebar">
+                <!-- Sidebar Header -->
+                <div class="stock-sidebar-header">
+                    <a href="/market" class="sidebar-brand">
+                        <div class="sidebar-brand-icon">
+                            <i class="fa fa-line-chart"></i>
+                        </div>
+                        <span class="sidebar-brand-text">Stock Market</span>
+                    </a>
+                    <button type="button" class="stock-sidebar-toggle-icon" aria-label="Toggle sidebar" tabindex="0">
+                        <i class="fa fa-angle-left sidebar-toggle-collapse"></i>
+                        <i class="fa fa-angle-right sidebar-toggle-expand"></i>
+                    </button>
+                </div>
                 
-                /* Ensure our custom layout takes full viewport */
-                .stock-portal-layout {
-                    min-height: 100vh;
-                    position: relative;
-                }
-                
-                /* Custom navbar user dropdown styling */
-                .navbar-user.dropdown {
-                    position: relative;
-                }
-                
-                .user-dropdown-toggle {
-                    display: flex;
-                    align-items: center;
-                    text-decoration: none;
-                    color: inherit;
-                    cursor: pointer;
-                    padding: 0.5rem;
-                    border-radius: 0.375rem;
-                    transition: background-color 0.2s ease;
-                }
-                
-                .user-dropdown-toggle:hover {
-                    background-color: rgba(255, 255, 255, 0.1);
-                    color: inherit;
-                    text-decoration: none;
-                }
-                
-                .navbar-user .dropdown-menu {
-                    min-width: 200px;
-                    border: 1px solid rgba(255, 255, 255, 0.1);
-                    background-color: #fff;
-                    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
-                    margin-top: 0.5rem;
-                }
-                
-                .navbar-user .dropdown-item {
-                    padding: 0.75rem 1rem;
-                    color: #374151;
-                    display: flex;
-                    align-items: center;
-                }
-                
-                .navbar-user .dropdown-item:hover {
-                    background-color: #f3f4f6;
-                    color: #1f2937;
-                }
-                
-                .navbar-user .dropdown-item i {
-                    width: 16px;
-                    text-align: center;
-                }
-                
-                /* Session info styles */
-                .navbar-session-info {
-                    background: linear-gradient(135deg, rgba(255, 255, 255, 0.1), rgba(255, 255, 255, 0.05));
-                    border: 1px solid rgba(255, 255, 255, 0.2);
-                    border-radius: 8px;
-                    padding: 0.5rem 0.75rem;
-                    margin-right: 1rem;
-                    min-width: 280px;
-                    backdrop-filter: blur(10px);
-                }
-                
-                .session-details {
-                    color: #fff;
-                    font-size: 0.875rem;
-                }
-                
-                .session-title {
-                    display: flex;
-                    align-items: center;
-                    font-weight: 600;
-                    margin-bottom: 0.25rem;
-                }
-                
-                .session-label {
-                    margin-right: 0.5rem;
-                }
-                
-                .session-name {
-                    font-weight: 700;
-                    color: #10b981;
-                }
-                
-                .session-end-time {
-                    display: flex;
-                    align-items: center;
-                    font-size: 0.8rem;
-                    opacity: 0.9;
-                }
-                
-                .end-label {
-                    margin-right: 0.5rem;
-                    color: #d1d5db;
-                }
-                
-                .end-datetime {
-                    font-weight: 500;
-                    color: #fbbf24;
-                }
-                
-                .session-status {
-                    font-size: 0.8rem;
-                    opacity: 0.9;
-                }
-                
-                .status-label {
-                    color: #f87171;
-                    font-weight: 500;
-                }
-                
-                /* Responsive adjustments */
-                @media (max-width: 768px) {
-                    .navbar-session-info {
-                        min-width: 200px;
-                        font-size: 0.8rem;
-                    }
-                    
-                    .session-title, .session-end-time {
-                        font-size: 0.75rem;
-                    }
-                }
-            </style>
-            
-            <div class="stock-portal-layout">
                 <!-- Sidebar Navigation -->
-                <nav class="stock-sidebar" id="stockSidebar">
-                    <!-- Sidebar Header -->
-                    <div class="stock-sidebar-header">
-                        <a href="/market" class="sidebar-brand">
-                            <div class="sidebar-brand-icon">
-                                <i class="fa fa-line-chart"></i>
-                            </div>
-                            <span class="sidebar-brand-text">Stock Market</span>
+                <div class="stock-sidebar-nav">
+                    <!-- Main Section -->
+                    <div class="sidebar-section">
+                        <div class="sidebar-section-title">Trading</div>
+                        <a href="/market" class="nav-link" data-page="dashboard" data-tooltip="Dashboard">
+                            <i class="fa fa-tachometer"></i>
+                            <span class="nav-text">Dashboard</span>
                         </a>
-                        <button type="button" class="stock-sidebar-toggle-icon" aria-label="Toggle sidebar" tabindex="0">
-                            <i class="fa fa-angle-left sidebar-toggle-collapse"></i>
-                            <i class="fa fa-angle-right sidebar-toggle-expand"></i>
-                        </button>
-                    </div>
-                    
-                    <!-- Sidebar Navigation -->
-                    <div class="stock-sidebar-nav">
-                        <!-- Main Section -->
-                        <div class="sidebar-section">
-                            <div class="sidebar-section-title">Trading</div>
-                            <a href="/market" class="nav-link" data-page="dashboard" data-tooltip="Dashboard">
-                                <i class="fa fa-tachometer"></i>
-                                <span class="nav-text">Dashboard</span>
+                        <t t-if="request.env.user.user_type in ['broker', 'investor', 'admin'] or request.env.user.has_group('base.group_system')">
+                            <a href="/market/trading" class="nav-link" data-page="trading" data-tooltip="Trading">
+                                <i class="fa fa-exchange"></i>
+                                <span class="nav-text">Trading</span>
                             </a>
-                            <t t-if="request.env.user.user_type in ['broker', 'investor', 'admin'] or request.env.user.has_group('base.group_system')">
-                                <a href="/market/trading" class="nav-link" data-page="trading" data-tooltip="Trading">
-                                    <i class="fa fa-exchange"></i>
-                                    <span class="nav-text">Trading</span>
-                                </a>
-                            </t>
-                            <t t-if="request.env.user.user_type in ['investor', 'broker', 'admin']">
-                                <a href="/market/orders" class="nav-link" data-page="orders" data-tooltip="Orders">
-                                    <i class="fa fa-list"></i>
-                                    <span class="nav-text">Orders</span>
-                                    <span class="nav-badge" t-if="order_count"><t t-esc="order_count"/></span>
-                                </a>
-                            </t>
-                        </div>
-                        
-                        <!-- Portfolio Section -->
+                        </t>
                         <t t-if="request.env.user.user_type in ['investor', 'broker', 'admin']">
-                            <div class="sidebar-section">
-                                <div class="sidebar-section-title">Portfolio</div>
-                                <a href="/market/portfolio" class="nav-link" data-page="portfolio" data-tooltip="Positions">
-                                    <i class="fa fa-briefcase"></i>
-                                    <span class="nav-text">Positions</span>
-                                    <span class="nav-badge" t-if="position_count"><t t-esc="position_count"/></span>
-                                </a>
-                                <a href="/market/trades" class="nav-link" data-page="trades" data-tooltip="Trade History">
-                                    <i class="fa fa-history"></i>
-                                    <span class="nav-text">Trade History</span>
-                                </a>
-                                <a href="/market/performance" class="nav-link" data-page="performance" data-tooltip="Performance">
-                                    <i class="fa fa-area-chart"></i>
-                                    <span class="nav-text">Performance</span>
-                                </a>
-                            </div>
-                        </t>                        <!-- Banking Section -->
-                        <t t-if="request.env.user.user_type in ['investor', 'banker', 'admin']">
-                            <div class="sidebar-section">
-                                <div class="sidebar-section-title">Banking</div>
-                                <a href="/market/deposits" class="nav-link" data-page="deposits" data-tooltip="Deposits">
-                                    <i class="fa fa-bank"></i>
-                                    <span class="nav-text">Deposits</span>
-                                    <span class="nav-badge" t-if="deposit_count"><t t-esc="deposit_count"/></span>
-                                </a>
-                                <a href="/market/loans" class="nav-link" data-page="loans" data-tooltip="Loans">
-                                    <i class="fa fa-money"></i>
-                                    <span class="nav-text">Loans</span>
-                                    <span class="nav-badge" t-if="loan_count"><t t-esc="loan_count"/></span>
-                                </a>
-                            </div>
+                            <a href="/market/orders" class="nav-link" data-page="orders" data-tooltip="Orders">
+                                <i class="fa fa-list"></i>
+                                <span class="nav-text">Orders</span>
+                                <span class="nav-badge" t-if="order_count"><t t-esc="order_count"/></span>
+                            </a>
                         </t>
-                        
-                        <!-- Broker Section -->
-                        <t t-if="request.env.user.user_type in ['broker', 'admin', 'superadmin'] or request.env.user.has_group('base.group_system')">
-                            <div class="sidebar-section">
-                                <div class="sidebar-section-title">Broker Tools</div>
-                                <a href="/market/commissions" class="nav-link" data-page="commissions" data-tooltip="Commissions">
-                                    <i class="fa fa-percentage"></i>
-                                    <span class="nav-text">Commissions</span>
-                                </a>
-                                <a href="/market/clients" class="nav-link" data-page="clients" data-tooltip="Clients">
-                                    <i class="fa fa-users"></i>
-                                    <span class="nav-text">Clients</span>
-                                </a>
-                            </div>
-                        </t>
-                        
-                        <!-- Market Data Section -->
+                    </div>
+                    
+                    <!-- Portfolio Section -->
+                    <t t-if="request.env.user.user_type in ['investor', 'broker', 'admin']">
                         <div class="sidebar-section">
-                            <div class="sidebar-section-title">Market</div>
-                            <a href="/market/securities" class="nav-link" data-page="securities" data-tooltip="Securities">
+                            <div class="sidebar-section-title">Portfolio</div>
+                            <a href="/market/portfolio" class="nav-link" data-page="portfolio" data-tooltip="Positions">
+                                <i class="fa fa-briefcase"></i>
+                                <span class="nav-text">Positions</span>
+                                <span class="nav-badge" t-if="position_count"><t t-esc="position_count"/></span>
+                            </a>
+                            <a href="/market/trades" class="nav-link" data-page="trades" data-tooltip="Trade History">
+                                <i class="fa fa-history"></i>
+                                <span class="nav-text">Trade History</span>
+                            </a>
+                            <a href="/market/performance" class="nav-link" data-page="performance" data-tooltip="Performance">
+                                <i class="fa fa-area-chart"></i>
+                                <span class="nav-text">Performance</span>
+                            </a>
+                        </div>
+                    </t>
+                    
+                    <!-- Banking Section -->
+                    <t t-if="request.env.user.user_type in ['investor', 'banker', 'admin']">
+                        <div class="sidebar-section">
+                            <div class="sidebar-section-title">Banking</div>
+                            <a href="/market/deposits" class="nav-link" data-page="deposits" data-tooltip="Deposits">
+                                <i class="fa fa-bank"></i>
+                                <span class="nav-text">Deposits</span>
+                                <span class="nav-badge" t-if="deposit_count"><t t-esc="deposit_count"/></span>
+                            </a>
+                            <a href="/market/loans" class="nav-link" data-page="loans" data-tooltip="Loans">
+                                <i class="fa fa-money"></i>
+                                <span class="nav-text">Loans</span>
+                                <span class="nav-badge" t-if="loan_count"><t t-esc="loan_count"/></span>
+                            </a>
+                        </div>
+                    </t>
+                    
+                    <!-- Broker Section -->
+                    <t t-if="request.env.user.user_type in ['broker', 'admin', 'superadmin'] or request.env.user.has_group('base.group_system')">
+                        <div class="sidebar-section">
+                            <div class="sidebar-section-title">Broker Tools</div>
+                            <a href="/market/commissions" class="nav-link" data-page="commissions" data-tooltip="Commissions">
+                                <i class="fa fa-percentage"></i>
+                                <span class="nav-text">Commissions</span>
+                            </a>
+                            <a href="/market/clients" class="nav-link" data-page="clients" data-tooltip="Clients">
+                                <i class="fa fa-users"></i>
+                                <span class="nav-text">Clients</span>
+                            </a>
+                        </div>
+                    </t>
+                    
+                    <!-- Market Data Section -->
+                    <div class="sidebar-section">
+                        <div class="sidebar-section-title">Market</div>
+                        <a href="/market/securities" class="nav-link" data-page="securities" data-tooltip="Securities">
+                            <i class="fa fa-bar-chart"></i>
+                            <span class="nav-text">Securities</span>
+                        </a>
+                        <a href="/market/session" class="nav-link" data-page="session" data-tooltip="Session Info">
+                            <i class="fa fa-clock-o"></i>
+                            <span class="nav-text">Session Info</span>
+                        </a>
+                        <a href="/market/reports" class="nav-link" data-page="reports" data-tooltip="Reports">
+                            <i class="fa fa-file-text"></i>
+                            <span class="nav-text">Reports</span>
+                        </a>
+                        <t t-if="request.env.user.user_type in ['admin', 'superadmin', 'broker']">
+                            <a href="/market/ipo" class="nav-link" data-page="ipo" data-tooltip="IPO &amp; Allocation">
+                                <i class="fa fa-rocket"></i>
+                                <span class="nav-text">IPO &amp; Allocation</span>
+                            </a>
+                        </t>
+                    </div>
+                    
+                    <!-- Administration Section -->
+                    <t t-if="request.env.user.user_type in ['admin', 'superadmin'] or request.env.user.has_group('base.group_system')">
+                        <div class="sidebar-section">
+                            <div class="sidebar-section-title">
+                                <i class="fa fa-lock"></i> Administration
+                            </div>
+                            <a href="/market/admin/users" class="nav-link" data-page="admin-users" data-tooltip="Manage Users">
+                                <i class="fa fa-users"></i>
+                                <span class="nav-text">Users Management</span>
+                            </a>
+                            <a href="/market/admin/users" class="nav-link" data-page="admin-analytics" data-tooltip="User Analytics">
                                 <i class="fa fa-bar-chart"></i>
-                                <span class="nav-text">Securities</span>
+                                <span class="nav-text">User Analytics</span>
                             </a>
-                            <a href="/market/session" class="nav-link" data-page="session" data-tooltip="Session Info">
-                                <i class="fa fa-clock-o"></i>
-                                <span class="nav-text">Session Info</span>
-                            </a>
-                            <a href="/market/reports" class="nav-link" data-page="reports" data-tooltip="Reports">
-                                <i class="fa fa-file-text"></i>
-                                <span class="nav-text">Reports</span>
-                            </a>
-                            <t t-if="request.env.user.user_type in ['admin', 'superadmin', 'broker']">
-                                <a href="/market/ipo" class="nav-link" data-page="ipo" data-tooltip="IPO &amp; Allocation">
-                                    <i class="fa fa-rocket"></i>
-                                    <span class="nav-text">IPO &amp; Allocation</span>
-                                </a>
-                            </t>
                         </div>
-                        
-                        <!-- Administration Section -->
-                        <t t-if="request.env.user.user_type in ['admin', 'superadmin'] or request.env.user.has_group('base.group_system')">
-                            <div class="sidebar-section">
-                                <div class="sidebar-section-title">
-                                    <i class="fa fa-lock"></i> Administration
-                                </div>
-                                <a href="/market/admin/users" class="nav-link" data-page="admin-users" data-tooltip="Manage Users">
-                                    <i class="fa fa-users"></i>
-                                    <span class="nav-text">Users Management</span>
-                                </a>
-                                <a href="/market/admin/users" class="nav-link" data-page="admin-analytics" data-tooltip="User Analytics">
-                                    <i class="fa fa-bar-chart"></i>
-                                    <span class="nav-text">User Analytics</span>
-                                </a>
+                    </t>
+                    
+                    <!-- Account Section -->
+                    <div class="sidebar-section">
+                        <div class="sidebar-section-title">Account</div>
+                        <a href="/my/account" class="nav-link" data-page="account" data-tooltip="Settings">
+                            <i class="fa fa-cog"></i>
+                            <span class="nav-text">Settings</span>
+                        </a>
+                        <a href="/web/session/logout" class="nav-link" data-tooltip="Logout">
+                            <i class="fa fa-sign-out"></i>
+                            <span class="nav-text">Logout</span>
+                        </a>
+                    </div>
+                </div>
+            </nav>
+            
+            <!-- Main Content -->
+            <main class="stock-main-content">
+                <!-- Top Navigation Bar -->
+                <header class="stock-navbar">
+                    <div class="navbar-title">
+                        <i class="fa fa-line-chart title-icon"></i>
+                        <span t-esc="page_title or 'Stock Market Portal'"/>
+                    </div>
+                    
+                    <div class="navbar-actions">
+                        <!-- Active Session Information -->
+                        <t t-if="active_session">
+                            <div class="alert alert-success mb-0 py-1 px-3">
+                                <small>
+                                    <i class="fa fa-clock text-success me-1"></i>
+                                    Active: <strong t-esc="active_session.name"/>
+                                    <t t-if="active_session.planned_end_date">
+                                        (ends <t t-esc="active_session.planned_end_date.strftime('%H:%M')"/>)
+                                    </t>
+                                </small>
+                            </div>
+                        </t>
+                        <t t-if="not active_session">
+                            <div class="alert alert-warning mb-0 py-1 px-3">
+                                <small><i class="fa fa-clock text-warning me-1"></i>No active session</small>
                             </div>
                         </t>
                         
-                        <!-- Account Section -->
-                        <div class="sidebar-section">
-                            <div class="sidebar-section-title">Account</div>
-                            <a href="/my/account" class="nav-link" data-page="account" data-tooltip="Settings">
-                                <i class="fa fa-cog"></i>
-                                <span class="nav-text">Settings</span>
+                        <!-- User Info with Dropdown -->
+                        <div class="navbar-user dropdown">
+                            <a href="#" class="user-dropdown-toggle" data-bs-toggle="dropdown" aria-expanded="false">
+                                <div class="user-avatar">
+                                    <t t-esc="request.env.user.name[:2].upper()"/>
+                                </div>
+                                <div class="user-info">
+                                    <div class="user-name" t-esc="request.env.user.name"/>
+                                    <div class="user-role" t-esc="request.env.user.user_type"/>
+                                </div>
+                                <i class="fa fa-chevron-down ms-2"></i>
                             </a>
-                            <a href="/web/session/logout" class="nav-link" data-tooltip="Logout">
-                                <i class="fa fa-sign-out"></i>
-                                <span class="nav-text">Logout</span>
-                            </a>
+                            <ul class="dropdown-menu dropdown-menu-end">
+                                <li><a class="dropdown-item" href="/my/home"><i class="fa fa-user me-2"></i>My Account</a></li>
+                                <t t-if="request.env.user.user_type in ['admin', 'superadmin'] or request.env.user.has_group('base.group_system')">
+                                    <li><hr class="dropdown-divider"/></li>
+                                    <li><a class="dropdown-item" href="/market/admin/users"><i class="fa fa-users me-2"></i>Admin: Users</a></li>
+                                    <li><a class="dropdown-item" href="/market/admin/users"><i class="fa fa-bar-chart me-2"></i>Admin: Analytics</a></li>
+                                    <li><hr class="dropdown-divider"/></li>
+                                </t>
+                                <li><a class="dropdown-item" href="/odoo"><i class="fa fa-th me-2"></i>Backend</a></li>
+                                <li><hr class="dropdown-divider"/></li>
+                                <li><a class="dropdown-item" href="/web/session/logout?redirect=/"><i class="fa fa-sign-out me-2"></i>Logout</a></li>
+                            </ul>
                         </div>
                     </div>
-                </nav>
+                </header>
                 
-                <!-- Main Content -->
-                <main class="stock-main-content">
-                    <!-- Top Navigation Bar -->
-                    <header class="stock-navbar">
-                        <div class="navbar-content">
-                            <div class="navbar-title">
-                                <i class="fa fa-line-chart title-icon"></i>
-                                <span t-esc="page_title or 'Stock Market Portal'"/>
+                <!-- Page Content -->
+                <div class="container-fluid px-4 py-4">
+                    <!-- Financial Summary Cards -->
+                    <div class="stock-dashboard-stats mb-4">
+                        <div class="stock-stat-card">
+                            <div class="stat-header">
+                                <h6 class="stat-title">Cash Balance</h6>
+                                <div class="stat-icon" style="--icon-bg: var(--stock-success-light); --icon-color: var(--stock-success);">
+                                    <i class="fa fa-money"></i>
+                                </div>
                             </div>
-                            
-                            <div class="navbar-actions">
-                                <!-- Active Session Information -->
-                                <t t-if="active_session">
-                                    <div class="navbar-session-info" title="Active Session Details">
-                                        <div class="session-details">
-                                            <div class="session-title">
-                                                <i class="fa fa-clock text-success me-1"></i>
-                                                <span class="session-label">Active Session:</span>
-                                                <span class="session-name" t-esc="active_session.name"/>
-                                            </div>
-                                            <div class="session-end-time" t-if="active_session.planned_end_date or active_session.actual_end_date">
-                                                <span class="end-label">Session ends at:</span>
-                                                <span class="end-datetime" t-esc="(active_session.actual_end_date or active_session.planned_end_date).strftime('%b %d, %Y %H:%M') if (active_session.actual_end_date or active_session.planned_end_date) else 'TBD'"/>
-                                            </div>
-                                        </div>
-                                    </div>
-                                </t>
-                                <t t-if="not active_session">
-                                    <div class="navbar-session-info" title="No Active Session">
-                                        <div class="session-details">
-                                            <div class="session-title">
-                                                <i class="fa fa-clock text-danger me-1"></i>
-                                                <span class="session-label">No Active Session</span>
-                                            </div>
-                                            <div class="session-status">
-                                                <span class="status-label">Market is closed</span>
-                                            </div>
-                                        </div>
-                                    </div>
-                                </t>
-                                
-                                <!-- Market Status -->
-                                <div class="navbar-notification" title="Market Status">
-                                    <i class="fa fa-globe" t-attf-style="color: #{active_session and 'var(--stock-success)' or 'var(--stock-danger)'}"></i>
-                                </div>
-                                
-                                <!-- User Info with Dropdown -->
-                                <div class="navbar-user dropdown">
-                                    <a href="#" class="user-dropdown-toggle" data-bs-toggle="dropdown" aria-expanded="false">
-                                        <div class="user-avatar">
-                                            <t t-esc="request.env.user.name[:2].upper()"/>
-                                        </div>
-                                        <div class="user-info">
-                                            <div class="user-name" t-esc="request.env.user.name"/>
-                                            <div class="user-role" t-esc="request.env.user.user_type"/>
-                                        </div>
-                                        <i class="fa fa-chevron-down ms-2"></i>
-                                    </a>
-                                    <ul class="dropdown-menu dropdown-menu-end">
-                                        <li><a class="dropdown-item" href="/my/home"><i class="fa fa-user me-2"></i>My Account</a></li>
-                                        <t t-if="request.env.user.user_type in ['admin', 'superadmin'] or request.env.user.has_group('base.group_system')">
-                                            <li><hr class="dropdown-divider"/></li>
-                                            <li><a class="dropdown-item" href="/market/admin/users"><i class="fa fa-users me-2"></i>Admin: Users</a></li>
-                                            <li><a class="dropdown-item" href="/market/admin/users"><i class="fa fa-bar-chart me-2"></i>Admin: Analytics</a></li>
-                                            <li><hr class="dropdown-divider"/></li>
-                                        </t>
-                                        <li><a class="dropdown-item" href="/odoo"><i class="fa fa-th me-2"></i>Backend</a></li>
-                                        <li><hr class="dropdown-divider"/></li>
-                                        <li><a class="dropdown-item" href="/web/session/logout?redirect=/"><i class="fa fa-sign-out me-2"></i>Logout</a></li>
-                                    </ul>
-                                </div>
+                            <div class="stat-value">
+                                $<t t-esc="'{:,.2f}'.format(cash_balance or 0.0)"/>
+                            </div>
+                            <div class="stat-change neutral">
+                                Available for trading
                             </div>
                         </div>
-                    </header>
-                    
-                    <!-- Page Content -->
-                    <div class="container-fluid px-4 py-4">
-                        <!-- Financial Summary Cards -->
-                        <div class="stock-dashboard-stats mb-4">
-                            <div class="stock-stat-card">
-                                <div class="stat-header">
-                                    <h6 class="stat-title">Cash Balance</h6>
-                                    <div class="stat-icon" style="--icon-bg: var(--stock-success-light); --icon-color: var(--stock-success);">
-                                        <i class="fa fa-money"></i>
-                                    </div>
-                                </div>
-                                <div class="stat-value">
-                                    $<t t-esc="'{:,.2f}'.format(cash_balance or 0.0)"/>
-                                </div>
-                                <div class="stat-change neutral">
-                                    Available for trading
-                                </div>
-                            </div>
-                            
-                            <div class="stock-stat-card">
-                                <div class="stat-header">
-                                    <h6 class="stat-title">Portfolio Value</h6>
-                                    <div class="stat-icon" style="--icon-bg: var(--stock-info-light); --icon-color: var(--stock-info);">
-                                        <i class="fa fa-briefcase"></i>
-                                    </div>
-                                </div>
-                                <div class="stat-value">
-                                    $<t t-esc="'{:,.2f}'.format(portfolio_value or 0.0)"/>
-                                </div>
-                                <div class="stat-change neutral">
-                                    Current market value
-                                </div>
-                            </div>
-                            
-                            <div class="stock-stat-card">
-                                <div class="stat-header">
-                                    <h6 class="stat-title">Total Assets</h6>
-                                    <div class="stat-icon" style="--icon-bg: var(--stock-primary-light); --icon-color: var(--stock-primary);">
-                                        <i class="fa fa-pie-chart"></i>
-                                    </div>
-                                </div>
-                                <div class="stat-value">
-                                    $<t t-esc="'{:,.2f}'.format(total_assets or 0.0)"/>
-                                </div>
-                                <div class="stat-change neutral">
-                                    Cash + Portfolio
-                                </div>
-                            </div>
-                            
-                            <div class="stock-stat-card" t-attf-class="#{(profit_loss or 0.0) >= 0 and 'profit' or 'loss'}">
-                                <div class="stat-header">
-                                    <h6 class="stat-title">P&amp;L</h6>
-                                    <div class="stat-icon" t-attf-style="--icon-bg: #{(profit_loss or 0.0) >= 0 and 'var(--stock-success-light)' or 'var(--stock-danger-light)'}; --icon-color: #{(profit_loss or 0.0) >= 0 and 'var(--stock-success)' or 'var(--stock-danger)'};">
-                                        <i t-attf-class="fa #{(profit_loss or 0.0) >= 0 and 'fa-arrow-up' or 'fa-arrow-down'}"></i>
-                                    </div>
-                                </div>
-                                <div class="stat-value">
-                                    $<t t-esc="'{:,.2f}'.format(profit_loss or 0.0)"/>
-                                </div>
-                                <div t-attf-class="stat-change #{(profit_loss or 0.0) >= 0 and 'positive' or 'negative'}">
-                                    <i t-attf-class="fa #{(profit_loss or 0.0) >= 0 and 'fa-arrow-up' or 'fa-arrow-down'}"></i>
-                                    <t t-esc="profit_loss_percentage or 0.0"/>%
-                                </div>
-                            </div>
-                        </div>
-
-
-
-                        <!-- Main Page Content -->
-                        <t t-raw="0"/>
-                    </div>
-                </main>
-            </div>
-        </t>
-        
-        <!-- Pre-paint Initialization - Prevent UI Flicker -->
-        <script>//<![CDATA[
-            // Execute immediately before paint to prevent flash
-            (function() {
-                'use strict';
-                const savedState = localStorage.getItem('stock_sidebar_collapsed');
-                if (savedState === 'true') {
-                    document.documentElement.classList.add('stock-sidebar-init-collapsed');
-                }
-            })();
-        //]]></script>
-        
-        <!-- Sidebar Toggle Logic -->
-        <script>//<![CDATA[
-            (function() {
-                'use strict';
-                
-                // Configuration
-                const SIDEBAR_STATE_KEY = 'stock_sidebar_collapsed';
-                const MOBILE_BREAKPOINT = 768;
-                
-                // Global toggle function
-                window.toggleStockSidebar = function() {
-                    const sidebar = document.getElementById('stockSidebar');
-                    if (!sidebar) return;
-                    
-                    sidebar.classList.toggle('collapsed');
-                    
-                    // Save state to localStorage
-                    const isCollapsed = sidebar.classList.contains('collapsed');
-                    try {
-                        localStorage.setItem(SIDEBAR_STATE_KEY, isCollapsed.toString());
-                    } catch (e) {
-                        console.warn('Failed to save sidebar state:', e);
-                    }
-                };
-                
-                // Initialize when DOM is ready
-                function initSidebar() {
-                    const sidebar = document.getElementById('stockSidebar');
-                    if (!sidebar) return;
-                    
-                    const isMobile = window.innerWidth <= MOBILE_BREAKPOINT;
-                    
-                    // Load saved state (desktop only)
-                    if (!isMobile) {
-                        const savedState = localStorage.getItem(SIDEBAR_STATE_KEY);
-                        if (savedState === 'true') {
-                            sidebar.classList.add('collapsed');
-                        }
-                    } else {
-                        // Force collapsed on mobile
-                        sidebar.classList.add('collapsed');
-                    }
-                    
-                    // Remove initialization class to enable transitions
-                    document.documentElement.classList.remove('stock-sidebar-init-collapsed');
-                    
-                    // Setup toggle button click handler
-                    const toggleBtn = sidebar.querySelector('.stock-sidebar-toggle-icon');
-                    if (toggleBtn) {
-                        toggleBtn.addEventListener('click', toggleStockSidebar);
                         
-                        // Keyboard support
-                        toggleBtn.addEventListener('keydown', function(e) {
-                            if (e.key === 'Enter' || e.key === ' ') {
-                                e.preventDefault();
-                                toggleStockSidebar();
-                            }
-                        });
-                    }
-                    
-                    // Set active navigation
-                    setActiveNavigation();
-                    
-                    // Handle window resize
-                    let resizeTimer;
-                    window.addEventListener('resize', function() {
-                        clearTimeout(resizeTimer);
-                        resizeTimer = setTimeout(function() {
-                            const newIsMobile = window.innerWidth <= MOBILE_BREAKPOINT;
-                            if (newIsMobile !== isMobile) {
-                                location.reload();
-                            }
-                        }, 250);
-                    });
-                }
+                        <div class="stock-stat-card">
+                            <div class="stat-header">
+                                <h6 class="stat-title">Portfolio Value</h6>
+                                <div class="stat-icon" style="--icon-bg: var(--stock-info-light); --icon-color: var(--stock-info);">
+                                    <i class="fa fa-briefcase"></i>
+                                </div>
+                            </div>
+                            <div class="stat-value">
+                                $<t t-esc="'{:,.2f}'.format(portfolio_value or 0.0)"/>
+                            </div>
+                            <div class="stat-change neutral">
+                                Current market value
+                            </div>
+                        </div>
+                        
+                        <div class="stock-stat-card">
+                            <div class="stat-header">
+                                <h6 class="stat-title">Total Assets</h6>
+                                <div class="stat-icon" style="--icon-bg: var(--stock-primary-light); --icon-color: var(--stock-primary);">
+                                    <i class="fa fa-pie-chart"></i>
+                                </div>
+                            </div>
+                            <div class="stat-value">
+                                $<t t-esc="'{:,.2f}'.format(total_assets or 0.0)"/>
+                            </div>
+                            <div class="stat-change neutral">
+                                Cash + Portfolio
+                            </div>
+                        </div>
+                        
+                        <div class="stock-stat-card" t-attf-class="#{(profit_loss or 0.0) >= 0 and 'profit' or 'loss'}">
+                            <div class="stat-header">
+                                <h6 class="stat-title">P&amp;L</h6>
+                                <div class="stat-icon" t-attf-style="--icon-bg: #{(profit_loss or 0.0) >= 0 and 'var(--stock-success-light)' or 'var(--stock-danger-light)'}; --icon-color: #{(profit_loss or 0.0) >= 0 and 'var(--stock-success)' or 'var(--stock-danger)'};">
+                                    <i t-attf-class="fa #{(profit_loss or 0.0) >= 0 and 'fa-arrow-up' or 'fa-arrow-down'}"></i>
+                                </div>
+                            </div>
+                            <div class="stat-value">
+                                $<t t-esc="'{:,.2f}'.format(profit_loss or 0.0)"/>
+                            </div>
+                            <div t-attf-class="stat-change #{(profit_loss or 0.0) >= 0 and 'positive' or 'negative'}">
+                                <i t-attf-class="fa #{(profit_loss or 0.0) >= 0 and 'fa-arrow-up' or 'fa-arrow-down'}"></i>
+                                <t t-esc="profit_loss_percentage or 0.0"/>%
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Main Page Content -->
+                    <t t-raw="0"/>
+                </div>
                 
-                function setActiveNavigation() {
-                    const currentPath = window.location.pathname;
-                    const navLinks = document.querySelectorAll('.stock-sidebar .nav-link');
-                    
-                    navLinks.forEach(link => {
-                        link.classList.remove('active');
-                        const href = link.getAttribute('href');
-                        if (href && (currentPath === href || currentPath.startsWith(href + '/'))) {
-                            link.classList.add('active');
+                <!-- Sidebar Toggle Script -->
+                <script>
+                    //<![CDATA[
+                    (function() {
+                        'use strict';
+                        
+                        // Configuration
+                        const SIDEBAR_STATE_KEY = 'stock_sidebar_collapsed';
+                        const MOBILE_BREAKPOINT = 768;
+                        
+                        // Global toggle function
+                        window.toggleStockSidebar = function() {
+                            const sidebar = document.getElementById('stockSidebar');
+                            if (!sidebar) return;
+                            
+                            sidebar.classList.toggle('collapsed');
+                            
+                            // Save state to localStorage
+                            const isCollapsed = sidebar.classList.contains('collapsed');
+                            try {
+                                localStorage.setItem(SIDEBAR_STATE_KEY, isCollapsed.toString());
+                            } catch (e) {
+                                console.warn('Failed to save sidebar state:', e);
+                            }
+                        };
+                        
+                        // Initialize when DOM is ready
+                        function initSidebar() {
+                            const sidebar = document.getElementById('stockSidebar');
+                            if (!sidebar) return;
+                            
+                            const isMobile = window.innerWidth <= MOBILE_BREAKPOINT;
+                            
+                            // Load saved state (desktop only)
+                            if (!isMobile) {
+                                const savedState = localStorage.getItem(SIDEBAR_STATE_KEY);
+                                if (savedState === 'true') {
+                                    sidebar.classList.add('collapsed');
+                                }
+                            } else {
+                                // Force collapsed on mobile
+                                sidebar.classList.add('collapsed');
+                            }
+                            
+                            // Setup toggle button click handler
+                            const toggleBtn = sidebar.querySelector('.stock-sidebar-toggle-icon');
+                            if (toggleBtn) {
+                                toggleBtn.addEventListener('click', toggleStockSidebar);
+                                
+                                // Keyboard support
+                                toggleBtn.addEventListener('keydown', function(e) {
+                                    if (e.key === 'Enter' || e.key === ' ') {
+                                        e.preventDefault();
+                                        toggleStockSidebar();
+                                    }
+                                });
+                            }
+                            
+                            // Set active navigation
+                            setActiveNavigation();
                         }
-                    });
-                }
-                
-                // Initialize
-                if (document.readyState === 'loading') {
-                    document.addEventListener('DOMContentLoaded', initSidebar);
-                } else {
-                    initSidebar();
-                }
-            })();
-        //]]></script>
+                        
+                        function setActiveNavigation() {
+                            const currentPath = window.location.pathname;
+                            const navLinks = document.querySelectorAll('.stock-sidebar .nav-link');
+                            
+                            navLinks.forEach(link => {
+                                link.classList.remove('active');
+                                const href = link.getAttribute('href');
+                                if (href && (currentPath === href || currentPath.startsWith(href + '/'))) {
+                                    link.classList.add('active');
+                                }
+                            });
+                        }
+                        
+                        // Initialize
+                        if (document.readyState === 'loading') {
+                            document.addEventListener('DOMContentLoaded', initSidebar);
+                        } else {
+                            initSidebar();
+                        }
+                    })();
+                    //]]>
+                </script>
+            </main>
+        </t>
     </template>
+
 
     <!-- IPO & Direct Allocation Page -->
     <template id="portal_ipo_page" name="IPO &amp; Allocation">
@@ -2111,176 +2165,79 @@
         </t>
     </template>
     
-    <!-- Remove "Powered by Odoo" Footer - Disabled for Odoo 18 compatibility -->
-    <!-- 
-    <template id="remove_odoo_branding" inherit_id="portal.portal_layout" priority="99">
-        <xpath expr="//footer" position="replace">
-            <footer class="bg-light mt-5 py-4">
-                <div class="container">
-                    <div class="text-center text-muted">
-                        <p class="mb-0">© <t t-esc="datetime.datetime.now().year"/> Stock Market Simulation Portal</p>
-                        <small>Professional Trading Platform</small>
-                    </div>
-                </div>
-            </footer>
-        </xpath>
-    </template>
-    -->
+    <!-- REMOVED: All inheritance-based templates since we now use standalone layouts -->
     
-    <!-- Redirect /my to /market - Disabled for Odoo 18 compatibility -->
-    <!--
-    <template id="redirect_my_to_market" inherit_id="portal.portal_my_home" priority="99">
-        <xpath expr="//div[hasclass('o_portal_wrap')]" position="after">
-            <script>
-                if (window.location.pathname === '/my' || window.location.pathname === '/my/') {
-                    window.location.href = '/market';
-                }
-            </script>
-        </xpath>
-    </template>
-    -->
+    <!-- Removed legacy redirect template to eliminate portal inheritance -->
 
     <!-- WIKI-Style Error Page Template -->
     <template id="stock_error_page" name="Stock Market Error Page">
-        <t t-call="web.frontend_layout">
-            <t t-set="pageName" t-value="'stock_error'"/>
-            
-            <div class="stock-portal-layout">
-                <!-- Error Page Content -->
-                <div class="container-fluid">
-                    <div class="error-page">
-                        <div class="row justify-content-center">
-                            <div class="col-lg-8 col-xl-6">
-                                <div class="error-content text-center">
-                                    <!-- Error Status -->
-                                    <div class="error-status mb-4">
-                                        <h1 class="error-code" t-esc="status_code"/>
-                                        <h2 class="error-title" t-esc="status_message"/>
-                                        <p class="error-description text-muted" t-esc="description"/>
-                                    </div>
-
-                                    <!-- Action Buttons -->
-                                    <div class="error-actions mb-5">
-                                        <a href="/market" class="btn btn-primary me-2">
-                                            <i class="fa fa-home"/> Back to Market
-                                        </a>
-                                        <a href="javascript:history.back()" class="btn btn-outline-secondary">
-                                            <i class="fa fa-arrow-left"/> Go Back
-                                        </a>
-                                    </div>
-
-                                    <!-- Suggestions (only for 404/403) -->
-                                    <t t-if="show_suggestions">
-                                        <div class="error-suggestions">
-                                            <!-- Active Sessions -->
-                                            <t t-if="suggested_sessions">
-                                                <div class="suggestion-section mb-4">
-                                                    <h5>Active Trading Sessions</h5>
-                                                    <div class="row">
-                                                        <t t-foreach="suggested_sessions" t-as="session">
-                                                            <div class="col-md-6 mb-3">
-                                                                <div class="card h-100">
-                                                                    <div class="card-body">
-                                                                        <h6 class="card-title" t-field="session.name"/>
-                                                                        <p class="card-text text-muted">
-                                                                            <span class="badge" t-attf-class="badge-#{session.state}">
-                                                                                <t t-esc="session.state.title()"/>
-                                                                            </span>
-                                                                        </p>
-                                                                        <a t-attf-href="/market/session/#{session.id}" class="btn btn-sm btn-outline-primary">
-                                                                            View Session
-                                                                        </a>
-                                                                    </div>
-                                                                </div>
-                                                            </div>
-                                                        </t>
-                                                    </div>
-                                                </div>
-                                            </t>
-
-                                            <!-- Popular Securities -->
-                                            <t t-if="popular_securities">
-                                                <div class="suggestion-section">
-                                                    <h5>Available Securities</h5>
-                                                    <div class="row">
-                                                        <t t-foreach="popular_securities" t-as="security">
-                                                            <div class="col-md-4 mb-3">
-                                                                <div class="card h-100">
-                                                                    <div class="card-body">
-                                                                        <h6 class="card-title" t-field="security.name"/>
-                                                                        <p class="card-text">
-                                                                            <small class="text-muted" t-field="security.symbol"/>
-                                                                        </p>
-                                                                        <a t-attf-href="/market/security/#{security.id}" class="btn btn-sm btn-outline-success">
-                                                                            View Details
-                                                                        </a>
-                                                                    </div>
-                                                                </div>
-                                                            </div>
-                                                        </t>
-                                                    </div>
-                                                </div>
-                                            </t>
-                                        </div>
-                                    </t>
+        <t t-call="stock_market_simulation.stock_standalone_layout">
+            <t t-set="page_title" t-value="page_title or 'Error'"/>
+            <div class="container-fluid py-5">
+                <div class="row justify-content-center">
+                    <div class="col-lg-8 col-xl-6">
+                        <div class="card shadow-sm">
+                            <div class="card-body text-center">
+                                <h1 class="display-3 mb-3 text-primary" t-esc="status_code"/>
+                                <h2 class="h3 mb-3" t-esc="status_message"/>
+                                <p class="text-muted mb-4" t-esc="description"/>
+                                <div class="mb-4">
+                                    <a href="/market" class="btn btn-primary me-2">
+                                        <i class="fa fa-home"/> Back to Market
+                                    </a>
+                                    <a href="javascript:history.back()" class="btn btn-outline-secondary">
+                                        <i class="fa fa-arrow-left"/> Go Back
+                                    </a>
                                 </div>
+                                <t t-if="show_suggestions">
+                                    <div class="text-start">
+                                        <t t-if="suggested_sessions">
+                                            <h5 class="mt-4">Active Trading Sessions</h5>
+                                            <div class="row">
+                                                <t t-foreach="suggested_sessions" t-as="session">
+                                                    <div class="col-md-6 mb-3">
+                                                        <div class="card h-100">
+                                                            <div class="card-body">
+                                                                <h6 class="card-title" t-field="session.name"/>
+                                                                <p class="card-text text-muted">
+                                                                    <span class="badge" t-attf-class="badge-#{session.state}">
+                                                                        <t t-esc="session.state.title()"/>
+                                                                    </span>
+                                                                </p>
+                                                                <a t-attf-href="/market/session/#{session.id}" class="btn btn-sm btn-outline-primary">View Session</a>
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                </t>
+                                            </div>
+                                        </t>
+                                        <t t-if="popular_securities">
+                                            <h5 class="mt-4">Available Securities</h5>
+                                            <div class="row">
+                                                <t t-foreach="popular_securities" t-as="security">
+                                                    <div class="col-md-4 mb-3">
+                                                        <div class="card h-100">
+                                                            <div class="card-body">
+                                                                <h6 class="card-title" t-field="security.name"/>
+                                                                <p class="card-text"><small class="text-muted" t-field="security.symbol"/></p>
+                                                                <a t-attf-href="/market/security/#{security.id}" class="btn btn-sm btn-outline-success">View Details</a>
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                </t>
+                                            </div>
+                                        </t>
+                                    </div>
+                                </t>
                             </div>
                         </div>
                     </div>
                 </div>
             </div>
-
-            <!-- Error Page Styles -->
             <style>
-                .error-page {
-                    min-height: 80vh;
-                    display: flex;
-                    align-items: center;
-                    padding: 2rem 0;
-                }
-                
-                .error-code {
-                    font-size: 6rem;
-                    font-weight: 700;
-                    color: var(--stock-primary);
-                    line-height: 1;
-                    margin-bottom: 0.5rem;
-                }
-                
-                .error-title {
-                    font-size: 2rem;
-                    font-weight: 600;
-                    color: var(--stock-text-primary);
-                    margin-bottom: 1rem;
-                }
-                
-                .error-description {
-                    font-size: 1.1rem;
-                    max-width: 500px;
-                    margin: 0 auto 2rem;
-                }
-                
-                .suggestion-section {
-                    text-align: left;
-                }
-                
-                .suggestion-section h5 {
-                    color: var(--stock-text-primary);
-                    margin-bottom: 1rem;
-                    font-weight: 600;
-                }
-                
-                .badge-active {
-                    background-color: var(--stock-success);
-                }
-                
-                .badge-planned {
-                    background-color: var(--stock-warning);
-                }
-                
-                .badge-closed {
-                    background-color: var(--stock-muted);
-                }
+                .badge-active { background-color: var(--stock-success); }
+                .badge-planned { background-color: var(--stock-warning); }
+                .badge-closed { background-color: var(--stock-muted); }
             </style>
         </t>
     </template>
@@ -2391,8 +2348,26 @@
                     </div>
                 </div>
                 
-                <!-- Pagination -->
-                <t t-if="pager and pager.get('page_count', 0) > 1" t-call="portal.pager"/>
+                <!-- Pagination (custom, no portal dependency) -->
+                <t t-if="pager and pager.get('page_count', 0) > 1">
+                    <nav aria-label="Users pagination" class="mt-3">
+                        <ul class="pagination justify-content-center">
+                            <li class="page-item" t-att-class="(pager.get('page',1) &lt;= 1) and 'disabled' or ''">
+                                <a class="page-link" t-att-href="'/market/admin/users/page/' + str((pager.get('page',1) - 1) if pager.get('page',1) &gt; 1 else 1) + '?sortby=' + str(sortby or '') + '&amp;filterby=' + str(filterby or '') + (('&amp;search=' + search) if search else '')" aria-label="Previous">
+                                    <span aria-hidden="true">&#171;</span>
+                                </a>
+                            </li>
+                            <li class="page-item disabled">
+                                <span class="page-link">Page <t t-esc="pager.get('page',1)"/> of <t t-esc="pager.get('page_count',1)"/></span>
+                            </li>
+                            <li class="page-item" t-att-class="(pager.get('page',1) &gt;= pager.get('page_count',1)) and 'disabled' or ''">
+                                <a class="page-link" t-att-href="'/market/admin/users/page/' + str((pager.get('page',1) + 1) if pager.get('page',1) &lt; pager.get('page_count',1) else pager.get('page_count',1)) + '?sortby=' + str(sortby or '') + '&amp;filterby=' + str(filterby or '') + (('&amp;search=' + search) if search else '')" aria-label="Next">
+                                    <span aria-hidden="true">&#187;</span>
+                                </a>
+                            </li>
+                        </ul>
+                    </nav>
+                </t>
             </div>
         </t>
     </template>
@@ -4542,7 +4517,7 @@
     
     <!-- Portal Broker Commissions Template -->
     <template id="portal_broker_commissions" name="Portal Broker Commissions">
-        <t t-call="portal.portal_layout">
+        <t t-call="stock_market_simulation.market_portal_layout">
             <div class="container-fluid">
                 <div class="row">
                     <div class="col-12">
