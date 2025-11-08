@@ -394,6 +394,27 @@ class PortalRedirectController(http.Controller):
             return original_portal.home(**kw)
 
 
+class RootRedirectController(http.Controller):
+    """
+    Controller to redirect root path (/) to /market, similar to /my behavior.
+    """
+    
+    @http.route(['/'], type='http', auth="public", website=True)
+    def root_redirect(self, **kw):
+        """Redirect root path to /market."""
+        _logger.info("Root path (/) accessed - redirecting to /market")
+        
+        # Check if user is logged in
+        if request.session.uid:
+            user = request.env.user
+            _logger.info("Logged in user %s accessing root - redirecting to /market", user.login)
+            return werkzeug.utils.redirect('/market')
+        else:
+            # Not logged in - redirect to login page
+            _logger.info("Anonymous user accessing root - redirecting to /web/login")
+            return werkzeug.utils.redirect('/web/login?redirect=/market')
+
+
 class TestController(http.Controller):
 
     @http.route(['/test-redirect'], type='http', auth="user", website=True)
