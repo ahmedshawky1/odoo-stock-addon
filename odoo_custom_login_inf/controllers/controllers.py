@@ -404,8 +404,9 @@ class RootRedirectController(http.Controller):
         """Redirect root path to configured portal redirect path."""
         _logger.info("Root path (/) accessed - reading portal redirect path")
         
+        # Read configured path from system parameter (with fallback)
+        portal_redirect_path = '/market'  # Default fallback
         try:
-            # Read configured path from system parameter
             param_obj = request.env['ir.config_parameter'].sudo()
             portal_redirect_path = (param_obj.get_param('login_background.portal_redirect_path') or '/market').strip()
             
@@ -414,7 +415,11 @@ class RootRedirectController(http.Controller):
                 portal_redirect_path = '/' + portal_redirect_path
             
             _logger.info("Root path redirect target: %s", portal_redirect_path)
-            
+        except Exception as e:
+            _logger.error("Error getting portal redirect path: %s", e)
+            # Keep default fallback
+        
+        try:
             # Check if user is logged in
             if request.session.uid:
                 user = request.env.user
@@ -425,12 +430,12 @@ class RootRedirectController(http.Controller):
                 _logger.info("Anonymous user accessing root - redirecting to /web/login")
                 return werkzeug.utils.redirect(f'/web/login?redirect={portal_redirect_path}')
         except Exception as e:
-            _logger.error("Error getting portal redirect path: %s", e)
-            # Fallback to /market
+            _logger.error("Error in root redirect: %s", e)
+            # Fallback using the same portal_redirect_path
             if request.session.uid:
-                return werkzeug.utils.redirect('/market')
+                return werkzeug.utils.redirect(portal_redirect_path)
             else:
-                return werkzeug.utils.redirect('/web/login?redirect=/market')
+                return werkzeug.utils.redirect(f'/web/login?redirect={portal_redirect_path}')
 
 
 class TestController(http.Controller):
