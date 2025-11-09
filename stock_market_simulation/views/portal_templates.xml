@@ -1217,6 +1217,10 @@
                         margin-bottom: var(--spacing-xl);
                     }
                     
+                    .stock-sidebar.collapsed .sidebar-section {
+                        margin-bottom: var(--spacing-md);
+                    }
+                    
                     .sidebar-section-title {
                         padding: 0 var(--spacing-lg) var(--spacing-sm);
                         font-size: 0.6875rem;
@@ -1226,7 +1230,7 @@
                         color: var(--stock-gray-500);
                         white-space: nowrap;
                         overflow: hidden;
-                        transition: opacity var(--transition-base);
+                        transition: all var(--transition-base);
                         display: flex;
                         align-items: center;
                         gap: var(--spacing-sm);
@@ -1239,6 +1243,10 @@
                     
                     .stock-sidebar.collapsed .sidebar-section-title {
                         opacity: 0;
+                        height: 0;
+                        padding: 0;
+                        margin: 0;
+                        overflow: hidden;
                     }
                     
                     .nav-link {
