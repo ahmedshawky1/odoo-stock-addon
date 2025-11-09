@@ -2442,69 +2442,71 @@
                 
                 <!-- Page Content -->
                 <div class="container-fluid px-4 py-4">
-                    <!-- Financial Summary Cards -->
-                    <div class="stock-dashboard-stats mb-4">
-                        <div class="stock-stat-card">
-                            <div class="stat-header">
-                                <h6 class="stat-title">Cash Balance</h6>
-                                <div class="stat-icon" style="--icon-bg: var(--stock-success-light); --icon-color: var(--stock-success);">
-                                    <i class="fa fa-money"></i>
+                    <!-- Financial Summary Cards (hidden on trading page) -->
+                    <t t-if="not hide_stats">
+                        <div class="stock-dashboard-stats mb-4">
+                            <div class="stock-stat-card">
+                                <div class="stat-header">
+                                    <h6 class="stat-title">Cash Balance</h6>
+                                    <div class="stat-icon" style="--icon-bg: var(--stock-success-light); --icon-color: var(--stock-success);">
+                                        <i class="fa fa-money"></i>
+                                    </div>
+                                </div>
+                                <div class="stat-value">
+                                    $<t t-esc="'{:,.2f}'.format(cash_balance or 0.0)"/>
+                                </div>
+                                <div class="stat-change neutral">
+                                    Available for trading
                                 </div>
                             </div>
-                            <div class="stat-value">
-                                $<t t-esc="'{:,.2f}'.format(cash_balance or 0.0)"/>
-                            </div>
-                            <div class="stat-change neutral">
-                                Available for trading
-                            </div>
-                        </div>
-                        
-                        <div class="stock-stat-card">
-                            <div class="stat-header">
-                                <h6 class="stat-title">Portfolio Value</h6>
-                                <div class="stat-icon" style="--icon-bg: var(--stock-info-light); --icon-color: var(--stock-info);">
-                                    <i class="fa fa-briefcase"></i>
+                            
+                            <div class="stock-stat-card">
+                                <div class="stat-header">
+                                    <h6 class="stat-title">Portfolio Value</h6>
+                                    <div class="stat-icon" style="--icon-bg: var(--stock-info-light); --icon-color: var(--stock-info);">
+                                        <i class="fa fa-briefcase"></i>
+                                    </div>
+                                </div>
+                                <div class="stat-value">
+                                    $<t t-esc="'{:,.2f}'.format(portfolio_value or 0.0)"/>
+                                </div>
+                                <div class="stat-change neutral">
+                                    Current market value
                                 </div>
                             </div>
-                            <div class="stat-value">
-                                $<t t-esc="'{:,.2f}'.format(portfolio_value or 0.0)"/>
-                            </div>
-                            <div class="stat-change neutral">
-                                Current market value
-                            </div>
-                        </div>
-                        
-                        <div class="stock-stat-card">
-                            <div class="stat-header">
-                                <h6 class="stat-title">Total Assets</h6>
-                                <div class="stat-icon" style="--icon-bg: var(--stock-primary-light); --icon-color: var(--stock-primary);">
-                                    <i class="fa fa-pie-chart"></i>
+                            
+                            <div class="stock-stat-card">
+                                <div class="stat-header">
+                                    <h6 class="stat-title">Total Assets</h6>
+                                    <div class="stat-icon" style="--icon-bg: var(--stock-primary-light); --icon-color: var(--stock-primary);">
+                                        <i class="fa fa-pie-chart"></i>
+                                    </div>
+                                </div>
+                                <div class="stat-value">
+                                    $<t t-esc="'{:,.2f}'.format(total_assets or 0.0)"/>
+                                </div>
+                                <div class="stat-change neutral">
+                                    Cash + Portfolio
                                 </div>
                             </div>
-                            <div class="stat-value">
-                                $<t t-esc="'{:,.2f}'.format(total_assets or 0.0)"/>
-                            </div>
-                            <div class="stat-change neutral">
-                                Cash + Portfolio
-                            </div>
-                        </div>
-                        
-                        <div class="stock-stat-card" t-attf-class="#{(profit_loss or 0.0) >= 0 and 'profit' or 'loss'}">
-                            <div class="stat-header">
-                                <h6 class="stat-title">P&amp;L</h6>
-                                <div class="stat-icon" t-attf-style="--icon-bg: #{(profit_loss or 0.0) >= 0 and 'var(--stock-success-light)' or 'var(--stock-danger-light)'}; --icon-color: #{(profit_loss or 0.0) >= 0 and 'var(--stock-success)' or 'var(--stock-danger)'};">
+                            
+                            <div class="stock-stat-card" t-attf-class="#{(profit_loss or 0.0) >= 0 and 'profit' or 'loss'}">
+                                <div class="stat-header">
+                                    <h6 class="stat-title">P&amp;L</h6>
+                                    <div class="stat-icon" t-attf-style="--icon-bg: #{(profit_loss or 0.0) >= 0 and 'var(--stock-success-light)' or 'var(--stock-danger-light)'}; --icon-color: #{(profit_loss or 0.0) >= 0 and 'var(--stock-success)' or 'var(--stock-danger)'};">
+                                        <i t-attf-class="fa #{(profit_loss or 0.0) >= 0 and 'fa-arrow-up' or 'fa-arrow-down'}"></i>
+                                    </div>
+                                </div>
+                                <div class="stat-value">
+                                    $<t t-esc="'{:,.2f}'.format(profit_loss or 0.0)"/>
+                                </div>
+                                <div t-attf-class="stat-change #{(profit_loss or 0.0) >= 0 and 'positive' or 'negative'}">
                                     <i t-attf-class="fa #{(profit_loss or 0.0) >= 0 and 'fa-arrow-up' or 'fa-arrow-down'}"></i>
+                                    <t t-esc="profit_loss_percentage or 0.0"/>%
                                 </div>
                             </div>
-                            <div class="stat-value">
-                                $<t t-esc="'{:,.2f}'.format(profit_loss or 0.0)"/>
-                            </div>
-                            <div t-attf-class="stat-change #{(profit_loss or 0.0) >= 0 and 'positive' or 'negative'}">
-                                <i t-attf-class="fa #{(profit_loss or 0.0) >= 0 and 'fa-arrow-up' or 'fa-arrow-down'}"></i>
-                                <t t-esc="profit_loss_percentage or 0.0"/>%
-                            </div>
                         </div>
-                    </div>
+                    </t>
 
                     <!-- Main Page Content -->
                     <t t-raw="0"/>
@@ -2996,6 +2998,7 @@
     <!-- Market Trading View -->
     <template id="market_trading_view" name="Market Trading View">
         <t t-call="stock_market_simulation.market_portal_layout">
+            <t t-set="hide_stats" t-value="True"/>
             <h4 class="mb-4"><i class="fa fa-exchange me-2"></i>Trading Platform</h4>
             <t t-call="stock_market_simulation.portal_order_new_content"/>
         </t>
