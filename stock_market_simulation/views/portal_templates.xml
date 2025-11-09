@@ -1004,7 +1004,7 @@
                         
                         /* Layout */
                         --stock-sidebar-width: 280px;
-                        --stock-sidebar-width-collapsed: 60px;
+                        --stock-sidebar-width-collapsed: 80px;
                         --stock-navbar-height: 70px;
                         
                         /* Spacing */
@@ -1242,11 +1242,15 @@
                     }
                     
                     .stock-sidebar.collapsed .sidebar-section-title {
-                        opacity: 0;
-                        height: 0;
-                        padding: 0;
-                        margin: 0;
-                        overflow: hidden;
+                        font-size: 0.5rem;
+                        padding: 0 var(--spacing-xs) var(--spacing-xs);
+                        letter-spacing: 0.02em;
+                        text-align: center;
+                        justify-content: center;
+                    }
+                    
+                    .stock-sidebar.collapsed .sidebar-section-title i {
+                        display: none;
                     }
                     
                     .nav-link {
@@ -1307,6 +1311,16 @@
                         font-size: 1.125rem;
                         color: var(--stock-gray-600);
                         transition: color var(--transition-fast);
+                    }
+                    
+                    .stock-sidebar.collapsed .nav-link {
+                        justify-content: center;
+                        padding: var(--spacing-md) var(--spacing-xs);
+                    }
+                    
+                    .stock-sidebar.collapsed .nav-link i {
+                        margin-right: 0;
+                        font-size: 1.25rem;
                     }
                     
                     .nav-link:hover i,
@@ -2562,11 +2576,26 @@
                             const currentPath = window.location.pathname;
                             const navLinks = document.querySelectorAll('.stock-sidebar .nav-link');
                             
+                            let hasMatch = false;
+                            
                             navLinks.forEach(link => {
                                 link.classList.remove('active');
                                 const href = link.getAttribute('href');
-                                if (href && (currentPath === href || currentPath.startsWith(href + '/'))) {
-                                    link.classList.add('active');
+                                
+                                if (!href) return;
+                                
+                                // Exact match for root paths
+                                if (href === '/market' || href === '/market/') {
+                                    if (currentPath === '/market' || currentPath === '/market/' || currentPath === '/market/dashboard') {
+                                        link.classList.add('active');
+                                        hasMatch = true;
+                                    }
+                                } else {
+                                    // For other paths, check if current path starts with href
+                                    if (currentPath === href || currentPath.startsWith(href + '/')) {
+                                        link.classList.add('active');
+                                        hasMatch = true;
+                                    }
                                 }
                             });
                         }
