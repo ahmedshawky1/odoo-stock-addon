@@ -6,6 +6,7 @@
     <!-- Portfolio Page -->
     <template id="portal_my_portfolio" name="My Portfolio">
         <t t-call="stock_market_simulation.market_portal_layout">
+            <t t-set="hide_stats" t-value="True"/>
             <div class="container-fluid">
                 <div class="page-header mb-4">
                     <h1 class="h2">My Portfolio</h1>
@@ -69,6 +70,7 @@
     <!-- Order Entry Page -->
     <template id="portal_order_new" name="Place New Order">
         <t t-call="stock_market_simulation.market_portal_layout">
+            <t t-set="hide_stats" t-value="True"/>
             <t t-call="stock_market_simulation.portal_order_new_content"/>
         </t>
     </template>
@@ -699,6 +701,7 @@
     <!-- Market Data Page -->
     <template id="portal_market_data" name="Market Data">
         <t t-call="stock_market_simulation.market_portal_layout">
+            <t t-set="hide_stats" t-value="True"/>
             <div class="container-fluid">
                 <div class="page-header mb-4">
                     <h1 class="h2">Market Data</h1>
@@ -2619,6 +2622,7 @@
     <!-- IPO & Direct Allocation Page -->
     <template id="portal_ipo_page" name="IPO &amp; Allocation">
         <t t-call="stock_market_simulation.market_portal_layout">
+            <t t-set="hide_stats" t-value="True"/>
             <div class="container-fluid">
                 <div class="page-header mb-4">
                     <h1 class="h2"><i class="fa fa-rocket"/> IPO &amp; Direct Allocation</h1>
@@ -2949,6 +2953,7 @@
     <!-- Market Portfolio View -->
     <template id="market_portfolio_view" name="Market Portfolio View">
         <t t-call="stock_market_simulation.market_portal_layout">
+            <t t-set="hide_stats" t-value="True"/>
             <div class="card">
                 <div class="card-header">
                     <h4 class="mb-0"><i class="fa fa-briefcase me-2"></i>My Portfolio</h4>
@@ -3007,6 +3012,7 @@
     <!-- Market Orders View -->
     <template id="market_orders_view" name="Market Orders View">
         <t t-call="stock_market_simulation.market_portal_layout">
+            <t t-set="hide_stats" t-value="True"/>
             <div class="card">
                 <div class="card-header">
                     <div class="d-flex justify-content-between align-items-center">
@@ -3154,6 +3160,7 @@
     <!-- ========== ADMIN USERS LIST TEMPLATE ========== -->
     <template id="admin_users_list" name="Admin Users List">
         <t t-call="stock_market_simulation.market_portal_layout">
+            <t t-set="hide_stats" t-value="True"/>
             <div class="container-fluid">
                 <!-- Header -->
                 <div class="page-header mb-4">
@@ -3284,6 +3291,7 @@
     <!-- ========== ADMIN USER 360 VIEW TEMPLATE ========== -->
     <template id="admin_user_360_view" name="Admin User 360 View">
         <t t-call="stock_market_simulation.market_portal_layout">
+            <t t-set="hide_stats" t-value="True"/>
             <div class="container-fluid">
                 <style>
                     .col-md-5th {
@@ -3746,6 +3754,7 @@
     <!-- Securities Page Template -->
     <template id="market_securities_page" name="Market Securities Page">
         <t t-call="stock_market_simulation.market_portal_layout">
+            <t t-set="hide_stats" t-value="True"/>
             <div class="container-fluid">
                 <div class="row">
                     <div class="col-12">
@@ -3840,6 +3849,7 @@
     <!-- Session Info Page Template -->
     <template id="market_session_page" name="Market Session Page">
         <t t-call="stock_market_simulation.market_portal_layout">
+            <t t-set="hide_stats" t-value="True"/>
             <div class="container-fluid">
                 <div class="row">
                     <div class="col-12">
@@ -4238,6 +4248,7 @@
     <!-- Reports Page Template -->
     <template id="market_reports_page" name="Market Reports Page">
         <t t-call="stock_market_simulation.market_portal_layout">
+            <t t-set="hide_stats" t-value="True"/>
             <div class="container-fluid">
                 <div class="row">
                     <div class="col-12">
@@ -4402,6 +4413,7 @@
     <!-- Deposits Page -->
     <template id="market_deposits_page" name="Market Deposits Page">
         <t t-call="stock_market_simulation.market_portal_layout">
+            <t t-set="hide_stats" t-value="True"/>
             <div class="container-fluid">
                 <div class="row">
                     <div class="col-12">
@@ -4720,6 +4732,7 @@
     <!-- Loans Page -->
     <template id="market_loans_page" name="Market Loans Page">
         <t t-call="stock_market_simulation.market_portal_layout">
+            <t t-set="hide_stats" t-value="True"/>
             <div class="container-fluid">
                 <div class="row">
                     <div class="col-12">
@@ -5193,6 +5206,7 @@
     <!-- Market Commissions Template -->
     <template id="market_commissions_page" name="Market Commissions Page">
         <t t-call="stock_market_simulation.market_portal_layout">
+            <t t-set="hide_stats" t-value="True"/>
             <div class="container-fluid">
                 <div class="row">
                     <div class="col-12">
@@ -5427,6 +5441,7 @@
     <!-- Portal Broker Commissions Template -->
     <template id="portal_broker_commissions" name="Portal Broker Commissions">
         <t t-call="stock_market_simulation.market_portal_layout">
+            <t t-set="hide_stats" t-value="True"/>
             <div class="container-fluid">
                 <div class="row">
                     <div class="col-12">
