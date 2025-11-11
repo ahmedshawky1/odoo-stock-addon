@@ -468,11 +468,27 @@
                     const quantityEl = document.getElementById('trading_quantity');
                     const priceEl = document.getElementById('trading_price');
                     const orderValueEl = document.getElementById('trading_order_value');
+                    const securitySelect = document.getElementById('trading_security_id');
+                    const orderTypeMarket = document.getElementById('trading_order_type_market');
                     
-                    if (!quantityEl || !priceEl || !orderValueEl) return;
+                    if (!quantityEl || !orderValueEl) return;
                     
                     const quantity = parseFloat(quantityEl.value) || 0;
-                    const price = parseFloat(priceEl.value) || 0;
+                    let price = 0;
+                    
+                    // For market orders, use current market price from security
+                    if (orderTypeMarket && orderTypeMarket.checked) {
+                        if (securitySelect) {
+                            const selectedOption = securitySelect.options[securitySelect.selectedIndex];
+                            if (selectedOption && selectedOption.value) {
+                                price = parseFloat(selectedOption.getAttribute('data-price')) || 0;
+                            }
+                        }
+                    } else {
+                        // For limit orders, use the price input field
+                        price = priceEl ? parseFloat(priceEl.value) || 0 : 0;
+                    }
+                    
                     const value = quantity * price;
                     
                     orderValueEl.textContent = `$${value.toLocaleString('en-US', {minimumFractionDigits: 2})}`;
@@ -521,9 +537,18 @@
                 function handleTradingPriceTypeChange() {
                     const limitRadio = document.getElementById('trading_order_type_limit');
                     const priceGroup = document.getElementById('trading_price_group');
+                    const priceInput = document.getElementById('trading_price');
                     
                     if (limitRadio && priceGroup) {
-                        priceGroup.style.display = limitRadio.checked ? 'block' : 'none';
+                        if (limitRadio.checked) {
+                            // Limit order: show and require price input
+                            priceGroup.style.display = 'block';
+                            if (priceInput) priceInput.required = true;
+                        } else {
+                            // Market order: hide price input
+                            priceGroup.style.display = 'none';
+                            if (priceInput) priceInput.required = false;
+                        }
                         calculateTradingOrderValue();
                     }
                 }
@@ -2493,7 +2518,7 @@
                                 </div>
                             </div>
                             
-                            <div class="stock-stat-card" t-attf-class="#{(profit_loss or 0.0) >= 0 and 'profit' or 'loss'}">
+                            <div t-attf-class="#{(profit_loss or 0.0) >= 0 and 'profit stock-stat-card' or 'loss stock-stat-card'}">
                                 <div class="stat-header">
                                     <h6 class="stat-title">P&amp;L</h6>
                                     <div class="stat-icon" t-attf-style="--icon-bg: #{(profit_loss or 0.0) >= 0 and 'var(--stock-success-light)' or 'var(--stock-danger-light)'}; --icon-color: #{(profit_loss or 0.0) >= 0 and 'var(--stock-success)' or 'var(--stock-danger)'};">
